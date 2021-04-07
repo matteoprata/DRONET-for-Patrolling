@@ -1,0 +1,8 @@
+tensorflow==2.1.0
+pandas==0.25.1
+Keras==2.3.1
+matplotlib==3.3.3
+scipy==1.6.0
+pygame==1.9.6
+numpy==1.19.5
+Shapely==1.7.1

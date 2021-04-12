@@ -61,7 +61,7 @@ class Simulator:
         self.__setup_plotting()
 
     def simulation_name(self):
-        return "seed{}-ndrones{}-date{}".format(self.sim_seed, self.n_drones, current_date())
+        return "seed{}-ndrones{}".format(self.sim_seed, self.n_drones)
 
     def is_free_movement(self):
         return self.drone_coo is not None

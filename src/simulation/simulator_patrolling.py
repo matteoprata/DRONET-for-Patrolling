@@ -2,7 +2,7 @@
 from src.world_entities.environment import Environment
 from src.world_entities.base_station import BaseStation
 from src.world_entities.drone import Drone
-
+from src.patrolling.metrics import Metrics
 from src.utilities.utilities import PathManager, current_date, euclidean_distance
 import src.utilities.config as config
 from src.drawing import pp_draw
@@ -64,10 +64,13 @@ class PatrollingSimulator:
         self.bs_coords = bs_coords
         self.current_date = current_date()
 
+        self.metrics = Metrics(self)
         # create the world entites
         self.__set_randomness()
         self.__create_world_entities()
         self.__setup_plotting()
+
+        self.simulator_paused = False
 
     def max_distance(self):
         return (self.environment.width**2 + self.environment.height**2)**0.5
@@ -76,7 +79,7 @@ class PatrollingSimulator:
         return self.max_distance() / self.drone_speed_meters_sec
 
     def simulation_name(self):
-        return "[{}]-seed{}-ndrones{}-date{}".format(self.sim_peculiarity, self.sim_seed, self.n_drones, self.current_date)
+        return "[{}]-seed{}-ndrones{}-mode{}".format(self.sim_peculiarity, self.sim_seed, self.n_drones, self.drone_mobility.value)
 
     def detect_key_pressed(self, key_pressed):
         """ Moves the drones freely. """
@@ -94,9 +97,6 @@ class PatrollingSimulator:
 
         elif key_pressed in ['s', 'S']:  # decrease speed
             self.selected_drone.speed -= config.DRONE_SPEED_INCREMENT
-
-        elif key_pressed in ['p', 'P']:
-            self.environment.drones[0].state_manager.metrics.plot(self.cur_step)
 
     def detect_drone_click(self, position):
         """ Handles drones selection in the simulation. """
@@ -138,6 +138,10 @@ class PatrollingSimulator:
         base_stations = []
         for i in range(self.n_base_stations):
             base_stations.append(BaseStation(i, self.bs_coords, self.bs_com_range_meters, self))
+        self.environment.add_base_station(base_stations)
+
+        self.environment.spawn_obstacles()
+        self.environment.spawn_targets()
 
         drones = []
         for i in range(self.n_drones):
@@ -158,11 +162,7 @@ class PatrollingSimulator:
             drones.append(drone)
 
         self.selected_drone = drones[0]
-        self.environment.add_base_station(base_stations)
         self.environment.add_drones(drones)
-
-        self.environment.spawn_obstacles()
-        self.environment.spawn_targets()
 
     def __plot(self, cur_step):
         """ Plot the simulation """
@@ -192,7 +192,6 @@ class PatrollingSimulator:
 
     def run(self):
         """ The method starts the simulation. """
-
         for cur_step in range(self.sim_duration_ts):
             self.cur_step = cur_step
 

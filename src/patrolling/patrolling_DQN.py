@@ -17,10 +17,12 @@ class PatrollingDQN:
                  simulator,
                  metrics,
                  batch_size=32,
-                 discount_factor=1,  # .99,
+                 lr=0.0001,
+                 beta=0.5,
+                 discount_factor=.95,  # .99,
                  epsilon_decay=.0004,
                  replay_memory_depth=100000,
-                 swap_models_every_decision=1000,  # 10000
+                 swap_models_every_decision=100,  # 10000
                  load_model=False,
                  ):
 
@@ -30,13 +32,15 @@ class PatrollingDQN:
 
         self.model_loss = 0
         self.avg_reward = 0
-        self.beta = 0.01
+        self.beta = beta
+        self.lr = lr
 
         # number of actions, actions, number of states
         self.n_actions = n_actions
         self.n_features = n_features
 
         self.n_decision_step = 0
+        self.n_epochs = 1
 
         # learning parameters
         self.discount_factor = discount_factor
@@ -77,16 +81,13 @@ class PatrollingDQN:
         """ Construct the model from scratch """
 
         # -------------- Q-NN module body --------------
-
         model = Sequential()
-
-        model.add(Dense(20, input_dim=self.n_features, activation='relu'))
-        model.add(Dense(25, activation='relu'))
-        model.add(Dense(20, activation='relu'))
+        n_hidden_neurons = int(np.sqrt(self.n_features * self.n_actions))
+        model.add(Dense(n_hidden_neurons, input_dim=self.n_features, activation='relu'))
         model.add(Dense(self.n_actions))
 
-        opt = optimizers.Adam(learning_rate=0.0001)  # (learning_rate=0.01)
-        model.compile(loss='mean_squared_error', optimizer=opt)  # huber
+        opt = optimizers.Adam(learning_rate=self.lr)
+        model.compile(loss='mean_squared_error', optimizer=opt)
 
         return model
 
@@ -107,43 +108,36 @@ class PatrollingDQN:
         # print(action_index, self.decay(self.n_training_step, self.epsilon_decay), "steps", self.simulator.cur_step, "/", self.simulator.sim_duration_ts)
         return action_index
 
-    def train(self, previous_state=None, current_state=None, action=None, reward=None):
+    def train(self, previous_state=None, current_state=None, action=None, reward=None, is_final=None):
         """ train the NN accumulate the experience and each X data the method actually train the network. """
         if self.load_model:
             return
 
-        if not (previous_state is None and current_state is None and action is None and reward is None):
-            experience = [previous_state, current_state, action, reward]
+        if is_final:
+            self.n_epochs += 1
+
+        if not (previous_state is None and current_state is None and action is None and reward is None and is_final is None):
+            experience = [previous_state, current_state, action, reward, is_final]
             self.replay_memory.append(experience)
 
         if self.time_to_batch_training():
+            # print("Train", self.n_epochs, self.n_decision_step)
             # sample at random from replay memory, batch_size elements
             random_sample_batch_indices = self.simulator.rstate_sample_batch_training.randint(0, len(self.replay_memory), size=self.batch_size)
             random_sample_batch = np.asarray(self.replay_memory.llist)[random_sample_batch_indices]
 
             self.__train_model_batched(random_sample_batch)
 
-    # def train_whole_memory(self, n_epochs):
-    #     """ Trains for n_epoch the nn. """
-    #
-    #     print("starting final training over memory of size {}, training steps {}".format(len(self.replay_memory), self.n_training_step))
-    #     for e in range(n_epochs):
-    #         print("epoch", e)
-    #         for b in tqdm(range(0, len(self.replay_memory), self.batch_size)):
-    #             self.n_training_step += 1
-    #             sample_batch = self.replay_memory.llist[b:b+self.batch_size]
-    #             self.__train_model_batched(sample_batch)
-
     def __train_model_batched(self, random_sample_batch):
         """ Given an input batch, it trains the model. """
 
         X, y = [], []  # batches input - output (correct prediction)
-        for previous_state, current_state, action, reward in random_sample_batch:
+        for previous_state, current_state, action, reward, is_final in random_sample_batch:
             old_out = self.model.predict(np.asarray([previous_state]))
             cur_out = self.model_hat.predict(np.asarray([current_state]))
 
-            old_out[0, action] = (reward - self.avg_reward) + self.discount_factor * np.max(cur_out[0])
-            self.avg_reward += 0 # self.beta * old_out[0, action]
+            old_out[0, action] = (reward - self.avg_reward) + self.discount_factor * np.max(cur_out[0]) if not is_final else reward
+            # self.avg_reward += 0  # self.beta * old_out[0, action]
 
             X.append(previous_state)
             y.append(old_out[0])

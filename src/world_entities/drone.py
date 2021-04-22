@@ -69,7 +69,8 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 self.update_target_reached()
                 self.invoke_patrolling_MDP()  # train nn and get next action
                 self.increase_waypoint_counter()
-                self.simulator.metrics.plot_statistics(DQN=self.state_manager.DQN, step=self.current_waypoint_count)
+                if not config.PRE_TRAINED:
+                    self.simulator.metrics.plot_statistics(DQN=self.state_manager.DQN, step=self.current_waypoint_count)
 
         elif self.mobility == config.Mobility.RANDOM_MOVEMENT:
             if self.will_reach_target():
@@ -79,26 +80,34 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 target = self.simulator.environment.targets[action]
                 self.update_next_target_at_reach(target)
 
-        elif self.mobility == config.Mobility.GO_OLDEST:
+        elif self.mobility == config.Mobility.GO_MAX_AOI:
             if self.will_reach_target():
                 self.coords = self.next_target()
                 self.update_target_reached()
-                target = Target.oldest(self.simulator.environment.targets, self.current_target())
+                target = Target.max_aoi(self.simulator.environment.targets, self.current_target())
                 self.update_next_target_at_reach(target)
 
-        elif self.mobility == config.Mobility.GO_LEAST_RESIDUAL:
+        elif self.mobility == config.Mobility.GO_MIN_RESIDUAL:
             if self.will_reach_target():
                 self.coords = self.next_target()
                 self.update_target_reached()
-                target = Target.lowest_residual(self.simulator.environment.targets, self.current_target())
+                target = Target.min_residual(self.simulator.environment.targets, self.current_target())
                 self.update_next_target_at_reach(target)
 
-        elif self.mobility == config.Mobility.GO_LEAST_RESIDUAL_NEAREST:
+        elif self.mobility == config.Mobility.GO_MIN_SUM_RESIDUAL:
             if self.will_reach_target():
                 self.coords = self.next_target()
                 self.update_target_reached()
-                target = Target.lowest_residual_nearest(self.simulator.environment.targets, self.current_target(), self.speed)
+                target = Target.min_sum_residual(self.simulator.environment.targets,
+                                                 self.current_target(), self.speed, self.simulator.cur_step,
+                                                 self.simulator.ts_duration_sec)
                 self.update_next_target_at_reach(target)
+
+        elif self.mobility == config.Mobility.FREE:
+            if self.will_reach_target():
+                self.update_target_reached()
+                self.simulator.metrics.cum_residuals += np.average(self.state_manager.get_current_residuals())
+                self.simulator.metrics.plot_statistics(self.current_waypoint_count)
 
         self.set_next_target_angle()
         self.__movement(self.angle)
@@ -110,6 +119,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         self.prev_target = next_target.identifier
         self.path.append(next_target.coords)
         self.increase_waypoint_counter()
+
         self.simulator.metrics.cum_residuals += np.average(self.state_manager.get_current_residuals())
         self.simulator.metrics.plot_statistics(self.current_waypoint_count)
 

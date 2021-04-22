@@ -23,7 +23,7 @@ class PatrollingDQN:
                  epsilon_decay=.0004,
                  replay_memory_depth=100000,
                  swap_models_every_decision=100,  # 10000
-                 load_model=False,
+                 load_model=True,
                  ):
 
         self.simulator = simulator
@@ -88,6 +88,7 @@ class PatrollingDQN:
 
         opt = optimizers.Adam(learning_rate=self.lr)
         model.compile(loss='mean_squared_error', optimizer=opt)
+        print("N_NEURONS", n_hidden_neurons)
 
         return model
 

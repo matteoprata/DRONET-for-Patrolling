@@ -47,7 +47,7 @@ PLOT_TRAJECTORY_NEXT_TARGET = True
 FIXED_TOURS_DIR = "data/tours/"        # str: the path to the drones tours
 DEMO_PATH = False                      # bool: whether to use handcrafted tours or not (in utilities.utilities)
 
-PLOT_SIM = False       # bool: whether to plot or not the simulation (set to false for faster experiments)
+PLOT_SIM = True       # bool: whether to plot or not the simulation (set to false for faster experiments)
 WAIT_SIM_STEP = 0     # float >= 0: seconds, pauses the rendering for x seconds
 SKIP_SIM_STEP = 5     # int > 0 : steps, plot the simulation every x steps
 DRAW_SIZE = 700       # int: size of the drawing window
@@ -58,6 +58,11 @@ SAVE_PLOT_DIR = "data/plots/"  # string: where to save plots
 # ------------------------------- PATROLLING ------------------------------- #
 N_TARGETS = 7       # number of random targets in the map
 
+TARGETS = [(BASE_STATION_COORDS[0]-600, BASE_STATION_COORDS[1]+400, 100),
+           (BASE_STATION_COORDS[0]-250, BASE_STATION_COORDS[1]+1100, 100),
+           (BASE_STATION_COORDS[0]+250, BASE_STATION_COORDS[1]+1100, 100),
+           (BASE_STATION_COORDS[0]+600, BASE_STATION_COORDS[1]+400, 100)]
+
 
 class Mobility(Enum):
     FREE = 0
@@ -65,11 +70,14 @@ class Mobility(Enum):
     DECIDED = 2
 
     RANDOM_MOVEMENT = 3
-    GO_OLDEST = 4
-    GO_LEAST_RESIDUAL = 5
-    GO_LEAST_RESIDUAL_NEAREST = 6
+    GO_MAX_AOI = 4
+    GO_MIN_RESIDUAL = 5
+    GO_MIN_SUM_RESIDUAL = 6
 
 
-DRONE_MOBILITY = Mobility.DECIDED
+DRONE_MOBILITY = Mobility.GO_MIN_SUM_RESIDUAL
 RL_DATA = "data/rl/"
-RL_MODEL = "data/rl/seed24-ndrones1-date05042021-215644"
+RL_MODEL = ""
+PRE_TRAINED = False
+
+

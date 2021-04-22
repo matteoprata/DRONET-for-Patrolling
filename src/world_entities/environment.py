@@ -62,18 +62,25 @@ class Environment:
         for drone in self.drones:
             drone.coords = drone.bs.coords
 
-    def spawn_targets(self, min_idlness_factor=1, max_idlness_factor=3):
+    def spawn_targets(self, targets=None):
+
+        # The base station is a target
         for i in range(self.simulator.n_base_stations):
             self.targets.append(Target(i, self.base_stations[i].coords, self.simulator.drone_max_battery, self.simulator))
 
-        # delays_distribution = self.get_truncated_normal(mean=2*self.simulator.max_travel_time(), sd=200, low=self.simulator.max_travel_time(), upp=self.simulator.sim_duration_ts*self.simulator.ts_duration_sec)
-        # delays_sample = delays_distribution.rvs(self.simulator.n_targets)
-        delays_sample = [500, 950, 400, 790, 200, 600, 1200]
-        offset = self.simulator.n_base_stations
-        for i in range(self.simulator.n_targets):
-            coords = [self.simulator.rnd_env.randint(0, self.width), self.simulator.rnd_env.randint(0, self.height)]
-            tolerated_idleness = delays_sample[i]  # self.simulator.rnd_env.randint(self.simulator.max_travel_time()*min_idlness_factor, self.simulator.max_travel_time()*max_idlness_factor)
-            self.targets.append(Target(offset+i, coords, tolerated_idleness, self.simulator))
+        # targets may be
+        if targets is not None:
+            for j, (x, y, tol_del) in enumerate(targets):
+                self.targets.append(Target(i+j+1, (x, y), tol_del, self.simulator))
+        else:
+            # delays_distribution = self.get_truncated_normal(mean=2*self.simulator.max_travel_time(), sd=200, low=self.simulator.max_travel_time(), upp=self.simulator.sim_duration_ts*self.simulator.ts_duration_sec)
+            # delays_sample = delays_distribution.rvs(self.simulator.n_targets)
+            delays_sample = [500, 950, 400, 790, 200, 600, 1200]
+            offset = self.simulator.n_base_stations
+            for i in range(self.simulator.n_targets):
+                coords = [self.simulator.rnd_env.randint(0, self.width), self.simulator.rnd_env.randint(0, self.height)]
+                tolerated_idleness = delays_sample[i]  # self.simulator.rnd_env.randint(self.simulator.max_travel_time()*min_idlness_factor, self.simulator.max_travel_time()*max_idlness_factor)
+                self.targets.append(Target(offset+i, coords, tolerated_idleness, self.simulator))
 
         # FOR each target set the furthest and closest target
         for tar1 in self.targets:
@@ -84,8 +91,6 @@ class Environment:
 
             tar1.furthest_target = self.targets[np.argmax(distances_max)]
             tar1.closest_target = self.targets[np.argmin(distances_min)]
-
-            # print(tar1.identifier, tar1.closest_target.identifier, tar1.furthest_target.identifier)
 
     def spawn_obstacles(self, orthogonal_obs=False):
         """ Appends obstacles in the environment """

@@ -55,7 +55,8 @@ class RLModule:
                                  n_actions=self.N_ACTIONS,
                                  n_features=self.N_FEATURES,
                                  simulator=self.drone.simulator,
-                                 metrics=self.drone.simulator.metrics
+                                 metrics=self.drone.simulator.metrics,
+                                 load_model=config.PRE_TRAINED
                                  )
 
         self.AOI_NORM = self.drone.simulator.sim_duration_ts * self.drone.simulator.ts_duration_sec
@@ -81,7 +82,7 @@ class RLModule:
 
     def evaluate_reward(self, state):
         zero_residuals = [res for res in state.residuals(False) if res < 0]
-        rew = len(zero_residuals)/self.N_ACTIONS if len(zero_residuals) > 0 else 0  # len / min / mean
+        rew = - len(zero_residuals)/self.N_ACTIONS if len(zero_residuals) > 0 else 2  # len / min / mean
         rew = rew if not state.is_final else -2
         return rew
 

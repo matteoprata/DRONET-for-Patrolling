@@ -15,8 +15,6 @@ from ast import literal_eval as make_tuple
 from shapely.geometry import LineString
 
 
-
-
 def log(message_to_log, is_to_log=True, current_ts=1, log_every=1):
     """ Logs message_to_log, if is_to_log or every log_every steps (given current_ts). """
     if not is_to_log or not (current_ts % log_every == 0):
@@ -30,8 +28,7 @@ def current_date():
 
 def euclidean_distance(p1, p2):
     """ Given points p1, p2 in R^2 it returns the norm of the vector connecting them.  """
-    dist = ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
-    return dist
+    return np.linalg.norm(np.array(p1)-np.array(p2))
 
 
 def angle_between_three_points(p1, p2, p3):
@@ -191,6 +188,12 @@ def json_to_paths(json_file_path):
 def save_json(msg, fname):
     with open(fname, 'w') as fp:
         json.dump(msg, fp)
+
+
+def read_json(fname):
+    with open(fname, 'r') as fp:
+        data = json.load(fp)
+    return data
 
 
 class LimitedList:

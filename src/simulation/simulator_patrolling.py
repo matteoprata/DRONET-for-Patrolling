@@ -14,7 +14,7 @@ import time
 class PatrollingSimulator:
 
     def __init__(self,
-                 sim_peculiarity="",
+                 sim_description="",
                  sim_seed=config.SIM_SEED,
                  ts_duration_sec=config.SIM_TS_DURATION,
                  sim_duration_ts=config.SIM_DURATION,
@@ -34,10 +34,11 @@ class PatrollingSimulator:
                  n_obstacles=config.N_OBSTACLES,
                  n_grid_cells=config.N_GRID_CELLS,
                  n_targets=config.N_TARGETS,
-                 drone_mobility=config.DRONE_MOBILITY
+                 drone_mobility=config.DRONE_MOBILITY,
+                 targets=config.TARGETS
                  ):
 
-        self.sim_peculiarity = sim_peculiarity
+        self.sim_peculiarity = sim_description
         self.cur_step = 0
         self.sim_seed = sim_seed
         self.ts_duration_sec = ts_duration_sec
@@ -47,6 +48,7 @@ class PatrollingSimulator:
         self.n_targets = n_targets
         self.n_obstacles = n_obstacles
         self.grid_cell_size = 0 if n_grid_cells <= 0 else int(self.env_width_meters / n_grid_cells)
+        self.targets = targets
 
         # if this coo is not none, then the drones are self driven
         self.drone_coo = drone_coo
@@ -71,6 +73,9 @@ class PatrollingSimulator:
         self.__setup_plotting()
 
         self.simulator_paused = False
+
+    def simulation_duration_sec(self):
+        return self.sim_duration_ts * self.ts_duration_sec
 
     def max_distance(self):
         return (self.environment.width**2 + self.environment.height**2)**0.5
@@ -141,7 +146,7 @@ class PatrollingSimulator:
         self.environment.add_base_station(base_stations)
 
         self.environment.spawn_obstacles()
-        self.environment.spawn_targets()
+        self.environment.spawn_targets(targets=self.targets)
 
         drones = []
         for i in range(self.n_drones):

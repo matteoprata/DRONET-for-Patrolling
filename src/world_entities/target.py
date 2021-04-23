@@ -16,6 +16,14 @@ class Target(SimulatedEntity):
 
     # ------ AGE OF INFORMATION -- RESIDUAL OF INFORMATION
 
+    def __str__(self):
+        return "Target {} on coords: {} with deadline: {}".format(self.identifier, self.coords,
+                                                                  self.maximum_tolerated_idleness)
+
+    def __repr__(self):
+        return "Target {} on coords: {} with deadline: {}".format(self.identifier, self.coords,
+                                                                  self.maximum_tolerated_idleness)
+
     def age_of_information(self):
         return (self.simulator.cur_step - self.last_visit_ts)*self.simulator.ts_duration_sec
 

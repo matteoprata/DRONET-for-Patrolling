@@ -4,8 +4,11 @@ from src.world_entities.base_station import BaseStation
 from src.world_entities.drone import Drone
 from src.patrolling.metrics import Metrics
 from src.utilities.utilities import PathManager, current_date, euclidean_distance
-import src.utilities.config as config
 from src.drawing import pp_draw
+
+from src.optimal_solution.opt_patrolling import AbstractConnectivityModel
+
+import src.utilities.config as config
 
 import numpy as np
 import time
@@ -169,6 +172,9 @@ class PatrollingSimulator:
         self.selected_drone = drones[0]
         self.environment.add_drones(drones)
 
+        # INIT OPT
+        self.init_optimal_solver()
+
     def __plot(self, cur_step):
         """ Plot the simulation """
 
@@ -194,6 +200,11 @@ class PatrollingSimulator:
         self.draw_manager.draw_obstacles()
         self.draw_manager.draw_targets()
         self.draw_manager.update(save=config.SAVE_PLOT, filename=self.simulation_name() + str(cur_step) + ".png")
+
+    def init_optimal_solver(self):
+        """ Init the optimal solver and find all the mission planning """
+        if self.drone_mobility == config.Mobility.OPTIMAL:
+            self.opt_solver = AbstractConnectivityModel(self)
 
     def run(self):
         """ The method starts the simulation. """

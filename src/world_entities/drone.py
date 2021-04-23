@@ -33,6 +33,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         self.angle, self.speed = angle, speed
         self.com_range, self.sensing_range, self.radar_range = com_range, sensing_range, radar_range
         self.max_battery, self.max_buffer = max_battery, max_buffer
+        self.cur_battery = 0  # Current battery of the drone
         self.bs = bs
 
         # parameters
@@ -62,6 +63,13 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
             if self.will_reach_target():
                 self.coords = self.next_target()
                 self.increase_waypoint_counter()
+
+        elif self.mobility == config.Mobility.OPTIMAL:
+            if self.will_reach_target():
+                self.coords = self.next_target()
+                self.update_target_reached()
+                target = self.simulator.opt_solver.next_target(self.identifier)
+                self.update_next_target_at_reach(target)
 
         elif self.mobility == config.Mobility.DECIDED:
             if self.will_reach_target():

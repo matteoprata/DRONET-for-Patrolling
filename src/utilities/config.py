@@ -74,6 +74,7 @@ class Mobility(Enum):
     GO_MIN_RESIDUAL = 5
     GO_MIN_SUM_RESIDUAL = 6
 
+    OPTIMAL = 7
 
 DRONE_MOBILITY = Mobility.GO_MIN_SUM_RESIDUAL
 RL_DATA = "data/rl/"

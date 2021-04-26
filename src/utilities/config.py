@@ -58,10 +58,10 @@ SAVE_PLOT_DIR = "data/plots/"  # string: where to save plots
 # ------------------------------- PATROLLING ------------------------------- #
 N_TARGETS = 7       # number of random targets in the map
 
-TARGETS = [(BASE_STATION_COORDS[0]-600, BASE_STATION_COORDS[1]+400, 100),
-           (BASE_STATION_COORDS[0]-250, BASE_STATION_COORDS[1]+1100, 100),
-           (BASE_STATION_COORDS[0]+250, BASE_STATION_COORDS[1]+1100, 100),
-           (BASE_STATION_COORDS[0]+600, BASE_STATION_COORDS[1]+400, 100)]
+TARGETS = [(BASE_STATION_COORDS[0]-600, BASE_STATION_COORDS[1]+400, 300),
+           (BASE_STATION_COORDS[0]-250, BASE_STATION_COORDS[1]+1100, 300),
+           (BASE_STATION_COORDS[0]+250, BASE_STATION_COORDS[1]+1100, 300),
+           (BASE_STATION_COORDS[0]+600, BASE_STATION_COORDS[1]+400, 300)]
 
 
 class Mobility(Enum):

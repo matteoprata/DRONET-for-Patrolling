@@ -67,10 +67,10 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
             if self.will_reach_target():
                 self.coords = self.next_target()
                 self.update_target_reached()
-                self.invoke_patrolling_MDP()  # train nn and get next action
+                reward, epsilon, loss = self.invoke_patrolling_MDP()  # train nn and get next action
                 self.increase_waypoint_counter()
                 if not config.PRE_TRAINED:
-                    self.simulator.metrics.plot_statistics(DQN=self.state_manager.DQN, step=self.current_waypoint_count)
+                    self.simulator.metrics.append_statistics_on_target_reached(reward, epsilon, loss)
 
         elif self.mobility == config.Mobility.RANDOM_MOVEMENT:
             if self.will_reach_target():
@@ -106,8 +106,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         elif self.mobility == config.Mobility.FREE:
             if self.will_reach_target():
                 self.update_target_reached()
-                self.simulator.metrics.cum_residuals += np.average(self.state_manager.get_current_residuals())
-                self.simulator.metrics.plot_statistics(self.current_waypoint_count)
+                self.simulator.metrics.append_statistics_on_target_reached()
 
         self.set_next_target_angle()
         self.__movement(self.angle)
@@ -120,11 +119,10 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         self.path.append(next_target.coords)
         self.increase_waypoint_counter()
 
-        self.simulator.metrics.cum_residuals += np.average(self.state_manager.get_current_residuals())
-        self.simulator.metrics.plot_statistics(self.current_waypoint_count)
+        self.simulator.metrics.append_statistics_on_target_reached()
 
     def invoke_patrolling_MDP(self):
-        self.state_manager.invoke_train()
+        reward, epsilon, loss = self.state_manager.invoke_train()
         action = self.state_manager.invoke_predict()
         self.prev_target = action
 

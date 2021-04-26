@@ -66,8 +66,12 @@ class PatrollingDQN:
             self.model_hat = kr.models.load_model(pretrained_model_path)
 
     @staticmethod
-    def decay(step, exp_coeff, base=np.e):
+    def exponential_decay(step, exp_coeff, base=np.e):
         return base ** (-step*exp_coeff)
+
+    def decay(self):
+        """ Probability of exploration now. """
+        return self.exponential_decay(self.n_decision_step, self.epsilon_decay)
 
     def flip_biased_coin(self, p):
         """ Return true with probability p, false with probability 1-p. """
@@ -75,7 +79,7 @@ class PatrollingDQN:
 
     def is_explore_probability(self):
         """ Returns True if it is time to explore, False otherwise. """
-        return self.flip_biased_coin(self.decay(self.n_decision_step, self.epsilon_decay))
+        return self.flip_biased_coin(self.decay())
 
     def build_neural_net(self):
         """ Construct the model from scratch """
@@ -88,7 +92,7 @@ class PatrollingDQN:
 
         opt = optimizers.Adam(learning_rate=self.lr)
         model.compile(loss='mean_squared_error', optimizer=opt)
-        print("N_NEURONS", n_hidden_neurons)
+        print("tensors: ({}x{}), ({}x{})".format(self.n_features, n_hidden_neurons, n_hidden_neurons, self.n_actions))
 
         return model
 
@@ -144,10 +148,10 @@ class PatrollingDQN:
             y.append(old_out[0])
 
         training_result = self.model.fit(np.asarray(X), np.asarray(y), epochs=1, batch_size=self.batch_size, verbose=0)
-        self.metrics.cum_loss += training_result.history["loss"][0]
+        self.current_loss = training_result.history["loss"][0]
 
         if self.time_to_swap_models():
-            print(self.decay(self.n_decision_step, self.epsilon_decay), "steps", self.simulator.cur_step, "/", self.simulator.sim_duration_ts)
+            print(self.decay(), "steps", self.simulator.cur_step, "/", self.simulator.sim_duration_ts)
             print('swapped', self.n_decision_step)
             self.swap_learning_model()
 
@@ -158,7 +162,7 @@ class PatrollingDQN:
         self.model_hat.set_weights(self.model.get_weights())
 
     def save_model(self):
-        self.model.save(config.RL_DATA+self.simulator.simulation_name())
+        self.model.save(config.RL_DATA + self.simulator.name())
 
     def time_to_batch_training(self):
         return len(self.replay_memory) > self.batch_size  # and self.n_decison_step % self.batch_training_every_decision == 0

@@ -3,7 +3,7 @@ from src.world_entities.environment import Environment
 from src.world_entities.base_station import BaseStation
 from src.world_entities.drone import Drone
 from src.patrolling.metrics import Metrics
-from src.utilities.utilities import PathManager, current_date, euclidean_distance
+from src.utilities.utilities import PathManager, current_date, euclidean_distance, make_path
 import src.utilities.config as config
 from src.drawing import pp_draw
 
@@ -72,19 +72,34 @@ class PatrollingSimulator:
         self.__create_world_entities()
         self.__setup_plotting()
 
-        self.simulator_paused = False
+        # create directory of the simulation
+        make_path(self.directory_simulation())
 
-    def simulation_duration_sec(self):
+    # ---- # BOUNDS and CONSTANTS # ---- #
+
+    def duration_seconds(self):
+        """ Last second of the Simulation. """
         return self.sim_duration_ts * self.ts_duration_sec
 
+    def current_second(self):
+        """ The current second of simulation, since the beginning. """
+        return self.cur_step * self.ts_duration_sec
+
     def max_distance(self):
+        """ Maximum distance in the area. """
         return (self.environment.width**2 + self.environment.height**2)**0.5
 
     def max_travel_time(self):
+        """ Time required to travel to maximum distance. """
         return self.max_distance() / self.drone_speed_meters_sec
 
-    def simulation_name(self):
-        return "[{}]-seed{}-ndrones{}-mode{}".format(self.sim_peculiarity, self.sim_seed, self.n_drones, self.drone_mobility.value)
+    def name(self):
+        return "{}-seed{}-ndrones{}-mode{}".format(self.sim_peculiarity, self.sim_seed, self.n_drones, self.drone_mobility.value)
+
+    def directory_simulation(self):
+        return config.RL_DATA + self.name() + "/"
+
+    # ---- # KEYS and MOUSE CLICKS # ---- #
 
     def detect_key_pressed(self, key_pressed):
         """ Moves the drones freely. """
@@ -122,6 +137,8 @@ class PatrollingSimulator:
         """ Defines the behaviour following a click on a drone. """
         self.selected_drone = clicked_drone
 
+    # ---- # OTHER # ---- #
+
     def __setup_plotting(self):
         if config.PLOT_SIM or config.SAVE_PLOT:
             self.draw_manager = pp_draw.PathPlanningDrawer(self.environment, self, borders=True)
@@ -137,7 +154,6 @@ class PatrollingSimulator:
         """ Creates the world entities. """
 
         self.path_manager = PathManager(config.FIXED_TOURS_DIR + "RANDOM_missions", self.sim_seed)
-
         self.environment = Environment(self.env_width_meters, self.env_height_meters, self)
 
         base_stations = []
@@ -193,7 +209,7 @@ class PatrollingSimulator:
         self.draw_manager.draw_simulation_info(cur_step=cur_step, max_steps=self.sim_duration_ts)
         self.draw_manager.draw_obstacles()
         self.draw_manager.draw_targets()
-        self.draw_manager.update(save=config.SAVE_PLOT, filename=self.simulation_name() + str(cur_step) + ".png")
+        self.draw_manager.update(save=config.SAVE_PLOT, filename=self.name() + str(cur_step) + ".png")
 
     def run(self):
         """ The method starts the simulation. """

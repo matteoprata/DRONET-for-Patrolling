@@ -97,9 +97,6 @@ class RLModule:
         s_prime = self.evaluate_state()
         r = self.evaluate_reward(s_prime)
 
-        self.drone.simulator.metrics.cum_reward += r
-        self.drone.simulator.metrics.cum_residuals += np.average(s_prime.residuals(False))
-
         if s_prime.is_final:
             self.drone.simulator.environment.reset_drones_targets()
 
@@ -110,6 +107,8 @@ class RLModule:
                        action=a,
                        reward=r,
                        is_final=s_prime.is_final)
+
+        return r, self.DQN.decay(), self.DQN.current_loss
 
     def invoke_predict(self):
         s = self.evaluate_state()

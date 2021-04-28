@@ -73,7 +73,7 @@ class PatrollingSimulator:
         self.__setup_plotting()
 
         # create directory of the simulation
-        make_path(self.directory_simulation())
+        make_path(self.directory_simulation() + "-")
 
     # ---- # BOUNDS and CONSTANTS # ---- #
 
@@ -81,9 +81,9 @@ class PatrollingSimulator:
         """ Last second of the Simulation. """
         return self.sim_duration_ts * self.ts_duration_sec
 
-    def current_second(self):
+    def current_second(self, next=0):
         """ The current second of simulation, since the beginning. """
-        return self.cur_step * self.ts_duration_sec
+        return self.cur_step * self.ts_duration_sec + next * self.ts_duration_sec
 
     def max_distance(self):
         """ Maximum distance in the area. """
@@ -220,11 +220,16 @@ class PatrollingSimulator:
                 self.environment.detect_collision(drone)
                 drone.move()
 
+            self.checkout()
             if config.SAVE_PLOT or config.PLOT_SIM:
                 self.__plot(cur_step)
 
-    def print_metrics(self):
-        pass
+    def checkout(self):
+        """ print metrics save stuff. """
+        CHECKOUT = 1000
+
+        if self.cur_step % CHECKOUT == 0 and self.cur_step > 0:
+            self.metrics.save_dataframe()
 
     def close(self):
         pass

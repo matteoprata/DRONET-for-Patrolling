@@ -241,7 +241,8 @@ def plot_X(X, plt_title, plt_path, window_size=30, is_avg=True):
     currently is based on channel -> in future can also handle cluster head/waypoints
 """
 
-class PathToDepot():
+
+class PathToDepot:
 
     def __init__(self, x_position, simulator):
         """ for now just a middle channel in the area used by all the drones """

@@ -10,7 +10,7 @@ simulation. For an extensive experimental campaign read the header at src.simula
 # ----------------------------- SIMULATION PARAMS ---------------------------- #
 
 SIM_SEED = 24                # int: seed of this simulation.
-SIM_DURATION = 24000*24*5      # int: steps of simulation. (np.inf)
+SIM_DURATION = 100000      # int: steps of simulation. (np.inf)
 SIM_TS_DURATION = 0.150     # float: seconds duration of a step in seconds.
 
 ENV_WIDTH = 1500      # float: meters, width of environment

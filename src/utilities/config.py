@@ -74,7 +74,8 @@ class Mobility(Enum):
     GO_MIN_RESIDUAL = 5
     GO_MIN_SUM_RESIDUAL = 6
 
-    OPTIMAL = 7
+    OPTIMAL_SOFT_CONSTRAINT = 7   # the deadline can be violated, but obj to meet most of them
+    OPTIMAL_HARD_CONSTRAINT = 8   # the deadline can'T be violated
 
 DRONE_MOBILITY = Mobility.GO_MIN_SUM_RESIDUAL
 RL_DATA = "data/rl/"

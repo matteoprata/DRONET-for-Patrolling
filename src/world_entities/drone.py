@@ -64,7 +64,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 self.coords = self.next_target()
                 self.increase_waypoint_counter()
 
-        elif self.mobility == config.Mobility.OPTIMAL:
+        elif self.mobility in (config.Mobility.OPTIMAL_HARD_CONSTRAINT, config.Mobility.OPTIMAL_SOFT_CONSTRAINT):
             if self.will_reach_target():
                 self.coords = self.next_target()
                 self.update_target_reached()

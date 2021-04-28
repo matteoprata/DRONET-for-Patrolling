@@ -1,8 +1,4 @@
 from abc import ABCMeta, abstractmethod
-from deprecated import deprecated
-
-import networkx as nx
-import numpy as np
 
 import math
 import pickle
@@ -23,7 +19,7 @@ from src.utilities import utilities, config
 # Abstract Class Model for patrolling
 #
 # -----------------------------------------------------------------------------
-class AbstractConnectivityModel():
+class AbstractPatrollingModel(metaclass=ABCMeta):
 
     def __init__(self, simulation, debug=False, out_path="data/opt_sol/"):
         """
@@ -41,7 +37,7 @@ class AbstractConnectivityModel():
         self.base_stations = self.simulation.environment.base_stations
         self.ndepots = len(self.base_stations)
         self.M = 10000
-        self.epsilon = 0.1
+        self.epsilon = 0.01
         self.mission_time = int(self.simulation.sim_duration_ts * self.simulation.ts_duration_sec)
         self.recharging_time = 1
         self.depots_drones = {u: 0 for u in range(self.ndrones)}  # the drone u is associated to depot: 0
@@ -71,7 +67,7 @@ class AbstractConnectivityModel():
         # add drone usage variable
         self.drone_vars = self.model.addVars([u
                                               for u in range(self.ndrones)],
-                                             vtype=GRB.CONTINUOUS, name="y_u")
+                                             vtype=GRB.BINARY, name="y_u")
 
         # deadline variables consumption
         self.deadline_vars = self.model.addVars([(i, t)
@@ -105,21 +101,15 @@ class AbstractConnectivityModel():
         self.__drone_usage()
 
         # idleness constraints
-        self.__idleness_constraints()
+        self.idleness_constraints()
 
         # battery constraints
         self.__energy_constraints()
 
-    def __idleness_constraints(self):
+    @abstractmethod
+    def idleness_constraints(self):
         """ add idleness constraints """
-        self.model.addConstrs(
-            quicksum([self.visit_variables[u, i, t + k]
-                      for u in range(self.ndrones)
-                      for k in range(0, self.targets[i].maximum_tolerated_idleness)
-                      if t + k < self.mission_time
-                      ]) >= 1
-            for i in range(self.ndepots, self.ntargets)
-            for t in range(self.mission_time))
+        pass
 
     def __energy_constraints(self):
         """ constraint 18 """
@@ -190,7 +180,7 @@ class AbstractConnectivityModel():
         """ return"""
         out_target = self.paths[i_drone][self.current_target_of_drones[i_drone]]
         self.current_target_of_drones[i_drone] += 1
-        if self.current_target_of_drones[i_drone] >= len(self.targets):
+        if self.current_target_of_drones[i_drone] >= len(self.paths[i_drone]):
             self.current_target_of_drones[i_drone] = 0
         return out_target
 
@@ -202,9 +192,10 @@ class AbstractConnectivityModel():
         unique_str += str(self.simulation.ts_duration_sec) + "_"
         unique_str += str(self.simulation.sim_duration_ts) + "_"
         unique_str += str(self.simulation.n_drones) + "_"
+        unique_str += str(self.simulation.drone_mobility) + "_"
         unique_str += str(self.simulation.env_width_meters) + "_"
         unique_str += str(self.simulation.env_height_meters) + "_"
-        unique_str += str(self.simulation.n_drones) + "_"
+        unique_str += str(self.simulation.n_targets) + "_"
         unique_str += str(self.simulation.n_obstacles) + "_"
         unique_str += str(self.simulation.drone_speed_meters_sec) + "_"
         unique_str += str(self.simulation.drone_max_battery) + "_"
@@ -234,6 +225,7 @@ class AbstractConnectivityModel():
         try:
             with open(self.out_path + self.disk_filename() + '_.pickle', 'rb') as f:
                 path_data = pickle.load(f)
+
             return path_data
         except Exception as e:
             print(e)
@@ -255,7 +247,7 @@ class AbstractConnectivityModel():
         self.paths = self.load_disk_solution()
         if self.paths is None:
             self.model = Model('Patrolling')
-            self.model.setParam('OutputFlag', 0)
+            #self.model.setParam('OutputFlag', 0)
             self.__add_variables()
             self.__add_constraints()
             self.objective_function()
@@ -267,18 +259,10 @@ class AbstractConnectivityModel():
                 print("No optimal solution found")
                 exit(1)
 
+    @abstractmethod
     def objective_function(self):
         """ objective function of opt model """
-        self.model.setObjective(self.drone_vars.sum('*') + self.epsilon * quicksum([self.edge_variables[u, j, i, t]
-                                                                                    for i in range(self.ntargets)
-                                                                                    for j in range(self.ntargets)
-                                                                                    for u in range(self.ndrones)
-                                                                                    for t in range(self.mission_time)
-                                                                                    if not (i == j and i < self.ndepots)
-                                                                                    # stay at depot does not consume
-                                                                                    # energy
-                                                                                    ]),
-                                GRB.MINIMIZE)
+        pass
 
     def extract_solution(self):
         ''' extract the values from variables
@@ -314,6 +298,76 @@ class AbstractConnectivityModel():
         for i_dr in range(self.ndrones):
             full_traj = full_drones_trajectories[i_dr]
             ordered_targets = list(OrderedDict.fromkeys([j for i, j in full_traj]))
-            paths[i_dr] = [self.targets[i] for i in ordered_targets]
+            if ordered_targets == []:
+                paths[i_dr] = [self.depots_drones[i_dr], self.depots_drones[i_dr]]
+            else:
+                paths[i_dr] = [self.targets[i] for i in ordered_targets]
 
         return paths
+
+
+""" THe following patrolling optimal model aims at finding a solution where all the deadlines should be respected """
+class HardConstraintsModel(AbstractPatrollingModel):
+
+
+    def objective_function(self):
+        """ objective function of opt model """
+        self.model.setObjective(self.drone_vars.sum('*') + self.epsilon * quicksum([self.edge_variables[u, j, i, t]
+                                                                                    for i in range(self.ntargets)
+                                                                                    for j in range(self.ntargets)
+                                                                                    for u in range(self.ndrones)
+                                                                                    for t in range(self.mission_time)
+                                                                                    if not (i == j and i < self.ndepots)
+                                                                                    # stay at depot does not consume
+                                                                                    # energy
+                                                                                    ]),
+                                GRB.MINIMIZE)
+
+    def idleness_constraints(self):
+        """ add idleness constraints """
+        self.model.addConstrs(
+            quicksum([self.visit_variables[u, i, t + k]
+                      for u in range(self.ndrones)
+                      for k in range(0, self.targets[i].maximum_tolerated_idleness)
+                      if t + k < self.mission_time
+                      ]) >= 1
+            for i in range(self.ndepots, self.ntargets)
+            for t in range(self.mission_time))
+
+    def disk_filename(self):
+        outfname = super().disk_filename()
+        return "hard_constraint_model_" + outfname
+
+
+""" THe following patrolling optimal model aims at finding a solution where most of the deadlines are respected """
+class SoftConstraintsModel(AbstractPatrollingModel):
+
+
+    def objective_function(self):
+        """ objective function of opt model """
+        self.model.setObjective(self.deadline_vars.sum('*') + self.epsilon * quicksum([self.edge_variables[u, j, i, t]
+                                                                                    for i in range(self.ntargets)
+                                                                                    for j in range(self.ntargets)
+                                                                                    for u in range(self.ndrones)
+                                                                                    for t in range(self.mission_time)
+                                                                                    if not (i == j and i < self.ndepots)
+                                                                                    # stay at depot does not consume
+                                                                                    # energy
+                                                                                    ]),
+                                GRB.MINIMIZE)
+
+    def idleness_constraints(self):
+        """ add idleness constraints """
+        self.model.addConstrs(
+            self.deadline_vars[i, t] >= 1 - quicksum([self.visit_variables[u, i, t + k]
+                                                      for u in range(self.ndrones)
+                                                      for k in range(0, self.targets[i].maximum_tolerated_idleness)
+                                                      if t + k < self.mission_time
+                                                      ])
+                        for i in range(self.ndepots, self.ntargets)
+                        for t in range(self.mission_time))
+
+    def disk_filename(self):
+        outfname = super().disk_filename()
+        return "hard_constraint_model_" + outfname
+

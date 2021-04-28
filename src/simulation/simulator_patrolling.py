@@ -6,7 +6,7 @@ from src.patrolling.metrics import Metrics
 from src.utilities.utilities import PathManager, current_date, euclidean_distance
 from src.drawing import pp_draw
 
-from src.optimal_solution.opt_patrolling import AbstractConnectivityModel
+from src.optimal_solution.opt_patrolling import HardConstraintsModel, SoftConstraintsModel
 
 import src.utilities.config as config
 
@@ -203,8 +203,10 @@ class PatrollingSimulator:
 
     def init_optimal_solver(self):
         """ Init the optimal solver and find all the mission planning """
-        if self.drone_mobility == config.Mobility.OPTIMAL:
-            self.opt_solver = AbstractConnectivityModel(self)
+        if self.drone_mobility == config.Mobility.OPTIMAL_HARD_CONSTRAINT:
+            self.opt_solver = HardConstraintsModel(self)
+        elif self.drone_mobility == config.Mobility.OPTIMAL_SOFT_CONSTRAINT:
+            self.opt_solver = SoftConstraintsModel(self)
 
     def run(self):
         """ The method starts the simulation. """

@@ -56,14 +56,17 @@ class PatrollingDQN:
         # tf.keras.backend.set_session(sess)
 
         self.load_model = load_model
+        self.current_loss = 1
 
         # build neural models
         if not self.load_model:
             self.model = self.build_neural_net()      # MODEL 1
             self.model_hat = self.build_neural_net()  # MODEL 2
+            print(self.model.summary())
         else:
             self.model = kr.models.load_model(pretrained_model_path)
             self.model_hat = kr.models.load_model(pretrained_model_path)
+
 
     @staticmethod
     def exponential_decay(step, exp_coeff, base=np.e):
@@ -86,13 +89,14 @@ class PatrollingDQN:
 
         # -------------- Q-NN module body --------------
         model = Sequential()
+
         n_hidden_neurons = int(np.sqrt(self.n_features * self.n_actions))
         model.add(Dense(n_hidden_neurons, input_dim=self.n_features, activation='relu'))
         model.add(Dense(self.n_actions))
 
         opt = optimizers.Adam(learning_rate=self.lr)
         model.compile(loss='mean_squared_error', optimizer=opt)
-        print("tensors: ({}x{}), ({}x{})".format(self.n_features, n_hidden_neurons, n_hidden_neurons, self.n_actions))
+        # print("tensors: ({}x{}), ({}x{})".format(self.n_features, n_hidden_neurons, n_hidden_neurons, self.n_actions))
 
         return model
 

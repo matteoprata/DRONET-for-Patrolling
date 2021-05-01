@@ -13,97 +13,133 @@ class Plotting:
         self.simulation_name = simulation_name
 
         self.d1 = pd.read_csv(config.RL_DATA + simulation_name + "/log_simulation_constants.csv")
-        self.d2 = pd.read_csv(config.RL_DATA + simulation_name + "/log_simulation.csv", index_col="date",
-                              infer_datetime_format=True, parse_dates=True)
+        self.tar_stats = pd.read_csv(config.RL_DATA + simulation_name + "/log_simulation.csv",
+                                     index_col="date",
+                                     infer_datetime_format=True,
+                                     parse_dates=True)
+
+        self.dqn_stats = pd.read_csv(config.RL_DATA + simulation_name + "/dqn_training_data.csv",
+                                     index_col="date",
+                                     infer_datetime_format=True,
+                                     parse_dates=True)
 
         self.reindex_interpolate()
 
         self.compute_residuals()
-        self.compute_average_residual()
         self.plot_average_residual()
+        self.plot_n_violations()
+        self.plot_average_expiration()
 
-    def plot_average_residual(self, window=60):
-        rolled_avg = self.d2["average_residual"].rolling(window).mean()
-        rolled_std = self.d2["std_residual"].rolling(window).mean()
+    def plot_average_residual(self, is_min_std=True, window=120):
+        """ Plot min residual of the targets population. """
+        rolled_min = self.tar_stats["min_residual"].rolling(window).mean()
+        rolled_max = self.tar_stats["max_residual"].rolling(window).mean()
+        rolled_avg = self.tar_stats["avg_residual"].rolling(window).mean()
+        rolled_std = self.tar_stats["std_residual"].rolling(window).mean()
 
-        plt.plot(self.d2["row_index"], rolled_avg)
-        plt.fill_between(self.d2["row_index"],
-                         rolled_avg - rolled_std,
-                         rolled_avg + rolled_std, alpha=0.25)
-        le = len(self.d2["average_residual"])
-        plt.plot(self.d2["row_index"], [self.d2["average_residual"].mean()]*le)
-        plt.title(self.simulation_name)
-        plt.show()
+        if is_min_std:
+            plt.fill_between(self.tar_stats["row_index"],
+                             rolled_min,
+                             rolled_max, alpha=0.10, color='red', label="min-max")
+        else:
+            plt.fill_between(self.tar_stats["row_index"],
+                             rolled_avg - rolled_std,
+                             rolled_avg + rolled_std, alpha=0.10, color='green', label="std")
 
-    def compute_average_residual(self):
-        column_names_res = [name for name in list(self.d2.columns.values) if "res" in name]
-        self.d2["average_residual"] = self.d2[column_names_res].mean(axis=1)
-        self.d2["std_residual"] = self.d2[column_names_res].std(axis=1)
+        plt.plot(self.tar_stats["row_index"], rolled_avg, label="moving avg")
+
+        le = len(self.tar_stats["avg_residual"])
+        plt.plot(self.tar_stats["row_index"], [self.tar_stats["avg_residual"].mean()] * le, label="avg")
+
+        self.__plot_now(self.simulation_name, "seconds", "moving avg ({}) avg res".format(window))
+
+    def plot_n_violations(self, window=120):
+        # print(self.d2["n_violations"])
+        n_violations_rolled = self.tar_stats["n_violations"].rolling(window).mean()
+        plt.plot(self.tar_stats["row_index"], n_violations_rolled, label="moving avg")
+
+        le = len(self.tar_stats["n_violations"])
+        plt.plot(self.tar_stats["row_index"], [self.tar_stats["n_violations"].mean()] * le, label="avg")
+
+        self.__plot_now(self.simulation_name, "seconds", "moving avg ({}) number violations".format(window))
+
+    def plot_average_expiration(self, window=120):
+        """ Plot min residual of the targets population. """
+        rolled_min = self.tar_stats["min_res_violations"].rolling(window).mean()
+        rolled_max = self.tar_stats["max_res_violations"].rolling(window).mean()
+        rolled_avg = self.tar_stats["mean_res_violations"].rolling(window).mean()
+
+        plt.fill_between(self.tar_stats["row_index"],
+                         rolled_min,
+                         rolled_max, alpha=0.10, color='red', label="min-max")
+
+        plt.plot(self.tar_stats["row_index"], rolled_avg, label="moving avg")
+
+        le = len(self.tar_stats["mean_res_violations"])
+        plt.plot(self.tar_stats["row_index"], [self.tar_stats["mean_res_violations"].mean()] * le, label="avg")
+
+        self.__plot_now(self.simulation_name, "seconds", "moving avg ({}) avg expiration".format(window))
+
+    def plot_dqn_stats(self, window=120):
+        """ Plot min residual of the targets population. """
+
+
+
 
     def compute_residuals(self):
-        column_names_aois = [name for name in list(self.d2.columns.values) if "aoi" in name]
+        column_names_aois = [name for name in list(self.tar_stats.columns.values) if "aoi" in name]
         column_names_ress = [col.replace("aoi", "res") for col in column_names_aois]
 
-        df_den = np.array(([list(self.d1.transpose().iloc[1, :])] * self.d2.shape[0]))
-        df_num = np.array(self.d2.loc[:, column_names_aois])
-        df_ones = np.ones([self.d2.shape[0], len(column_names_aois)])
+        df_den = np.array(([list(self.d1.transpose().iloc[1, :])] * self.tar_stats.shape[0]))
+        df_num = np.array(self.tar_stats.loc[:, column_names_aois])
+        df_ones = np.ones([self.tar_stats.shape[0], len(column_names_aois)])
 
         df_residuals = df_ones - df_num / df_den
-        df_residuals = pd.DataFrame(df_residuals).set_index(self.d2.index)
+        df_residuals = pd.DataFrame(df_residuals).set_index(self.tar_stats.index)
 
-        self.d2 = pd.concat([self.d2, df_residuals], axis=1)
-        self.d2 = self.d2.rename(columns={i: n for i, n in enumerate(column_names_ress)})
+        self.tar_stats = pd.concat([self.tar_stats, df_residuals], axis=1)
+        self.tar_stats = self.tar_stats.rename(columns={i: n for i, n in enumerate(column_names_ress)})
+
+        # average residual & std residual
+        self.tar_stats["min_residual"] = self.tar_stats[column_names_ress].min(axis=1)
+        self.tar_stats["max_residual"] = self.tar_stats[column_names_ress].max(axis=1)
+
+        self.tar_stats["avg_residual"] = self.tar_stats[column_names_ress].mean(axis=1)
+        self.tar_stats["std_residual"] = self.tar_stats[column_names_ress].std(axis=1)
+
+        # number of violations
+        self.tar_stats["n_violations"] = (self.tar_stats[column_names_ress] <= 0).sum(axis=1)
+        df_res_vilations = (self.tar_stats[column_names_ress] <= 0) * (df_num / df_den)
+
+        epsilon = 10e-10
+        n_violations_row = (np.sum(df_res_vilations != 0, axis=1) == 0) * epsilon + np.sum(df_res_vilations != 0, axis=1)
+        self.tar_stats["mean_res_violations"] = np.sum(df_res_vilations, axis=1) / n_violations_row
+        self.tar_stats["min_res_violations"] = df_res_vilations.replace(0, np.inf).min(axis=1)
+        self.tar_stats["max_res_violations"] = df_res_vilations.max(axis=1)
 
     def reindex_interpolate(self):
-        idx = pd.date_range(self.d2.index[0], self.d2.index[-1], freq='1S')
+        idx = pd.date_range(self.tar_stats.index[0], self.tar_stats.index[-1], freq='1S')
 
-        self.d3 = pd.DataFrame(index=idx, columns=self.d2.columns)
-        self.d3 = self.d3.append(self.d2)
-        self.d2 = self.d3
+        self.d3 = pd.DataFrame(index=idx, columns=self.tar_stats.columns)
+        self.d3 = self.d3.append(self.tar_stats)
+        self.tar_stats = self.d3
 
-        self.d2.sort_index(inplace=True)
-        self.d2 = self.d2.interpolate()
-        self.d2["row_index"] = list(range(self.d2.shape[0]))
+        self.tar_stats.sort_index(inplace=True)
+        self.tar_stats = self.tar_stats.interpolate()
 
-    @staticmethod
-    def moving_average(x, w):
-        return np.asarray(pd.DataFrame(x).rolling(w).mean()).T[0]
+        self.tar_stats["row_index"] = list(range(self.tar_stats.shape[0]))
 
     @staticmethod
-    def moving_std(x, w):
-        return np.asarray(pd.DataFrame(x).rolling(w).std()).T[0]
-
-    # def plot(self, time, sim_name="sim", ROLLING_WINDOW=50):
-    #     json_to_save = {"AOIS": self.aois, "LOSSES": self.losses, "REWS": self.rewards}
-    #     utilities.save_json(json_to_save, config.RL_DATA + "data-{}.json".format(sim_name))
-    #
-    #     if config.DRONE_MOBILITY == config.Mobility.DECIDED:
-    #         loss_avg, loss_std = self.moving_average(self.losses, ROLLING_WINDOW), self.moving_std(
-    #             self.losses, ROLLING_WINDOW)
-    #         plt.plot(range(len(loss_avg)), loss_avg)
-    #         plt.fill_between(range(len(loss_avg)), loss_avg - loss_std, loss_avg + loss_std, alpha=0.25)
-    #         self.fig.savefig(config.RL_DATA + "loss-training-{}.png".format(sim_name))
-    #         plt.clf()
-    #
-    #         rew_avg, rew_std = self.moving_average(self.rewards, ROLLING_WINDOW), self.moving_std(
-    #             self.rewards, ROLLING_WINDOW)
-    #         plt.plot(range(len(rew_avg)), rew_avg)
-    #         plt.fill_between(range(len(rew_avg)), rew_avg - rew_std, rew_avg + rew_std, alpha=0.25)
-    #         self.fig.savefig(config.RL_DATA + "rew-training-{}.png".format(sim_name))
-    #         plt.clf()
-    #
-    #         # plt.plot(range(len(self.epsilon)), self.epsilon)
-    #         # self.fig.savefig(config.RL_DATA + "eps-training-{}.png".format(sim_name))
-    #         # plt.clf()
-    #
-    #     aois_avg, aois_std = self.moving_average(self.aois, ROLLING_WINDOW), self.moving_std(self.aois,
-    #                                                                                          ROLLING_WINDOW)
-    #     plt.plot(range(len(aois_avg)), aois_avg)
-    #     plt.fill_between(range(len(aois_avg)), aois_avg - aois_std, aois_avg + aois_std, alpha=0.25)
-    #     self.fig.savefig(config.RL_DATA + "aoi-training-{}.png".format(sim_name))
-    #     plt.clf()
+    def __plot_now(title, xlabel, ylabel):
+        plt.legend()
+        plt.title(title)
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.savefig(config.RL_DATA + "/" + title + " " + ylabel)
+        plt.clf()
 
 
 if __name__ == '__main__':
-    a = Plotting("-seed24-ndrones1-mode6")
+    for i in range(6, 6+1):
+        Plotting("-seed24-ndrones3-mode{}".format(i))
 

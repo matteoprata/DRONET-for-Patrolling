@@ -20,14 +20,13 @@ class Metrics:
         self.reward = []
         self.epsilon = []
         self.loss = []
+        self.end_epoch = []
 
-    def append_statistics_on_target_reached(self, action, reward=None, epsilon=None, loss=None):
+    def append_statistics_on_target_reached(self, action, reward=None, epsilon=None, loss=None, end_epoch=None):
         """ Saves the current second, aoi, reward, epsilon, loss. For computing final plots. """
 
         for rep in [-1, 0]:
             self.cur_second.append(self.simulator.current_second(rep))
-            # self.visited_target.append(action)
-
             for t in self.simulator.environment.targets:
                 if rep == -1:
                     if t.identifier == action:
@@ -40,10 +39,11 @@ class Metrics:
                     else:
                         self.target_aoi[t.identifier].append(t.age_of_information())
 
-            if reward is not None and epsilon is not None and loss is not None:
-                self.reward.append(reward)
-                self.epsilon.append(epsilon)
-                self.loss.append(loss)
+        if reward is not None and epsilon is not None and loss is not None and end_epoch is not None:
+            self.reward.append(reward)
+            self.epsilon.append(epsilon)
+            self.loss.append(loss)
+            self.end_epoch.append(end_epoch)
 
         if len(self.targets_threshold.keys()) == 0:
             self.targets_threshold = {t.identifier: t.maximum_tolerated_idleness for t in self.simulator.environment.targets}
@@ -54,25 +54,32 @@ class Metrics:
         N_ROWS = len(self.cur_second)
         target_aoi_columns = ["target_{}_aoi".format(t.identifier) for t in self.simulator.environment.targets]
 
-        df = pd.DataFrame(columns=["date", "cur_second"] + target_aoi_columns + ["loss", "reward", "epsilon"])
+        df_dqn = pd.DataFrame()
+        df_tar = pd.DataFrame()
 
         # df["visited_target"] = pd.Series(self.visited_target)
-        df["cur_second"] = pd.Series(self.cur_second)
+        df_tar["cur_second"] = pd.Series(self.cur_second)
+        df_tar["date"] = pd.Series([pd.to_datetime('now').normalize().strftime("%d-%m-%Y %H:%M:%S")]*N_ROWS)
+        df_tar["date"] = pd.to_datetime(df_tar["date"]) + pd.Series([pd.to_timedelta(delta, unit='s') for delta in self.cur_second])
 
-        df["date"] = pd.Series([pd.to_datetime('now').normalize().strftime("%d-%m-%Y %H:%M:%S")]*N_ROWS)
-        df["date"] = pd.to_datetime(df["date"]) + pd.Series([pd.to_timedelta(delta, unit='s') for delta in self.cur_second])
-
-        df["loss"] = pd.Series(self.loss)
-        df["reward"] = pd.Series(self.reward)
-        df["epsilon"] = pd.Series(self.epsilon)
+        df_dqn["date"] = df_tar["cur_second"].iloc[::2]
+        df_dqn["loss"] = pd.Series(self.loss)
+        df_dqn["reward"] = pd.Series(self.reward)
+        df_dqn["epsilon"] = pd.Series(self.epsilon)
+        df_dqn["is_end"] = self.end_epoch
 
         for i, t in enumerate(self.simulator.environment.targets):
-            df[target_aoi_columns[i]] = pd.Series(self.target_aoi[t.identifier])
+            df_tar[target_aoi_columns[i]] = pd.Series(self.target_aoi[t.identifier])
 
-        df = df.set_index("date")
-        df.to_csv(self.simulator.directory_simulation() + "log_simulation.csv")
+        #
+        # Dataset with simulation target data
+        df_tar = df_tar.set_index("date")
+        df_tar.to_csv(self.simulator.directory_simulation() + "log_simulation.csv")
 
-        df1 = pd.DataFrame(columns=["threshold"])
-        df1["threshold"] = pd.Series(self.targets_threshold)
-        df1.to_csv(self.simulator.directory_simulation() + "log_simulation_constants.csv")
+        # Dataset with constants data
+        df_const = pd.DataFrame(columns=["threshold"])
+        df_const["threshold"] = pd.Series(self.targets_threshold)
+        df_const.to_csv(self.simulator.directory_simulation() + "log_simulation_constants.csv")
 
+        # DQN training data
+        df_dqn.to_csv(self.simulator.directory_simulation() + "dqn_training_data.csv")

@@ -41,7 +41,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         self.buffer = list()
 
         # self.random_targets_visits = self.__set_policy()
-        self.prev_target = 0
+        self.prev_target = self.simulator.environment.targets[0]
 
     # MOVEMENT ROUTINES
 
@@ -66,18 +66,22 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         elif self.mobility == config.Mobility.DECIDED:
             if self.will_reach_target():
                 self.coords = self.next_target()
-                reward, epsilon, loss = self.invoke_patrolling_MDP()  # train nn and get next action
-                self.increase_waypoint_counter()
-                if not config.PRE_TRAINED:
-                    self.simulator.metrics.append_statistics_on_target_reached(self.prev_target, reward, epsilon, loss)
-                else:
-                    self.simulator.metrics.append_statistics_on_target_reached(self.prev_target)
                 self.update_target_reached()
+
+                reward, epsilon, loss, is_end = self.invoke_patrolling_MDP()  # train nn and get next action
+
+                if not config.PRE_TRAINED:
+                    self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier, reward, epsilon, loss, is_end)
+                else:
+                    self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
+
+                self.increase_waypoint_counter()
+
 
         elif self.mobility == config.Mobility.RANDOM_MOVEMENT:
             if self.will_reach_target():
                 self.coords = self.next_target()
-                self.simulator.metrics.append_statistics_on_target_reached(self.prev_target)
+                self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
                 self.update_target_reached()
 
                 action = self.simulator.rnd_explore.randint(0, len(self.simulator.environment.targets))
@@ -87,7 +91,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         elif self.mobility == config.Mobility.GO_MAX_AOI:
             if self.will_reach_target():
                 self.coords = self.next_target()
-                self.simulator.metrics.append_statistics_on_target_reached(self.prev_target)
+                self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
                 self.update_target_reached()
 
                 target = Target.max_aoi(self.simulator.environment.targets, self.current_target())
@@ -96,7 +100,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         elif self.mobility == config.Mobility.GO_MIN_RESIDUAL:
             if self.will_reach_target():
                 self.coords = self.next_target()
-                self.simulator.metrics.append_statistics_on_target_reached(self.prev_target)
+                self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
                 self.update_target_reached()
 
                 target = Target.min_residual(self.simulator.environment.targets, self.current_target())
@@ -105,7 +109,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         elif self.mobility == config.Mobility.GO_MIN_SUM_RESIDUAL:
             if self.will_reach_target():
                 self.coords = self.next_target()
-                self.simulator.metrics.append_statistics_on_target_reached(self.prev_target)
+                self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
                 self.update_target_reached()
 
                 target = Target.min_sum_residual(self.simulator.environment.targets,
@@ -123,26 +127,26 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         self.__movement(self.angle)
 
     def current_target(self):
-        return self.simulator.environment.targets[self.prev_target]
+        return self.simulator.environment.targets[self.prev_target.identifier]
 
     def update_next_target_at_reach(self, next_target):
-        self.prev_target = next_target.identifier
+        next_target.lock = self
+        self.prev_target.lock = None
+
+        self.prev_target = next_target
         self.path.append(next_target.coords)
         self.increase_waypoint_counter()
 
     def invoke_patrolling_MDP(self):
-        reward, epsilon, loss = self.state_manager.invoke_train()
+        reward, epsilon, loss, is_end = self.state_manager.invoke_train()
         action = self.state_manager.invoke_predict()
-        self.prev_target = action
-
-        target = self.simulator.environment.targets[action]
-        self.path.append(target.coords)
-        return reward, epsilon, loss
+        self.prev_target = self.simulator.environment.targets[action]
+        self.path.append(self.prev_target.coords)
+        return reward, epsilon, loss, is_end
 
     def update_target_reached(self):
         """ Once reached, update target last visit """
-        target = self.simulator.environment.targets[self.prev_target]
-        target.last_visit_ts = self.simulator.cur_step
+        self.prev_target.last_visit_ts = self.simulator.cur_step
 
     def set_next_target_angle(self):
         """ Set the angle of the next target """

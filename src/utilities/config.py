@@ -58,10 +58,10 @@ SAVE_PLOT_DIR = "data/plots/"  # string: where to save plots
 # ------------------------------- PATROLLING ------------------------------- #
 N_TARGETS = 7       # number of random targets in the map
 
-TARGETS = [(BASE_STATION_COORDS[0]-600, BASE_STATION_COORDS[1]+400, 300),
-           (BASE_STATION_COORDS[0]-250, BASE_STATION_COORDS[1]+1100, 300),
-           (BASE_STATION_COORDS[0]+250, BASE_STATION_COORDS[1]+1100, 300),
-           (BASE_STATION_COORDS[0]+600, BASE_STATION_COORDS[1]+400, 300)]
+TARGETS = [(BASE_STATION_COORDS[0]-600, BASE_STATION_COORDS[1]+400, 50),
+           (BASE_STATION_COORDS[0]-250, BASE_STATION_COORDS[1]+1100, 200),
+           (BASE_STATION_COORDS[0]+250, BASE_STATION_COORDS[1]+1100, 50),
+           (BASE_STATION_COORDS[0]+600, BASE_STATION_COORDS[1]+400, 7777)]
 
 
 class Mobility(Enum):
@@ -74,8 +74,10 @@ class Mobility(Enum):
     GO_MIN_RESIDUAL = 5
     GO_MIN_SUM_RESIDUAL = 6
 
+    GO_MIN_SUM_RESIDUAL_REACTIVE = 7
 
-DRONE_MOBILITY = Mobility.GO_MIN_SUM_RESIDUAL
+
+DRONE_MOBILITY = Mobility.DECIDED
 RL_DATA = "data/rl/"
 RL_MODEL = ""
 PRE_TRAINED = False

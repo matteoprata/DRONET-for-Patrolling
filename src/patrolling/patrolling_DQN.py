@@ -108,11 +108,11 @@ class PatrollingDQN:
 
         if is_explore and self.is_explore_probability():
             action_index = self.simulator.rnd_explore.randint(0, self.n_actions)
-            # print(action_index)
+            # print("random", action_index)
         else:
             q_values = self.model.predict(np.array([state]))  # q-values for the input state
             action_index = np.argmax(q_values[0])
-            # print(q_values, action_index)
+            # print("q", action_index)
         return action_index
 
     def train(self, previous_state=None, current_state=None, action=None, reward=None, is_final=None):

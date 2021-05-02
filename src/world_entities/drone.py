@@ -55,14 +55,26 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         elif self.mobility == config.Mobility.DECIDED:
             if self.will_reach_target():
                 self.coords = self.next_target()
-                self.update_target_reached()
-                reward, epsilon, loss, is_end = self.invoke_patrolling_MDP()  # train nn and get next action
+
+                reward, epsilon, loss, is_end = self.state_manager.invoke_train()
+                action = self.state_manager.invoke_predict()
+
+                # print([target.last_visit_ts for target in self.simulator.environment.targets])
+                # print([target.aoi_idleness_ratio() for target in self.simulator.environment.targets])
+                # print(self.simulator.cur_step)
+                # print(self.next_target())
+                # print(action)
+                # print(reward)
+                # print()
+
+                self.prev_target.last_visit_ts = self.simulator.cur_step
+                self.prev_target = self.simulator.environment.targets[action]
+                self.path.append(self.prev_target.coords)
 
                 if not config.PRE_TRAINED:
                     self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier, reward, epsilon, loss, is_end)
                 else:
                     self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
-
                 self.increase_waypoint_counter()
 
         elif self.mobility == config.Mobility.RANDOM_MOVEMENT:
@@ -123,13 +135,6 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         self.prev_target = next_target
         self.path.append(next_target.coords)
         self.increase_waypoint_counter()
-
-    def invoke_patrolling_MDP(self):
-        reward, epsilon, loss, is_end = self.state_manager.invoke_train()
-        action = self.state_manager.invoke_predict()
-        self.prev_target = self.simulator.environment.targets[action]
-        self.path.append(self.prev_target.coords)
-        return reward, epsilon, loss, is_end
 
     def update_target_reached(self):
         """ Once reached, update target last visit """

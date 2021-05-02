@@ -9,7 +9,7 @@ simulation. For an extensive experimental campaign read the header at src.simula
 
 # ----------------------------- SIMULATION PARAMS ---------------------------- #
 
-SIM_SEED = 24                # int: seed of this simulation.
+SIM_SEED = 27                # int: seed of this simulation.
 SIM_DURATION = 24000*24*10      # int: steps of simulation. (np.inf)
 SIM_TS_DURATION = 0.150     # float: seconds duration of a step in seconds.
 
@@ -47,7 +47,7 @@ PLOT_TRAJECTORY_NEXT_TARGET = True
 FIXED_TOURS_DIR = "data/tours/"        # str: the path to the drones tours
 DEMO_PATH = False                      # bool: whether to use handcrafted tours or not (in utilities.utilities)
 
-PLOT_SIM = False       # bool: whether to plot or not the simulation (set to false for faster experiments)
+PLOT_SIM = True       # bool: whether to plot or not the simulation (set to false for faster experiments)
 WAIT_SIM_STEP = 0     # float >= 0: seconds, pauses the rendering for x seconds
 SKIP_SIM_STEP = 5     # int > 0 : steps, plot the simulation every x steps
 DRAW_SIZE = 700       # int: size of the drawing window

@@ -60,12 +60,12 @@ class RLModule:
                                  )
 
         min_threshold = min([t.maximum_tolerated_idleness for t in self.drone.simulator.environment.targets])
-        self.AOI_NORM = self.drone.simulator.duration_seconds() / min_threshold
+        self.AOI_NORM = 1  # self.drone.simulator.duration_seconds() / min_threshold
         self.TIME_NORM = self.drone.simulator.max_travel_time()
         self.ACTION_NORM = self.N_ACTIONS
 
     def get_current_residuals(self):
-        return [target.aoi_idleness_ratio() for target in self.drone.simulator.environment.targets]
+        return [min(target.aoi_idleness_ratio(), 1) for target in self.drone.simulator.environment.targets]
 
     def get_current_time_distances(self):
         return [euclidean_distance(self.drone.coords, target.coords)/self.drone.speed for target in self.drone.simulator.environment.targets]
@@ -78,17 +78,17 @@ class RLModule:
 
     def evaluate_reward(self, state, action):
         # zero_residuals = [res for res in state.residuals() if res <= 0]
-        live_residuals = [res for res in state.residuals(False) if res < 1]
+        zero_residuals = [res for res in state.residuals(False) if res >= 1]
 
-        rew  = - 1/self.N_ACTIONS * len(live_residuals)
+        rew  = - 1/self.N_ACTIONS * len(zero_residuals)
         rew += 0 if not state.is_final else -5
-        rew += 0 if not state.position == action else -5
+        rew += 0 if not state.position(False) == action else -5
         # print(state.normalized_vector(), rew)
         return rew
 
     def invoke_train(self):
         if self.previous_state is None or self.previous_action is None:
-            return 0, 1, 0, False
+            return 0, 1, 0, False, None
 
         self.DQN.n_decision_step += 1
 
@@ -111,10 +111,10 @@ class RLModule:
         return r, self.DQN.decay(), self.DQN.current_loss, s_prime.is_final
 
     def invoke_predict(self):
-        s = self.evaluate_state()
-        action_index = self.DQN.predict(s.normalized_vector())
+        s_prime = self.evaluate_state()
+        action_index = self.DQN.predict(s_prime.normalized_vector())
 
-        self.previous_state = s
+        self.previous_state = s_prime
         self.previous_action = action_index
         return action_index
 

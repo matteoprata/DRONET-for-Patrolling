@@ -39,11 +39,11 @@ class Metrics:
                     else:
                         self.target_aoi[t.identifier].append(t.age_of_information())
 
-        if reward is not None and epsilon is not None and loss is not None and end_epoch is not None:
-            self.reward.append(reward)
-            self.epsilon.append(epsilon)
-            self.loss.append(loss)
-            self.end_epoch.append(end_epoch)
+        # if reward is not None and epsilon is not None and loss is not None and end_epoch is not None:
+        self.reward.append(reward)
+        self.epsilon.append(epsilon)
+        self.loss.append(loss)
+        self.end_epoch.append(1 if end_epoch else 0)
 
         if len(self.targets_threshold.keys()) == 0:
             self.targets_threshold = {t.identifier: t.maximum_tolerated_idleness for t in self.simulator.environment.targets}
@@ -62,7 +62,7 @@ class Metrics:
         df_tar["date"] = pd.Series([pd.to_datetime('now').normalize().strftime("%d-%m-%Y %H:%M:%S")]*N_ROWS)
         df_tar["date"] = pd.to_datetime(df_tar["date"]) + pd.Series([pd.to_timedelta(delta, unit='s') for delta in self.cur_second])
 
-        df_dqn["date"] = df_tar["cur_second"].iloc[::2]
+        # df_dqn["date"] = df_tar["cur_second"].iloc[::2]
         df_dqn["loss"] = pd.Series(self.loss)
         df_dqn["reward"] = pd.Series(self.reward)
         df_dqn["epsilon"] = pd.Series(self.epsilon)
@@ -82,4 +82,5 @@ class Metrics:
         df_const.to_csv(self.simulator.directory_simulation() + "log_simulation_constants.csv")
 
         # DQN training data
+        # df_dqn = df_dqn.set_index("date")
         df_dqn.to_csv(self.simulator.directory_simulation() + "dqn_training_data.csv")

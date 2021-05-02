@@ -3,6 +3,8 @@ from src.world_entities.environment import Environment
 from src.world_entities.base_station import BaseStation
 from src.world_entities.drone import Drone
 from src.patrolling.metrics import Metrics
+from src.patrolling.plotting import Plotting
+
 from src.utilities.utilities import PathManager, current_date, euclidean_distance, make_path
 import src.utilities.config as config
 from src.drawing import pp_draw
@@ -226,10 +228,12 @@ class PatrollingSimulator:
 
     def checkout(self):
         """ print metrics save stuff. """
-        CHECKOUT = 1000
+        CHECKOUT = 24000*6
 
         if self.cur_step % CHECKOUT == 0 and self.cur_step > 0:
             self.metrics.save_dataframe()
+            Plotting(self.name())
+            self.environment.drones[0].state_manager.DQN.save_model()
 
     def close(self):
         pass

@@ -19,10 +19,10 @@ class PatrollingDQN:
                  batch_size=32,
                  lr=0.0001,
                  beta=0.5,
-                 discount_factor=.95,  # .99,
+                 discount_factor=.80,  # .99,
                  epsilon_decay=.0004,
                  replay_memory_depth=100000,
-                 swap_models_every_decision=100,  # 10000
+                 swap_models_every_decision=500,  # 10000
                  load_model=True,
                  ):
 
@@ -56,7 +56,7 @@ class PatrollingDQN:
         # tf.keras.backend.set_session(sess)
 
         self.load_model = load_model
-        self.current_loss = 1
+        self.current_loss = None
 
         # build neural models
         if not self.load_model:
@@ -96,7 +96,6 @@ class PatrollingDQN:
 
         opt = optimizers.Adam(learning_rate=self.lr)
         model.compile(loss='mean_squared_error', optimizer=opt)
-        # print("tensors: ({}x{}), ({}x{})".format(self.n_features, n_hidden_neurons, n_hidden_neurons, self.n_actions))
 
         return model
 
@@ -110,7 +109,7 @@ class PatrollingDQN:
         if is_explore and self.is_explore_probability():
             action_index = self.simulator.rnd_explore.randint(0, self.n_actions)
         else:
-            q_values = self.model.predict(np.asarray([state]))  # q-values for the input state
+            q_values = self.model.predict(np.array([state]))  # q-values for the input state
             action_index = np.argmax(q_values[0])
             # print(action_index, "was thaken from nn failed wp", self.decay(self.n_decison_step, self.epsilon_decay))
 
@@ -133,7 +132,7 @@ class PatrollingDQN:
             # print("Train", self.n_epochs, self.n_decision_step)
             # sample at random from replay memory, batch_size elements
             random_sample_batch_indices = self.simulator.rstate_sample_batch_training.randint(0, len(self.replay_memory), size=self.batch_size)
-            random_sample_batch = np.asarray(self.replay_memory.llist)[random_sample_batch_indices]
+            random_sample_batch = [self.replay_memory.llist[i] for i in random_sample_batch_indices]
 
             self.__train_model_batched(random_sample_batch)
 
@@ -142,8 +141,8 @@ class PatrollingDQN:
 
         X, y = [], []  # batches input - output (correct prediction)
         for previous_state, current_state, action, reward, is_final in random_sample_batch:
-            old_out = self.model.predict(np.asarray([previous_state]))
-            cur_out = self.model_hat.predict(np.asarray([current_state]))
+            old_out = self.model.predict(np.array([previous_state]))
+            cur_out = self.model_hat.predict(np.array([current_state]))
 
             old_out[0, action] = (reward - self.avg_reward) + self.discount_factor * np.max(cur_out[0]) if not is_final else reward
             # self.avg_reward += 0  # self.beta * old_out[0, action]
@@ -151,7 +150,7 @@ class PatrollingDQN:
             X.append(previous_state)
             y.append(old_out[0])
 
-        training_result = self.model.fit(np.asarray(X), np.asarray(y), epochs=1, batch_size=self.batch_size, verbose=0)
+        training_result = self.model.fit(np.array(X), np.array(y), epochs=1, batch_size=self.batch_size, verbose=0)
         self.current_loss = training_result.history["loss"][0]
 
         if self.time_to_swap_models():
@@ -166,7 +165,7 @@ class PatrollingDQN:
         self.model_hat.set_weights(self.model.get_weights())
 
     def save_model(self):
-        self.model.save(config.RL_DATA + self.simulator.name())
+        self.model.save(config.RL_DATA + self.simulator.name() + "/model.mod")
 
     def time_to_batch_training(self):
         return len(self.replay_memory) > self.batch_size  # and self.n_decison_step % self.batch_training_every_decision == 0

@@ -76,10 +76,14 @@ class RLModule:
         is_final = residuals[0] < 0
         return State(residuals, self.get_current_time_distances(), pa, self.AOI_NORM, self.TIME_NORM, self.ACTION_NORM, is_final)
 
-    def evaluate_reward(self, state):
-        zero_residuals = [res for res in state.residuals() if res < 0]
-        rew = sum(zero_residuals)  # if len(zero_residuals) > 0 else 0  # len / min / mean
-        rew = rew if not state.is_final else -1
+    def evaluate_reward(self, state, action):
+        # zero_residuals = [res for res in state.residuals() if res <= 0]
+        live_residuals = [1 for res in state.residuals() if res > 0]
+
+        rew  = 1/self.N_ACTIONS * len(live_residuals)
+        rew += 0 if not state.is_final else -1
+        rew += 0 if not state.position == action else -1
+        # print(rew)
         return rew
 
     def invoke_train(self):
@@ -91,7 +95,7 @@ class RLModule:
         s = self.previous_state
         a = self.previous_action
         s_prime = self.evaluate_state()
-        r = self.evaluate_reward(s_prime)
+        r = self.evaluate_reward(s_prime, a)
 
         # print()
         # print("{}\n{}\n{}\n{}".format(s.normalized_vector(), a, s_prime.normalized_vector(), r))

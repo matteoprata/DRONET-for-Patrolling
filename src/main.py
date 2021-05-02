@@ -6,7 +6,7 @@ import src.utilities.config as config
 def main():
     """ the place where to run simulations and experiments. """
 
-    sim = PatrollingSimulator(sim_description="")
+    sim = PatrollingSimulator(sim_description="new2")
     sim.run()
 
 

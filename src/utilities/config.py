@@ -10,7 +10,7 @@ simulation. For an extensive experimental campaign read the header at src.simula
 # ----------------------------- SIMULATION PARAMS ---------------------------- #
 
 SIM_SEED = 24                # int: seed of this simulation.
-SIM_DURATION = 100000      # int: steps of simulation. (np.inf)
+SIM_DURATION = 24000*24*10      # int: steps of simulation. (np.inf)
 SIM_TS_DURATION = 0.150     # float: seconds duration of a step in seconds.
 
 ENV_WIDTH = 1500      # float: meters, width of environment
@@ -47,7 +47,7 @@ PLOT_TRAJECTORY_NEXT_TARGET = True
 FIXED_TOURS_DIR = "data/tours/"        # str: the path to the drones tours
 DEMO_PATH = False                      # bool: whether to use handcrafted tours or not (in utilities.utilities)
 
-PLOT_SIM = True       # bool: whether to plot or not the simulation (set to false for faster experiments)
+PLOT_SIM = False       # bool: whether to plot or not the simulation (set to false for faster experiments)
 WAIT_SIM_STEP = 0     # float >= 0: seconds, pauses the rendering for x seconds
 SKIP_SIM_STEP = 5     # int > 0 : steps, plot the simulation every x steps
 DRAW_SIZE = 700       # int: size of the drawing window
@@ -58,10 +58,10 @@ SAVE_PLOT_DIR = "data/plots/"  # string: where to save plots
 # ------------------------------- PATROLLING ------------------------------- #
 N_TARGETS = 7       # number of random targets in the map
 
-TARGETS = [(BASE_STATION_COORDS[0]-600, BASE_STATION_COORDS[1]+400, 50),
-           (BASE_STATION_COORDS[0]-250, BASE_STATION_COORDS[1]+1100, 200),
-           (BASE_STATION_COORDS[0]+250, BASE_STATION_COORDS[1]+1100, 50),
-           (BASE_STATION_COORDS[0]+600, BASE_STATION_COORDS[1]+400, 7777)]
+TARGETS = [(BASE_STATION_COORDS[0]-600, BASE_STATION_COORDS[1]+400, 400),
+           (BASE_STATION_COORDS[0]-250, BASE_STATION_COORDS[1]+1100, 400),
+           (BASE_STATION_COORDS[0]+250, BASE_STATION_COORDS[1]+1100, 400),
+           (BASE_STATION_COORDS[0]+600, BASE_STATION_COORDS[1]+400, 400)]
 
 
 class Mobility(Enum):
@@ -74,12 +74,10 @@ class Mobility(Enum):
     GO_MIN_RESIDUAL = 5
     GO_MIN_SUM_RESIDUAL = 6
 
-    GO_MIN_SUM_RESIDUAL_REACTIVE = 7
-
 
 DRONE_MOBILITY = Mobility.DECIDED
 RL_DATA = "data/rl/"
-RL_MODEL = ""
+RL_MODEL = ""  # "data/rl/new-seed24-ndrones1-mode2/model.mod"
 PRE_TRAINED = False
 
 

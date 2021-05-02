@@ -45,17 +45,6 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
     # MOVEMENT ROUTINES
 
-    # def __set_policy(self):
-    #     if self.mobility == config.Mobility.RANDOM_POLICY:
-    #         random_policy = [None]*(self.simulator.n_targets + self.simulator.n_base_stations)
-    #         for i in range(len(random_policy)):
-    #             allowed_actions = list(range(len(random_policy)))
-    #             allowed_actions.remove(i)
-    #
-    #             rand_action = self.simulator.rnd_explore.randint(0, len(self.simulator.environment.targets) - 1)
-    #             random_policy[i] = allowed_actions[rand_action]
-    #         return random_policy
-
     def move(self):
         """ Called at every time step. """
         if self.mobility == config.Mobility.PLANNED:

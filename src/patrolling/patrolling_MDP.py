@@ -80,7 +80,7 @@ class RLModule:
         # zero_residuals = [res for res in state.residuals() if res <= 0]
         live_residuals = [res for res in state.residuals(False) if res < 1]
 
-        rew  = 1/self.N_ACTIONS * len(live_residuals)
+        rew  = - 1/self.N_ACTIONS * len(live_residuals)
         rew += 0 if not state.is_final else -5
         rew += 0 if not state.position == action else -5
         # print(state.normalized_vector(), rew)

@@ -17,13 +17,13 @@ class State:
         self.position_norm = position_norm
 
     def residuals(self, normalized=True):
-        return self._residuals if not normalized else self.normalize_feature(self._residuals, self.aoi_norm, 1)
+        return self._residuals if not normalized else self.normalize_feature(self._residuals, self.aoi_norm, 0)
 
     def time_distances(self, normalized=True):
-        return self._time_distances if not normalized else self.normalize_feature(self._time_distances, self.time_norm)
+        return self._time_distances if not normalized else self.normalize_feature(self._time_distances, self.time_norm, 0)
 
     def position(self, normalized=True):
-        return self._position if not normalized else self.normalize_feature(self._position, self.position_norm)
+        return self._position if not normalized else self.normalize_feature(self._position, self.position_norm, 0)
 
     def normalized_vector(self):
         """ NN INPUT """
@@ -33,7 +33,7 @@ class State:
         return "{}\n{}\n{}".format(self.position(), self.residuals(), self.time_distances())
 
     @staticmethod
-    def normalize_feature(feature, maxi, mini=0):
+    def normalize_feature(feature, maxi, mini):
         return (np.asarray(feature) - mini) / (maxi - mini)
 
     @staticmethod
@@ -59,31 +59,31 @@ class RLModule:
                                  load_model=config.PRE_TRAINED
                                  )
 
-        self.AOI_NORM = self.drone.simulator.sim_duration_ts * self.drone.simulator.ts_duration_sec
+        min_threshold = min([t.maximum_tolerated_idleness for t in self.drone.simulator.environment.targets])
+        self.AOI_NORM = self.drone.simulator.duration_seconds() / min_threshold
         self.TIME_NORM = self.drone.simulator.max_travel_time()
         self.ACTION_NORM = self.N_ACTIONS
 
     def get_current_residuals(self):
-        return [target.residual_of_information() for target in self.drone.simulator.environment.targets]
+        return [target.aoi_idleness_ratio() for target in self.drone.simulator.environment.targets]
 
     def get_current_time_distances(self):
         return [euclidean_distance(self.drone.coords, target.coords)/self.drone.speed for target in self.drone.simulator.environment.targets]
 
     def evaluate_state(self):
         pa = self.previous_action if self.previous_action is not None else 0
-
         residuals = self.get_current_residuals()
-        is_final = residuals[0] < 0
+        is_final = residuals[0] >= 1
         return State(residuals, self.get_current_time_distances(), pa, self.AOI_NORM, self.TIME_NORM, self.ACTION_NORM, is_final)
 
     def evaluate_reward(self, state, action):
         # zero_residuals = [res for res in state.residuals() if res <= 0]
-        live_residuals = [1 for res in state.residuals() if res > 0]
+        live_residuals = [res for res in state.residuals(False) if res < 1]
 
         rew  = 1/self.N_ACTIONS * len(live_residuals)
-        rew += 0 if not state.is_final else -1
-        rew += 0 if not state.position == action else -1
-        # print(rew)
+        rew += 0 if not state.is_final else -5
+        rew += 0 if not state.position == action else -5
+        # print(state.normalized_vector(), rew)
         return rew
 
     def invoke_train(self):
@@ -96,10 +96,6 @@ class RLModule:
         a = self.previous_action
         s_prime = self.evaluate_state()
         r = self.evaluate_reward(s_prime, a)
-
-        # print()
-        # print("{}\n{}\n{}\n{}".format(s.normalized_vector(), a, s_prime.normalized_vector(), r))
-        # print()
 
         if s_prime.is_final:
             self.drone.simulator.environment.reset_drones_targets()

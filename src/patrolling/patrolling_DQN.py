@@ -108,12 +108,11 @@ class PatrollingDQN:
 
         if is_explore and self.is_explore_probability():
             action_index = self.simulator.rnd_explore.randint(0, self.n_actions)
+            # print(action_index)
         else:
             q_values = self.model.predict(np.array([state]))  # q-values for the input state
             action_index = np.argmax(q_values[0])
-            # print(action_index, "was thaken from nn failed wp", self.decay(self.n_decison_step, self.epsilon_decay))
-
-        # print(action_index, self.decay(self.n_training_step, self.epsilon_decay), "steps", self.simulator.cur_step, "/", self.simulator.sim_duration_ts)
+            # print(q_values, action_index)
         return action_index
 
     def train(self, previous_state=None, current_state=None, action=None, reward=None, is_final=None):

@@ -77,6 +77,8 @@ class PatrollingSimulator:
         # create directory of the simulation
         make_path(self.directory_simulation() + "-")
 
+        self.plotting = Plotting(self.name())
+
     # ---- # BOUNDS and CONSTANTS # ---- #
 
     def duration_seconds(self):
@@ -228,13 +230,13 @@ class PatrollingSimulator:
 
     def checkout(self):
         """ print metrics save stuff. """
-        CHECKOUT = 24000*6
+        CHECKOUT = 2400#00*6
 
         if self.cur_step % CHECKOUT == 0 and self.cur_step > 0:
             self.metrics.save_dataframe()
-            Plotting(self.name())
+            self.plotting.plot()
             self.environment.drones[0].state_manager.DQN.save_model()
 
     def close(self):
-        pass
+        self.checkout()
 

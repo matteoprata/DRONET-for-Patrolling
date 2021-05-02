@@ -9,16 +9,16 @@ pd.set_option('display.max_columns', None)
 class Plotting:
     def __init__(self, simulation_name):
         self.fig = plt.figure()
-
         self.simulation_name = simulation_name
 
-        self.d1 = pd.read_csv(config.RL_DATA + simulation_name + "/log_simulation_constants.csv")
-        self.tar_stats = pd.read_csv(config.RL_DATA + simulation_name + "/log_simulation.csv",
+    def plot(self):
+        self.d1 = pd.read_csv(config.RL_DATA + self.simulation_name + "/log_simulation_constants.csv")
+        self.tar_stats = pd.read_csv(config.RL_DATA + self.simulation_name + "/log_simulation.csv",
                                      index_col="date",
                                      infer_datetime_format=True,
                                      parse_dates=True)
 
-        self.dqn_stats = pd.read_csv(config.RL_DATA + simulation_name + "/dqn_training_data.csv")
+        self.dqn_stats = pd.read_csv(config.RL_DATA + self.simulation_name + "/dqn_training_data.csv")
 
         self.reindex_interpolate()
 

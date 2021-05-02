@@ -56,7 +56,6 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
             if self.will_reach_target():
                 self.coords = self.next_target()
                 self.update_target_reached()
-
                 reward, epsilon, loss, is_end = self.invoke_patrolling_MDP()  # train nn and get next action
 
                 if not config.PRE_TRAINED:
@@ -65,7 +64,6 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                     self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
 
                 self.increase_waypoint_counter()
-
 
         elif self.mobility == config.Mobility.RANDOM_MOVEMENT:
             if self.will_reach_target():

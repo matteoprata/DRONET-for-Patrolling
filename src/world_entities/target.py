@@ -24,6 +24,9 @@ class Target(SimulatedEntity):
     def residual_of_information(self):
         return 1 - self.age_of_information() / self.maximum_tolerated_idleness
 
+    def aoi_idleness_ratio(self):
+        return self.age_of_information() / self.maximum_tolerated_idleness
+
     # ------ AGE OF INFORMATION -- RESIDUAL OF INFORMATION
 
     @staticmethod

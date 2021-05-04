@@ -9,6 +9,7 @@ from gurobipy import *
 from collections import OrderedDict
 from src.utilities import utilities, config
 
+import numpy as np
 
 # export GUROBI_HOME="/opt/gurobi902/linux64"
 # export PATH="${PATH}:${GUROBI_HOME}/bin"
@@ -21,7 +22,7 @@ from src.utilities import utilities, config
 # -----------------------------------------------------------------------------
 class AbstractPatrollingModel(metaclass=ABCMeta):
 
-    def __init__(self, simulation, debug=False, out_path="data/opt_sol/"):
+    def __init__(self, simulation, debug=True, out_path="data/opt_sol/"):
         """
         Build up the model
 
@@ -181,7 +182,7 @@ class AbstractPatrollingModel(metaclass=ABCMeta):
         out_target = self.paths[i_drone][self.current_target_of_drones[i_drone]]
         self.current_target_of_drones[i_drone] += 1
         if self.current_target_of_drones[i_drone] >= len(self.paths[i_drone]):
-            self.current_target_of_drones[i_drone] = 0
+            self.current_target_of_drones[i_drone] = len(self.paths[i_drone]) - 1
         return out_target
 
     def disk_filename(self):
@@ -296,8 +297,10 @@ class AbstractPatrollingModel(metaclass=ABCMeta):
         # COMPUTE SOLUTIONS FOR THE SIMULATOR
         paths = {}
         for i_dr in range(self.ndrones):
-            full_traj = full_drones_trajectories[i_dr]
-            ordered_targets = list(OrderedDict.fromkeys([j for i, j in full_traj]))
+            full_traj = np.asarray([j for i,j in full_drones_trajectories[i_dr]])
+            full_traj = full_traj[np.insert(np.diff(full_traj).astype(np.bool), 0, True)]
+            # 0, 0,0 ,0,0 ,0 ,0, 1,1 ,1, 1, 1, 2,3,3,4,4. 0, 0,0
+            ordered_targets = list(full_traj)
             if ordered_targets == []:
                 paths[i_dr] = [self.depots_drones[i_dr], self.depots_drones[i_dr]]
             else:
@@ -345,6 +348,7 @@ class SoftConstraintsModel(AbstractPatrollingModel):
 
     def objective_function(self):
         """ objective function of opt model """
+        # read this -> https://math.stackexchange.com/questions/2732897/linear-integer-programming-count-consecutive-ones
         self.model.setObjective(self.deadline_vars.sum('*') + self.epsilon * quicksum([self.edge_variables[u, j, i, t]
                                                                                     for i in range(self.ntargets)
                                                                                     for j in range(self.ntargets)
@@ -369,5 +373,5 @@ class SoftConstraintsModel(AbstractPatrollingModel):
 
     def disk_filename(self):
         outfname = super().disk_filename()
-        return "hard_constraint_model_" + outfname
+        return "soft_constraint_model_" + outfname
 

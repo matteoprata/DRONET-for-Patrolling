@@ -237,15 +237,15 @@ class PatrollingSimulator:
             if config.SAVE_PLOT or config.PLOT_SIM:
                 self.__plot(cur_step)
 
-    def checkout(self):
+    def checkout(self, do=False):
         """ print metrics save stuff. """
         CHECKOUT = 24000*5
 
-        if self.cur_step % CHECKOUT == 0 and self.cur_step > 0:
+        if self.cur_step % CHECKOUT == 0 and self.cur_step > 0 or do:
             self.metrics.save_dataframe()
             self.plotting.plot()
             self.environment.drones[0].state_manager.DQN.save_model()
 
     def close(self):
-        self.checkout()
+        self.checkout(True)
 

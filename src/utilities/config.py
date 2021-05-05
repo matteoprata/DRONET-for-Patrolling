@@ -91,5 +91,5 @@ LEARNING_PARAMETERS = {
     "swap_models_every_decision": 500,
 }
 
-POSITIVE = True
-RELATIVE = True
+POSITIVE = False
+RELATIVE = False

@@ -34,7 +34,7 @@ class State:
 
     @staticmethod
     def normalize_feature(feature, maxi, mini):
-        return (np.asarray(feature) - mini) / (maxi - mini) if not (maxi is None or mini is None) else feature
+        return ((np.asarray(feature) - mini) / (maxi - mini)) if not (maxi is None or mini is None) else np.asarray(feature)
 
     @staticmethod
     def round_feature_vector(feature, rounding_digit):
@@ -84,7 +84,7 @@ class RLModule:
         residuals = self.get_current_residuals()
         distances = np.asarray(self.get_current_time_distances())
         thresholds = np.asarray([target.maximum_tolerated_idleness for target in self.simulator.environment.targets])
-        distances = distances / thresholds if self.TIME_NORM is None else 1
+        distances = distances / (thresholds if self.TIME_NORM is None else 1)
         return State(residuals, distances, pa, self.AOI_NORM, self.TIME_NORM, self.ACTION_NORM, False)
 
     def evaluate_reward(self, state, action):

@@ -31,8 +31,8 @@ for arg in vars(args):
     if val is not None and arg in learning:
         learning[arg] = val
 
-config.POSITIVE = args.positive
-config.RELATIVE = args.relative
+# config.POSITIVE = args.positive
+# config.RELATIVE = args.relative
 
 
 def main():

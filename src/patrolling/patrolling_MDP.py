@@ -34,7 +34,7 @@ class State:
 
     @staticmethod
     def normalize_feature(feature, maxi, mini):
-        return (np.asarray(feature) - mini) / (maxi - mini)
+        return (np.asarray(feature) - mini) / (maxi - mini) if not (maxi is None or mini is None) else feature
 
     @staticmethod
     def round_feature_vector(feature, rounding_digit):
@@ -70,7 +70,7 @@ class RLModule:
 
         min_threshold = min([t.maximum_tolerated_idleness for t in self.simulator.environment.targets])
         self.AOI_NORM = 1  # self.simulator.duration_seconds() / min_threshold
-        self.TIME_NORM = self.simulator.max_travel_time()
+        self.TIME_NORM = None if config.RELATIVE else self.simulator.max_travel_time()
         self.ACTION_NORM = self.N_ACTIONS
 
     def get_current_residuals(self):
@@ -83,14 +83,15 @@ class RLModule:
         pa = self.previous_action if self.previous_action is not None else 0
         residuals = self.get_current_residuals()
         distances = np.asarray(self.get_current_time_distances())
-        thresholds = np.asarray([target.maximum_tolerated_idleness for target in self.drone.simulator.environment.targets])
-        return State(residuals, distances / thresholds, pa, self.AOI_NORM, self.TIME_NORM, self.ACTION_NORM, False)
+        thresholds = np.asarray([target.maximum_tolerated_idleness for target in self.simulator.environment.targets])
+        distances = distances / thresholds if self.TIME_NORM is None else 1
+        return State(residuals, distances, pa, self.AOI_NORM, self.TIME_NORM, self.ACTION_NORM, False)
 
     def evaluate_reward(self, state, action):
-        # zero_residuals = [res for res in state.residuals() if res <= 0]
         live_residuals = [res for res in state.residuals(False) if res < 1]
+        dead_residuals = [res for res in state.residuals(False) if res >= 1]
 
-        rew = len(live_residuals) / self.N_ACTIONS
+        rew = (len(live_residuals) if config.POSITIVE else (- len(dead_residuals))) / self.N_ACTIONS
         rew += 0 if not state.is_final else -2
         return rew
 

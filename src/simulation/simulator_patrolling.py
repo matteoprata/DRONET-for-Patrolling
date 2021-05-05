@@ -239,7 +239,7 @@ class PatrollingSimulator:
 
     def checkout(self):
         """ print metrics save stuff. """
-        CHECKOUT = 240000*6
+        CHECKOUT = 24000*5
 
         if self.cur_step % CHECKOUT == 0 and self.cur_step > 0:
             self.metrics.save_dataframe()

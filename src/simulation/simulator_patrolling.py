@@ -217,8 +217,15 @@ class PatrollingSimulator:
         self.draw_manager.draw_targets()
         self.draw_manager.update(save=config.SAVE_PLOT, filename=self.name() + str(cur_step) + ".png")
 
+    def print_sim_info(self):
+        print("simulation starting", self.name())
+        print(self.learning)
+        print()
+
     def run(self):
         """ The method starts the simulation. """
+
+        self.print_sim_info()
         for cur_step in range(self.sim_duration_ts):
             self.cur_step = cur_step
 
@@ -232,7 +239,7 @@ class PatrollingSimulator:
 
     def checkout(self):
         """ print metrics save stuff. """
-        CHECKOUT = 2400#00*6
+        CHECKOUT = 240000*6
 
         if self.cur_step % CHECKOUT == 0 and self.cur_step > 0:
             self.metrics.save_dataframe()

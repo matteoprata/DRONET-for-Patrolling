@@ -19,7 +19,7 @@ class PatrollingDQN:
                  batch_size=32,
                  lr=0.0001,
                  beta=0.5,
-                 discount_factor=.99,  # .99,
+                 discount_factor=.80,  # .99,
                  epsilon_decay=0.0002,
                  replay_memory_depth=100000,
                  swap_models_every_decision=500,  # 10000

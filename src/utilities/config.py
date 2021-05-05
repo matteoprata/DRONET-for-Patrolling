@@ -10,7 +10,7 @@ simulation. For an extensive experimental campaign read the header at src.simula
 # ----------------------------- SIMULATION PARAMS ---------------------------- #
 
 SIM_SEED = 27                # int: seed of this simulation.
-SIM_DURATION = 24000*24*10      # int: steps of simulation. (np.inf)
+SIM_DURATION = 24000*24*15      # int: steps of simulation. (np.inf)
 SIM_TS_DURATION = 0.150     # float: seconds duration of a step in seconds.
 
 ENV_WIDTH = 1500      # float: meters, width of environment
@@ -77,7 +77,7 @@ class Mobility(Enum):
 
 DRONE_MOBILITY = Mobility.DECIDED
 RL_DATA = "data/rl/"
-RL_MODEL = ""  # "data/rl/new-seed24-ndrones1-mode2/model.mod"
-PRE_TRAINED = False
+RL_MODEL = "model.mod"
+PRE_TRAINED = True
 
 

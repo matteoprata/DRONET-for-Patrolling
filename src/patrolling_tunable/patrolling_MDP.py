@@ -78,11 +78,11 @@ class RLModule:
 
     def evaluate_reward(self, state, action):
         # zero_residuals = [res for res in state.residuals() if res <= 0]
-        zero_residuals = [res for res in state.residuals(False) if res < 1]
+        zero_residuals = [res for res in state.residuals(False) if res >= 1]
 
-        rew  = 1/self.N_ACTIONS * len(zero_residuals)
-        rew += 0 if not state.is_final else -1
-        rew += 0 if not state.position(False) == action else -1
+        rew  = - 1/self.N_ACTIONS * len(zero_residuals)
+        rew += 0 if not state.is_final else -5
+        rew += 0 if not state.position(False) == action else -5
         # print(state.normalized_vector(), rew)
         return rew
 

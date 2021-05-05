@@ -56,8 +56,8 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
             if self.will_reach_target():
                 self.coords = self.next_target()
 
-                reward, epsilon, loss, is_end = self.state_manager.invoke_train()
-                action = self.state_manager.invoke_predict()
+                reward, epsilon, loss, is_end, s_prime = self.state_manager.invoke_train()
+                action = self.state_manager.invoke_predict(s_prime)
 
                 # print([target.last_visit_ts for target in self.simulator.environment.targets])
                 # print([target.aoi_idleness_ratio() for target in self.simulator.environment.targets])
@@ -71,7 +71,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 self.prev_target = self.simulator.environment.targets[action]
                 self.path.append(self.prev_target.coords)
 
-                if not config.PRE_TRAINED:
+                if not self.simulator.learning["is_pretrained"]:
                     self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier, reward, epsilon, loss, is_end)
                 else:
                     self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)

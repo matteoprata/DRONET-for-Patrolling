@@ -37,9 +37,11 @@ class PatrollingSimulator:
                  n_grid_cells=config.N_GRID_CELLS,
                  n_targets=config.N_TARGETS,
                  drone_mobility=config.DRONE_MOBILITY,
-                 targets=config.TARGETS
+                 targets=config.TARGETS,
+                 learning=config.LEARNING_PARAMETERS
                  ):
 
+        self.learning = learning
         self.sim_peculiarity = sim_description
         self.cur_step = 0
         self.sim_seed = sim_seed

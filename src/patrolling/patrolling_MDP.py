@@ -48,6 +48,8 @@ class RLModule:
 
         self.previous_state = None
         self.previous_action = None
+        self.previous_epsilon = 1
+
         self.com_rewards = 0
         self.policy_cycle = 0
 
@@ -109,7 +111,7 @@ class RLModule:
         if self.previous_state is None or self.previous_action is None:
             # print("s", None)
             # print()
-            return 0, 1, 0, False, None
+            return 0, self.previous_epsilon, 0, False, None
 
         self.DQN.n_decision_step += 1
 
@@ -124,6 +126,7 @@ class RLModule:
         # print("s'", s_prime.position(False), s_prime.is_final)
         # print("r", r)
         # print()
+        self.previous_epsilon = self.DQN.decay()
 
         if s_prime.is_final:
             self.simulator.environment.reset_drones_targets()
@@ -139,7 +142,7 @@ class RLModule:
                        reward=r,
                        is_final=s_prime.is_final)
 
-        return r, self.DQN.decay(), self.DQN.current_loss, s_prime.is_final, s_prime
+        return r, self.previous_epsilon, self.DQN.current_loss, s_prime.is_final, s_prime
 
     def invoke_predict(self, state):
         if state is None:

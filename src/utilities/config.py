@@ -85,7 +85,7 @@ LEARNING_PARAMETERS = {
     "batch_size": 32,
     "learning_rate": 0.0001,
     "discount_factor": 0.98,
-    "beta": 0.5, # for continuous tasks
+    "beta": 0.5,  # for continuous tasks
     "epsilon_decay": 0.0002,
     "replay_memory_depth": 100000,
     "swap_models_every_decision": 500,

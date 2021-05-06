@@ -9,6 +9,8 @@ from src.utilities.utilities import PathManager, current_date, euclidean_distanc
 import src.utilities.config as config
 from src.drawing import pp_draw
 
+from tqdm import tqdm
+
 import numpy as np
 import time
 
@@ -226,7 +228,7 @@ class PatrollingSimulator:
         """ The method starts the simulation. """
 
         self.print_sim_info()
-        for cur_step in range(self.sim_duration_ts):
+        for cur_step in tqdm(range(self.sim_duration_ts)):
             self.cur_step = cur_step
 
             for drone in self.environment.drones:

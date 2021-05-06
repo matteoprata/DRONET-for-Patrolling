@@ -17,8 +17,8 @@ parser.add_argument('-sw', '--swap_models_every_decision', type=int)
 parser.add_argument('-de', '--description', type=str, default="")
 parser.add_argument('-du', '--duration', type=int, default=24000*24*15)
 
-parser.add_argument('-po', '--positive', type=bool)
-parser.add_argument('-re', '--relative', type=bool)
+parser.add_argument('-po', '--positive', type=int, default=1)
+parser.add_argument('-re', '--relative', type=int, default=1)
 
 args = parser.parse_args()
 
@@ -31,12 +31,13 @@ for arg in vars(args):
     if val is not None and arg in learning:
         learning[arg] = val
 
-# config.POSITIVE = args.positive
-# config.RELATIVE = args.relative
+config.POSITIVE = bool(args.positive)
+config.RELATIVE = bool(args.relative)
 
 
 def main():
     """ the place where to run simulations and experiments. """
+    print(config.POSITIVE, config.RELATIVE)
     sim = PatrollingSimulator(sim_description=description,
                               sim_duration_ts=duration,
                               learning=learning)

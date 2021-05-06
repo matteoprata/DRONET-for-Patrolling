@@ -249,11 +249,11 @@ class PathPlanningDrawer:
         stddraw.text(drone.coords[0], drone.coords[1] + (drone.com_range / 2.0), "id: " + str(drone.identifier))
         # state action
         if self.simulator.drone_mobility == config.Mobility.DECIDED:
-            stddraw.text(drone.coords[0], drone.coords[1] - (drone.com_range / 2.0), "a:{} s:{}".format(
-                str(int(self.simulator.selected_drone.state_manager.previous_action)),
-                str([round(i, 3) for i in self.simulator.selected_drone.state_manager.previous_state.residuals(False)])))
-            stddraw.text(drone.coords[0], drone.coords[1] - (drone.com_range / 2.0)-30, "    s:{}".format(
-                str([round(i, 3) for i in self.simulator.selected_drone.state_manager.previous_state.time_distances(False)])))
+            ac = self.simulator.selected_drone.state_manager.previous_action
+            st = self.simulator.selected_drone.state_manager.previous_state
+            if not (ac is None or st is None):
+                stddraw.text(drone.coords[0], drone.coords[1] - (drone.com_range / 2.0), "a:{} s:{}".format(str(int(ac)), str([round(i, 3) for i in st.residuals()])))
+                stddraw.text(drone.coords[0], drone.coords[1] - (drone.com_range / 2.0)-30, "    s:{}".format(str([round(i, 3) for i in st.time_distances()])))
 
     def draw_simulation_info(self, cur_step, max_steps):
         TEXT_LEFT = 60

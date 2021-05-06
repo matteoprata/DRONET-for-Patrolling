@@ -61,6 +61,7 @@ class Environment:
 
         for drone in self.drones:
             drone.coords = drone.bs.coords
+            drone.path.append(drone.bs.coords)
 
     def spawn_targets(self, targets=None):
 

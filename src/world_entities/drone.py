@@ -55,27 +55,20 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         elif self.mobility == config.Mobility.DECIDED:
             if self.will_reach_target():
                 self.coords = self.next_target()
+                self.prev_target.last_visit_ts = self.simulator.cur_step
 
                 reward, epsilon, loss, is_end, s_prime = self.state_manager.invoke_train()
-                action = self.state_manager.invoke_predict(s_prime)
 
-                # print([target.last_visit_ts for target in self.simulator.environment.targets])
-                # print([target.aoi_idleness_ratio() for target in self.simulator.environment.targets])
-                # print(self.simulator.cur_step)
-                # print(self.next_target())
-                # print(action)
-                # print(reward)
-                # print()
+                if not is_end:
+                    action = self.state_manager.invoke_predict(s_prime)
+                    self.prev_target = self.simulator.environment.targets[action]
+                    self.path.append(self.prev_target.coords)
 
-                self.prev_target.last_visit_ts = self.simulator.cur_step
-                self.prev_target = self.simulator.environment.targets[action]
-                self.path.append(self.prev_target.coords)
-
+                self.increase_waypoint_counter()
                 if not self.simulator.learning["is_pretrained"]:
                     self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier, reward, epsilon, loss, is_end)
                 else:
                     self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
-                self.increase_waypoint_counter()
 
         elif self.mobility == config.Mobility.RANDOM_MOVEMENT:
             if self.will_reach_target():

@@ -49,6 +49,7 @@ class RLModule:
         self.previous_state = None
         self.previous_action = None
         self.com_rewards = 0
+        self.policy_cycle = 0
 
         self.N_ACTIONS = len(self.simulator.environment.targets)
         self.N_FEATURES = 2 * len(self.simulator.environment.targets) + 1
@@ -84,15 +85,21 @@ class RLModule:
         residuals = self.get_current_residuals()
         distances = np.asarray(self.get_current_time_distances())
         thresholds = np.asarray([target.maximum_tolerated_idleness for target in self.simulator.environment.targets])
-        distances = distances / (thresholds if self.TIME_NORM is None else 1)
-        return State(residuals, distances, pa, self.AOI_NORM, self.TIME_NORM, self.ACTION_NORM, False)
+        distances2 = distances / (thresholds if self.TIME_NORM is None else 1)
 
-    def evaluate_reward(self, state, action):
-        live_residuals = [res for res in state.residuals(False) if res < 1]
+        # print(distances)
+        # print(thresholds)
+        # print(distances2)
+        # print()
+
+        return State(residuals, distances2, pa, self.AOI_NORM, self.TIME_NORM, self.ACTION_NORM, False)
+
+    def evaluate_reward(self, state):
         dead_residuals = [res for res in state.residuals(False) if res >= 1]
+        live_residuals = [res for res in state.residuals(False) if res < 1]
 
         rew = (len(live_residuals) if config.POSITIVE else (- len(dead_residuals))) / self.N_ACTIONS
-        rew += 0 if not state.is_final else -2
+        rew = rew if not state.is_final else -5
         return rew
 
     def evaluate_is_final_state(self, s, a, s_prime):
@@ -100,6 +107,8 @@ class RLModule:
 
     def invoke_train(self):
         if self.previous_state is None or self.previous_action is None:
+            # print("s", None)
+            # print()
             return 0, 1, 0, False, None
 
         self.DQN.n_decision_step += 1
@@ -108,11 +117,19 @@ class RLModule:
         a = self.previous_action
         s_prime = self.evaluate_state()
         s_prime.is_final = self.evaluate_is_final_state(s, a, s_prime)
+        r = self.evaluate_reward(s_prime)
 
-        r = self.evaluate_reward(s_prime, a)
+        # print("s", s.position(False), s.is_final)
+        # print("a", a)
+        # print("s'", s_prime.position(False), s_prime.is_final)
+        # print("r", r)
+        # print()
 
         if s_prime.is_final:
             self.simulator.environment.reset_drones_targets()
+            self.previous_state = None
+            self.previous_action = None
+            self.policy_cycle = 0
 
         # Continuous Tasks: Reinforcement Learning tasks which are not made of episodes, but rather last forever.
         # This tasks have no terminal states. For simplicity, they are usually assumed to be made of one never-ending episode.
@@ -131,6 +148,7 @@ class RLModule:
         action_index = self.DQN.predict(state.normalized_vector())
         self.previous_state = state
         self.previous_action = action_index
+        self.policy_cycle += 1
         return action_index
 
 

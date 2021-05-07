@@ -9,7 +9,7 @@ simulation. For an extensive experimental campaign read the header at src.simula
 
 # ----------------------------- SIMULATION PARAMS ---------------------------- #
 
-SIM_SEED = 27                # int: seed of this simulation.
+SIM_SEED = 50                # int: seed of this simulation.
 SIM_DURATION = 24000*24*60      # int: steps of simulation. (np.inf)
 SIM_TS_DURATION = 0.150     # float: seconds duration of a step in seconds.
 
@@ -79,7 +79,7 @@ DRONE_MOBILITY = Mobility.DECIDED
 RL_DATA = "data/rl/"
 
 LEARNING_PARAMETERS = {
-    "is_pretrained": True,
+    "is_pretrained": False,
     "model_name": "model.h5",
 
     "batch_size": 32,
@@ -94,4 +94,4 @@ LEARNING_PARAMETERS = {
 POSITIVE = False
 RELATIVE = False
 
-DELTA_DEC = 5  # seconds
+DELTA_DEC = 4.95  # seconds

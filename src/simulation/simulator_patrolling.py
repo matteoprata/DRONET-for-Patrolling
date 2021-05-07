@@ -228,7 +228,7 @@ class PatrollingSimulator:
         """ The method starts the simulation. """
 
         self.print_sim_info()
-        for cur_step in tqdm(range(self.sim_duration_ts)):
+        for cur_step in (range(self.sim_duration_ts)):
             self.cur_step = cur_step
 
             for drone in self.environment.drones:

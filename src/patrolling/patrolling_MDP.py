@@ -16,18 +16,22 @@ import numpy as np
 
 class State:
     def __init__(self, aois, time_distances, position, aoi_norm, time_norm, position_norm, is_final,
-                 future_residuals, aoi_future_norm):
+                 future_residuals, aoi_future_norm, is_flying):
 
         self._future_residuals: list = future_residuals
         self._residuals: list = aois
         self._time_distances: list = time_distances
         self._position = position
         self.is_final = is_final
+        self._is_flying = is_flying
 
         self.aoi_future_norm = aoi_future_norm
         self.aoi_norm = aoi_norm
         self.time_norm = time_norm
         self.position_norm = position_norm
+
+    def is_flying(self, normalized=True):
+        return self._is_flying if not normalized else int(self._is_flying)
 
     def future_residuals(self, normalized=True):
         return self._future_residuals if not normalized else self.normalize_feature(self._future_residuals, self.aoi_future_norm, 0)
@@ -43,7 +47,7 @@ class State:
 
     def normalized_vector(self):
         """ NN INPUT """
-        return [self.position()] + list(self.residuals()) + list(self.future_residuals())
+        return list(self.residuals()) + list(self.future_residuals())
         # return [self.position()] + list(self.residuals()) + list(self.time_distances())
 
     def __repr__(self):
@@ -72,7 +76,7 @@ class RLModule:
         self.policy_cycle = 0
 
         self.N_ACTIONS = len(self.simulator.environment.targets)
-        self.N_FEATURES = 2 * len(self.simulator.environment.targets) + 1
+        self.N_FEATURES = 2 * len(self.simulator.environment.targets)
 
         self.DQN = PatrollingDQN(n_actions=self.N_ACTIONS,
                                  n_features=self.N_FEATURES,
@@ -108,10 +112,14 @@ class RLModule:
         """ TIME of TRANSIT """
         return [euclidean_distance(self.drone.coords, target.coords)/self.drone.speed for target in self.drone.simulator.environment.targets]
 
+    def get_is_flying(self):
+        return self.drone.is_flying()
+
     def evaluate_state(self):
         pa = self.previous_action if self.previous_action is not None else 0
         residuals = self.get_current_residuals()
         future_residuals = self.get_future_residuals()
+        is_flying = self.get_is_flying()
 
         # distances = self.get_current_time_distances()
         # thresholds = np.asarray([target.maximum_tolerated_idleness for target in self.simulator.environment.targets])
@@ -121,7 +129,7 @@ class RLModule:
         # print(distances2)
         # print()
 
-        return State(residuals, future_residuals, pa, self.AOI_NORM, self.TIME_NORM, self.ACTION_NORM, False, future_residuals, self.AOI_FUTURE_NORM)
+        return State(residuals, future_residuals, pa, self.AOI_NORM, self.TIME_NORM, self.ACTION_NORM, False, future_residuals, self.AOI_FUTURE_NORM, is_flying)
 
     def evaluate_reward(self, state):
         # dead_residuals = [res for res in state.residuals(False) if res >= 1]
@@ -135,7 +143,7 @@ class RLModule:
         return rew
 
     def evaluate_is_final_state(self, s, a, s_prime):
-        return s_prime.future_residuals()[0] >= 1 or s.position() == s_prime.position()
+        return s_prime.future_residuals()[0] >= 1 # or s.position() == s_prime.position()
 
     def invoke_train(self):
         if self.previous_state is None or self.previous_action is None:
@@ -177,11 +185,11 @@ class RLModule:
 
         return r, self.previous_epsilon, self.DQN.current_loss, s_prime.is_final, s_prime
 
-    def invoke_predict(self, state):
+    def invoke_predict(self, state, force_action=None):
         if state is None:
             state = self.evaluate_state()
 
-        action_index = self.DQN.predict(state.normalized_vector())
+        action_index = self.DQN.predict(state.normalized_vector()) if force_action is None else force_action
         self.previous_state = state
         self.previous_action = action_index
         self.policy_cycle += 1

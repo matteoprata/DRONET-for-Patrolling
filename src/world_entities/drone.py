@@ -40,6 +40,9 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         self.previous_ts_coordinate = None
         self.buffer = list()
 
+        self.decision_time = 0
+        self.prv_action = 0
+
         # self.random_targets_visits = self.__set_policy()
         self.prev_target = self.simulator.environment.targets[0]
 
@@ -53,21 +56,50 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 self.increase_waypoint_counter()
 
         elif self.mobility == config.Mobility.DECIDED:
-            if self.will_reach_target():
-                self.coords = self.next_target()
-                self.prev_target.last_visit_ts = self.simulator.cur_step
+            if self.is_decision_step():
+                self.decision_time = self.simulator.cur_step
+                # print("decision now", self.simulator.cur_step)
 
-                reward, epsilon, loss, is_end, s_prime = self.state_manager.invoke_train()
-                action = 0 if is_end else self.state_manager.invoke_predict(s_prime)
+                if self.will_reach_target():
+                    # print("reached", self.path)
+                    self.coords = self.next_target()
+                    self.prev_target.last_visit_ts = self.simulator.cur_step
 
-                self.prev_target = self.simulator.environment.targets[action]
-                self.path.append(self.prev_target.coords)
-                self.increase_waypoint_counter()
+                    reward, epsilon, loss, is_end, s_prime = self.state_manager.invoke_train()
+                    action = 0 if is_end else self.state_manager.invoke_predict(s_prime)
+                    self.prv_action = action
+
+                    self.prev_target = self.simulator.environment.targets[action]
+                    self.path.append(self.prev_target.coords)
+                    self.increase_waypoint_counter()
+                else:
+                    reward, epsilon, loss, is_end, s_prime = self.state_manager.invoke_train()
+                    self.state_manager.invoke_predict(s_prime, self.prv_action)
 
                 if not self.simulator.learning["is_pretrained"]:
                     self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier, reward, epsilon, loss, is_end)
                 else:
                     self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
+
+
+
+
+
+            #     self.decision_time = self.simulator.cur_step
+            #     self.coords = self.next_target()
+            #     self.prev_target.last_visit_ts = self.simulator.cur_step
+            #
+            #     reward, epsilon, loss, is_end, s_prime = self.state_manager.invoke_train()
+            #     action = 0 if is_end else self.state_manager.invoke_predict(s_prime)
+            #
+            #     self.prev_target = self.simulator.environment.targets[action]
+            #     self.path.append(self.prev_target.coords)
+            #     self.increase_waypoint_counter()
+            #
+            #     if not self.simulator.learning["is_pretrained"]:
+            #         self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier, reward, epsilon, loss, is_end)
+            #     else:
+            #         self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
 
         elif self.mobility == config.Mobility.RANDOM_MOVEMENT:
             if self.will_reach_target():
@@ -116,6 +148,13 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
         self.set_next_target_angle()
         self.__movement(self.angle)
+
+    def is_decision_step(self):
+        """ Whether is time to make a decision step or not """
+        return self.simulator.cur_step % (config.DELTA_DEC / self.simulator.ts_duration_sec) == 0
+
+    def is_flying(self):
+        return not self.will_reach_target()
 
     def current_target(self):
         return self.simulator.environment.targets[self.prev_target.identifier]

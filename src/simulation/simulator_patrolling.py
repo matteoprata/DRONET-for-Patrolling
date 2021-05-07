@@ -241,7 +241,7 @@ class PatrollingSimulator:
 
     def checkout(self, do=False):
         """ print metrics save stuff. """
-        CHECKOUT = 24000*5
+        CHECKOUT = max(self.sim_duration_ts * 0.01, 24000)   # 1% della durata della sim
         if self.cur_step % CHECKOUT == 0 and self.cur_step > 0 or do:
             self.metrics.save_dataframe()
             self.plotting.plot()

@@ -141,7 +141,7 @@ class Plotting:
 
     @staticmethod
     def __plot_now(title, xlabel, ylabel):
-        plt.legend()
+        plt.legend(loc="upper left")
         plt.title(title)
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)

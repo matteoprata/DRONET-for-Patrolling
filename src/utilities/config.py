@@ -10,7 +10,7 @@ simulation. For an extensive experimental campaign read the header at src.simula
 # ----------------------------- SIMULATION PARAMS ---------------------------- #
 
 SIM_SEED = 27                # int: seed of this simulation.
-SIM_DURATION = 24000*24*15      # int: steps of simulation. (np.inf)
+SIM_DURATION = 24000*24*60      # int: steps of simulation. (np.inf)
 SIM_TS_DURATION = 0.150     # float: seconds duration of a step in seconds.
 
 ENV_WIDTH = 1500      # float: meters, width of environment
@@ -80,7 +80,7 @@ RL_DATA = "data/rl/"
 
 LEARNING_PARAMETERS = {
     "is_pretrained": False,
-    "model_name": "model.mod",
+    "model_name": "model.h5",
 
     "batch_size": 32,
     "learning_rate": 0.0001,

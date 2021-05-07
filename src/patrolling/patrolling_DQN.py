@@ -136,7 +136,7 @@ class PatrollingDQN:
             random_sample_batch_indices = self.simulator.rstate_sample_batch_training.randint(0, len(self.replay_memory), size=self.batch_size)
             random_sample_batch = [self.replay_memory.llist[i] for i in random_sample_batch_indices]
 
-            self.__train_model_batched(random_sample_batch)
+            return self.__train_model_batched(random_sample_batch)
 
     def __train_model_batched(self, random_sample_batch):
         """ Given an input batch, it trains the model. """
@@ -159,6 +159,8 @@ class PatrollingDQN:
             print(self.decay(), "steps", self.simulator.cur_step, "/", self.simulator.sim_duration_ts)
             print('swapped', self.n_decision_step)
             self.swap_learning_model()
+
+        return self.current_loss
 
     def swap_learning_model(self):
         """ Updates the knowledge of the two """

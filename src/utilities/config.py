@@ -10,7 +10,7 @@ simulation. For an extensive experimental campaign read the header at src.simula
 # ----------------------------- SIMULATION PARAMS ---------------------------- #
 
 SIM_SEED = 24                # int: seed of this simulation.
-SIM_DURATION = 24000*24*5      # int: steps of simulation. (np.inf)
+SIM_DURATION = 24*24*5      # int: steps of simulation. (np.inf)
 SIM_TS_DURATION = 0.150     # float: seconds duration of a step in seconds.
 
 ENV_WIDTH = 1500      # float: meters, width of environment
@@ -77,7 +77,7 @@ class Mobility(Enum):
     OPTIMAL_SOFT_CONSTRAINT = 7   # the deadline can be violated, but obj to meet most of them
     OPTIMAL_HARD_CONSTRAINT = 8   # the deadline can'T be violated
 
-DRONE_MOBILITY = Mobility.GO_MIN_SUM_RESIDUAL
+DRONE_MOBILITY = Mobility.OPTIMAL_SOFT_CONSTRAINT
 RL_DATA = "data/rl/"
 RL_MODEL = ""
 PRE_TRAINED = False

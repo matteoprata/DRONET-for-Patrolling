@@ -40,12 +40,14 @@ class AbstractPatrollingModel(metaclass=ABCMeta):
         self.M = 10000
         self.epsilon = 0.01
         self.mission_time = int(self.simulation.sim_duration_ts * self.simulation.ts_duration_sec)
+        self.idleness_targets = {i : int(self.targets[i].maximum_tolerated_idleness)
+                                        for i in range(len(self.targets))}
         self.recharging_time = 1
         self.depots_drones = {u: 0 for u in range(self.ndrones)}  # the drone u is associated to depot: 0
         self.hovering_time = 1
         self.compute_sol()
 
-    def __add_variables(self):
+    def add_variables(self):
         """ Add all the needed integer variables to the problem """
         # add x^u_ij(t) variables, to move the drones among targets
         self.edge_variables = self.model.addVars([(u, i, j, t)
@@ -69,12 +71,6 @@ class AbstractPatrollingModel(metaclass=ABCMeta):
         self.drone_vars = self.model.addVars([u
                                               for u in range(self.ndrones)],
                                              vtype=GRB.BINARY, name="y_u")
-
-        # deadline variables consumption
-        self.deadline_vars = self.model.addVars([(i, t)
-                                                 for i in range(self.ntargets)
-                                                 for t in range(self.mission_time)],
-                                                vtype=GRB.BINARY, name="v_i(t)")
 
     def __target_weights(self):
         """ compute a dictionary (i, j) with the cost in time to reach that target j from target i,
@@ -133,20 +129,24 @@ class AbstractPatrollingModel(metaclass=ABCMeta):
     def __coverage_constraints(self):
         """ exactly one target for drone (consistency of the solution) """
         # cover exactly one target
+        self.model.addConstrs(self.visit_variables[u, i, 0] == 1
+                              for u in range(self.ndrones)
+                              for i in range(self.ntargets))
+
         self.model.addConstrs(self.visit_variables[u, i, t] <=
                               quicksum([self.edge_variables[u, i, i, k] for k in
-                                        range(t - self.hovering_time)]) / self.hovering_time
+                                        range(max(0, t - self.hovering_time), t+1)]) / self.hovering_time
                               for u in range(self.ndrones)
                               for i in range(self.ndepots, self.ntargets)  # avoid depots here
                               for t in range(self.mission_time)
-                              if t > self.hovering_time)
+                              if t >= 1)
 
         self.model.addConstrs(self.visit_variables[u, self.depots_drones[u], t] <=
                               quicksum([self.edge_variables[u, self.depots_drones[u], self.depots_drones[u], k] for k in
-                                        range(t - self.recharging_time)]) / self.recharging_time
+                                        range(max(0, t - self.recharging_time), t+1)]) / self.recharging_time
                               for u in range(self.ndrones)
                               for t in range(self.mission_time)
-                              if t > self.hovering_time)
+                              if t >= 1)
 
         self.model.addConstrs(quicksum([self.edge_variables[u, self.depots_drones[u], i, 0]
                                         for i in range(self.ntargets)]) == 1
@@ -177,13 +177,21 @@ class AbstractPatrollingModel(metaclass=ABCMeta):
             for t in range(self.mission_time)
             if t >= 1)
 
-    def next_target(self, i_drone):
+    def next_target(self, i_drone, timestep):
         """ return"""
-        out_target = self.paths[i_drone][self.current_target_of_drones[i_drone]]
-        self.current_target_of_drones[i_drone] += 1
+        time_sec = int(timestep * self.simulation.ts_duration_sec)
+
+        # no used drone or mission completed
         if self.current_target_of_drones[i_drone] >= len(self.paths[i_drone]):
-            self.current_target_of_drones[i_drone] = len(self.paths[i_drone]) - 1
-        return out_target
+            return self.targets[self.depots_drones[i_drone]]
+
+        # extract next target
+        out_target = self.paths[i_drone][self.current_target_of_drones[i_drone]]
+        if out_target[1] <= time_sec:  # time to move to the next target
+            self.current_target_of_drones[i_drone] += 1
+            return out_target[0]
+        else:
+            return self.paths[i_drone][self.current_target_of_drones[i_drone] - 1][0]
 
     def disk_filename(self):
         """ return the filename of the pickled solution for optimal model """
@@ -249,7 +257,7 @@ class AbstractPatrollingModel(metaclass=ABCMeta):
         if self.paths is None:
             self.model = Model('Patrolling')
             #self.model.setParam('OutputFlag', 0)
-            self.__add_variables()
+            self.add_variables()
             self.__add_constraints()
             self.objective_function()
             self.model.optimize()
@@ -278,14 +286,16 @@ class AbstractPatrollingModel(metaclass=ABCMeta):
         self.strsolution += "Objetive function value: "
         self.strsolution += str(self.model.objVal)
 
+        #print(self.strsolution)
         full_drones_trajectories = {}
         for u in range(self.ndrones):  # drones
-            trajectory = []
+            trajectory = [(self.targets[self.depots_drones[u]], 0)]
             for t in range(self.mission_time):  # mission time
                 for i in range(self.ntargets):  # targets
                     for j in range(self.ntargets):  # targets
                         if (self.model.getVarByName('x_u_ij_t[{},{},{},{}]'.format(u, i, j, t)).X >= 0.5):
-                            trajectory.append((i, j))
+                            if i != j:
+                                trajectory.append((self.targets[j], t))
                             if self.debug:
                                 print("dr:", u, "start:", i, "end:", j, "at time:", t)
             full_drones_trajectories[u] = trajectory
@@ -294,19 +304,7 @@ class AbstractPatrollingModel(metaclass=ABCMeta):
             for i, r in self.target_weights.items():
                 print("Edge:", i, "Cost:", int(r))
 
-        # COMPUTE SOLUTIONS FOR THE SIMULATOR
-        paths = {}
-        for i_dr in range(self.ndrones):
-            full_traj = np.asarray([j for i,j in full_drones_trajectories[i_dr]])
-            full_traj = full_traj[np.insert(np.diff(full_traj).astype(np.bool), 0, True)]
-            # 0, 0,0 ,0,0 ,0 ,0, 1,1 ,1, 1, 1, 2,3,3,4,4. 0, 0,0
-            ordered_targets = list(full_traj)
-            if ordered_targets == []:
-                paths[i_dr] = [self.depots_drones[i_dr], self.depots_drones[i_dr]]
-            else:
-                paths[i_dr] = [self.targets[i] for i in ordered_targets]
-
-        return paths
+        return full_drones_trajectories
 
 
 """ THe following patrolling optimal model aims at finding a solution where all the deadlines should be respected """
@@ -331,11 +329,12 @@ class HardConstraintsModel(AbstractPatrollingModel):
         self.model.addConstrs(
             quicksum([self.visit_variables[u, i, t + k]
                       for u in range(self.ndrones)
-                      for k in range(0, self.targets[i].maximum_tolerated_idleness)
-                      if t + k < self.mission_time
+                      for k in range(self.idleness_targets[i])
                       ]) >= 1
             for i in range(self.ndepots, self.ntargets)
-            for t in range(self.mission_time))
+            for t in range(self.mission_time)
+            if t + self.idleness_targets[i] < self.mission_time
+        )
 
     def disk_filename(self):
         outfname = super().disk_filename()
@@ -346,18 +345,39 @@ class HardConstraintsModel(AbstractPatrollingModel):
 class SoftConstraintsModel(AbstractPatrollingModel):
 
 
+    def add_variables(self):
+        """ Add all the needed integer variables to the problem """
+        super().add_variables()
+        # deadline variables consumption
+        self.deadline_vars = self.model.addVars([(i, t)
+                                                 for i in range(self.ntargets)
+                                                 for t in range(self.mission_time)],
+                                                vtype=GRB.BINARY, name="v_i(t)")
+        # deadline variables consumption
+        self.cum_deadline_vars = self.model.addVars([(i, t)
+                                                 for i in range(self.ntargets)
+                                                 for t in range(self.mission_time)],
+                                                vtype=GRB.INTEGER, name="phi_i(t)", lb=0,
+                                                    ub=self.mission_time)
+
+        # final function variable
+        self.f = self.model.addVar(vtype=GRB.CONTINUOUS, name='obj_value', lb=0)
+
     def objective_function(self):
         """ objective function of opt model """
-        # read this -> https://math.stackexchange.com/questions/2732897/linear-integer-programming-count-consecutive-ones
-        self.model.setObjective(self.deadline_vars.sum('*') + self.epsilon * quicksum([self.edge_variables[u, j, i, t]
-                                                                                    for i in range(self.ntargets)
-                                                                                    for j in range(self.ntargets)
-                                                                                    for u in range(self.ndrones)
-                                                                                    for t in range(self.mission_time)
-                                                                                    if not (i == j and i < self.ndepots)
-                                                                                    # stay at depot does not consume
-                                                                                    # energy
-                                                                                    ]),
+        self.model.addConstrs(self.f >= self.cum_deadline_vars[i, t] / self.idleness_targets[i]
+            for i in range(self.ndepots, self.ntargets)
+                for t in range(self.mission_time))
+
+        self.model.setObjective(self.f,# + self.epsilon * quicksum([self.edge_variables[u, j, i, t]
+                                       #                                             for i in range(self.ntargets)
+                                       #                                             for j in range(self.ntargets)
+                                       #                                             for u in range(self.ndrones)
+                                       #                                             for t in range(self.mission_time)
+                                       #                                             if not (i == j and i < self.ndepots)
+                                       #                                             # stay at depot does not consume
+                                       #                                             # energy
+                                       #                                             ]),
                                 GRB.MINIMIZE)
 
     def idleness_constraints(self):
@@ -365,11 +385,71 @@ class SoftConstraintsModel(AbstractPatrollingModel):
         self.model.addConstrs(
             self.deadline_vars[i, t] >= 1 - quicksum([self.visit_variables[u, i, t + k]
                                                       for u in range(self.ndrones)
-                                                      for k in range(0, self.targets[i].maximum_tolerated_idleness)
+                                                      for k in range(0, self.idleness_targets[i])
                                                       if t + k < self.mission_time
                                                       ])
                         for i in range(self.ndepots, self.ntargets)
                         for t in range(self.mission_time))
+
+        # self.cum_deadline_vars
+        self.model.addConstrs(
+            self.cum_deadline_vars[i, t] >=
+                self.cum_deadline_vars[i, t - 1] + 1
+                    - (1 - self.deadline_vars[i, t-1])*self.M
+            for i in range(self.ndepots, self.ntargets)
+            for t in range(self.mission_time)
+            if t > 0)
+
+
+        self.model.addConstrs(
+            self.cum_deadline_vars[i, t] <=
+                self.cum_deadline_vars[i, t - 1]  + 1
+                    + (1 - self.deadline_vars[i, t-1])*self.M
+            for i in range(self.ndepots, self.ntargets)
+            for t in range(self.mission_time)
+            if t > 0)
+
+        # second cumulative constraint
+        self.model.addConstrs(
+            self.cum_deadline_vars[i, t] <= self.deadline_vars[i, t]*self.M
+            for i in range(self.ndepots, self.ntargets)
+            for t in range(self.mission_time))
+
+    def idleness_constraints1(self):
+        """ add idleness constraints """
+        self.model.addConstrs(
+            self.deadline_vars[i, t] >= 1 - quicksum([self.visit_variables[u, i, t + k]
+                                                      for u in range(self.ndrones)
+                                                      for k in range(0, self.idleness_targets[i])
+                                                      if t + k < self.mission_time
+                                                      ])
+                        for i in range(self.ndepots, self.ntargets)
+                        for t in range(self.mission_time))
+
+        # self.cum_deadline_vars
+        self.model.addConstrs(
+            self.cum_deadline_vars[i, t] >=
+                self.cum_deadline_vars[i, t - 1] + 1
+                    - (1 - self.deadline_vars[i, t-1])*self.M
+            for i in range(self.ndepots, self.ntargets)
+            for t in range(self.mission_time)
+            if t > 0)
+
+
+        self.model.addConstrs(
+            self.cum_deadline_vars[i, t] <=
+                self.cum_deadline_vars[i, t - 1]  + 1
+                    + (1 - self.deadline_vars[i, t-1])*self.M
+            for i in range(self.ndepots, self.ntargets)
+            for t in range(self.mission_time)
+            if t > 0)
+
+        # second cumulative constraint
+        self.model.addConstrs(
+            self.cum_deadline_vars[i, t] <= self.deadline_vars[i, t]*self.M
+            for i in range(self.ndepots, self.ntargets)
+            for t in range(self.mission_time))
+
 
     def disk_filename(self):
         outfname = super().disk_filename()

@@ -68,7 +68,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
             if self.will_reach_target():
                 self.coords = self.next_target()
                 self.update_target_reached()
-                target = self.simulator.opt_solver.next_target(self.identifier)
+                target = self.simulator.opt_solver.next_target(self.identifier, self.simulator.cur_step)
                 self.update_next_target_at_reach(target)
 
         elif self.mobility == config.Mobility.DECIDED:

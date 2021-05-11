@@ -41,11 +41,6 @@ class Environment:
     def get_valid_events(self, current_ts):
         return [e for e in self.events if not e.is_expired(current_ts)]
 
-    def query_drone_sensing(self, drone):
-        """ Returns a list of valid events nj
-        that this drone is able to sense. """
-        pass
-
     def get_current_cell(self, drone):
         drone_coods = drone.coords
         cell_index = TraversedCells.coord_to_cell(size_cell=self.simulator.grid_cell_size,

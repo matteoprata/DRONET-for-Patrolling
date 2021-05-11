@@ -6,7 +6,7 @@ import sys
 import argparse
 
 parser = argparse.ArgumentParser(description='Run experiments of patrolling.')
-parser.add_argument('-ip', '--is_pretrained', type=bool)
+parser.add_argument('-ip', '--is_pretrained', type=int)
 parser.add_argument('-bs', '--batch_size', type=int)
 parser.add_argument('-lr', '--learning_rate', type=float)
 parser.add_argument('-df', '--discount_factor', type=float)
@@ -17,8 +17,10 @@ parser.add_argument('-sw', '--swap_models_every_decision', type=int)
 parser.add_argument('-de', '--description', type=str, default="")
 parser.add_argument('-du', '--duration', type=int, default=24000*24*60)
 
-parser.add_argument('-po', '--positive', type=int, default=1)
-parser.add_argument('-re', '--relative', type=int, default=1)
+parser.add_argument('-po', '--positive', type=int, default=0)
+parser.add_argument('-pl', '--plotting', type=int, default=0)
+# parser.add_argument('-re', '--relative', type=int, default=0)
+parser.add_argument('-lo', '--log_state', type=int, default=-1)
 
 args = parser.parse_args()
 
@@ -32,12 +34,12 @@ for arg in vars(args):
         learning[arg] = val
 
 config.POSITIVE = bool(args.positive)
-config.RELATIVE = bool(args.relative)
+config.PLOT_SIM = bool(args.plotting)
+config.LOG_STATE = args.log_state
 
 
 def main():
     """ the place where to run simulations and experiments. """
-    print(config.POSITIVE, config.RELATIVE)
     sim = PatrollingSimulator(sim_description=description,
                               sim_duration_ts=duration,
                               learning=learning)

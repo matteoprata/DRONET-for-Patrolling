@@ -47,7 +47,7 @@ PLOT_TRAJECTORY_NEXT_TARGET = True
 FIXED_TOURS_DIR = "data/tours/"        # str: the path to the drones tours
 DEMO_PATH = False                      # bool: whether to use handcrafted tours or not (in utilities.utilities)
 
-PLOT_SIM = True # bool: whether to plot or not the simulation (set to false for faster experiments)
+PLOT_SIM = False  # bool: whether to plot or not the simulation (set to false for faster experiments)
 WAIT_SIM_STEP = 0     # float >= 0: seconds, pauses the rendering for x seconds
 SKIP_SIM_STEP = 5     # int > 0 : steps, plot the simulation every x steps
 DRAW_SIZE = 700       # int: size of the drawing window
@@ -80,18 +80,16 @@ RL_DATA = "data/rl/"
 
 LEARNING_PARAMETERS = {
     "is_pretrained": False,
-    "model_name": "model.h5",
-
+    "model_name": "data/rl/model.h5",
     "batch_size": 32,
-    "learning_rate": 0.0001,
+    "learning_rate": 0.001,
     "discount_factor": 0.98,
     "beta": 0.5,  # for continuous tasks
-    "epsilon_decay": 0.0002,
+    "epsilon_decay": 0.000005,
     "replay_memory_depth": 100000,
     "swap_models_every_decision": 500,
 }
 
 POSITIVE = False
-RELATIVE = False
-
-DELTA_DEC = 4.95  # seconds
+DELTA_DEC = 15  # seconds
+LOG_STATE = False

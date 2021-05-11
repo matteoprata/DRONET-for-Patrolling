@@ -15,12 +15,13 @@ parser.add_argument('-rm', '--replay_memory_depth', type=int)
 parser.add_argument('-sw', '--swap_models_every_decision', type=int)
 
 parser.add_argument('-de', '--description', type=str, default="")
-parser.add_argument('-du', '--duration', type=int, default=24000*24*60)
+parser.add_argument('-du', '--duration', type=int, default=24000*24*100)
 
 parser.add_argument('-po', '--positive', type=int, default=0)
 parser.add_argument('-pl', '--plotting', type=int, default=0)
 # parser.add_argument('-re', '--relative', type=int, default=0)
 parser.add_argument('-lo', '--log_state', type=int, default=-1)
+parser.add_argument('-pe', '--penalty', type=int)
 
 args = parser.parse_args()
 
@@ -36,6 +37,7 @@ for arg in vars(args):
 config.POSITIVE = bool(args.positive)
 config.PLOT_SIM = bool(args.plotting)
 config.LOG_STATE = args.log_state
+config.PENALTY_ON_BS_EXPIRATION = args.penalty if args.penalty is not None else config.PENALTY_ON_BS_EXPIRATION
 
 
 def main():

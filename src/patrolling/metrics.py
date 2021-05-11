@@ -77,7 +77,7 @@ class Metrics:
         df_tar.to_csv(self.simulator.directory_simulation() + "log_simulation.csv")
 
         # Dataset with constants data
-        df_const = pd.DataFrame(columns=["threshold"])
+        df_const = pd.DataFrame()
         df_const["threshold"] = pd.Series(self.targets_threshold)
         df_const.to_csv(self.simulator.directory_simulation() + "log_simulation_constants.csv")
 

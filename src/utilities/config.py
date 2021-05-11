@@ -82,7 +82,7 @@ LEARNING_PARAMETERS = {
     "is_pretrained": False,
     "model_name": "data/rl/model.h5",
     "batch_size": 32,
-    "learning_rate": 0.001,
+    "learning_rate": 0.0001,
     "discount_factor": 0.98,
     "beta": 0.5,  # for continuous tasks
     "epsilon_decay": 0.000005,
@@ -93,3 +93,4 @@ LEARNING_PARAMETERS = {
 POSITIVE = False
 DELTA_DEC = 15  # seconds
 LOG_STATE = False
+PENALTY_ON_BS_EXPIRATION = -5

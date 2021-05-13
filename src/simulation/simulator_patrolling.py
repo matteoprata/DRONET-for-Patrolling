@@ -241,11 +241,15 @@ class PatrollingSimulator:
 
     def checkout(self, do=False):
         """ print metrics save stuff. """
-        CHECKOUT = max(self.sim_duration_ts * 0.01, 24000)   # 1% della durata della sim
+        CHECKOUT = 24000*6   # ogni 6 ore di simulazione
         if self.cur_step % CHECKOUT == 0 and self.cur_step > 0 or do:
             self.metrics.save_dataframe()
-            self.plotting.plot()
             self.environment.drones[0].state_manager.DQN.save_model()
+            
+            try:
+                self.plotting.plot()
+            except:
+                print("Couldn't plot from step", self.cur_step)
 
     def close(self):
         self.checkout(True)

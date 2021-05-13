@@ -1,0 +1,1 @@
+rsync -avz -e 'ssh -i ~/.ssh/matteo_prata' matteo_prata@35.202.70.186:/home/matteo_prata/uavsimulator_patrolling/data/rl/* "/Users/matteoprata/PycharmProjects/UAV Simulators/uavsimulator_patrolling/cluster_data" 

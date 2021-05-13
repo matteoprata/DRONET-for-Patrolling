@@ -20,7 +20,7 @@ parser.add_argument('-du', '--duration', type=int, default=24000*24*100)
 parser.add_argument('-po', '--positive', type=int, default=0)
 parser.add_argument('-pl', '--plotting', type=int, default=0)
 # parser.add_argument('-re', '--relative', type=int, default=0)
-parser.add_argument('-lo', '--log_state', type=int, default=-1)
+parser.add_argument('-lo', '--log_state', type=float, default=-1)
 parser.add_argument('-pe', '--penalty', type=int)
 
 args = parser.parse_args()

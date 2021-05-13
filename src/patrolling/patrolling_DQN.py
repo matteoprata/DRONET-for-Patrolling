@@ -109,14 +109,17 @@ class PatrollingDQN:
         if self.load_model:
             is_explore = False
 
+        q_values = self.model.predict(np.array([state]))
         if is_explore and self.is_explore_probability():
             action_index = self.simulator.rnd_explore.randint(0, self.n_actions)
+            # q_values = np.asarray([0]*self.n_actions)  # crafted for visualization
+            # q_values[action_index] = np.inf
             # print("random", action_index)
         else:
-            q_values = self.model.predict(np.array([state]))  # q-values for the input state
+            # q_values = self.model.predict(np.array([state]))  # q-values for the input state
             action_index = np.argmax(q_values[0])
             # print("q", action_index)
-        return action_index
+        return action_index, q_values
 
     def train(self, previous_state=None, current_state=None, action=None, reward=None, is_final=None):
         """ train the NN accumulate the experience and each X data the method actually train the network. """

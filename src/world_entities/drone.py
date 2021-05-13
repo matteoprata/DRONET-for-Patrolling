@@ -61,15 +61,16 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                     self.coords = self.next_target()
                     self.prev_target.last_visit_ts = self.simulator.cur_step
 
-                reward, epsilon, loss, is_end, s_prime = self.state_manager.invoke_train()
-                action = 0 if is_end else self.state_manager.invoke_predict(s_prime)
+                reward, epsilon, loss, is_end, s, s_prime = self.state_manager.invoke_train()
+                action, q = (0, None) if is_end else self.state_manager.invoke_predict(s_prime)
 
                 self.prev_target = self.simulator.environment.targets[action]
                 self.path.append(self.prev_target.coords)
                 self.increase_waypoint_counter()
-
+                
                 if not self.simulator.learning["is_pretrained"]:
-                    self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier, reward, epsilon, loss, is_end)
+                    learning_tuple = reward, epsilon, loss, is_end, s, q
+                    self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier, learning_tuple)
                 else:
                     self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
 

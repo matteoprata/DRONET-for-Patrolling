@@ -50,9 +50,9 @@ class State:
     def position(self, normalized=True):
         return self._position if not normalized else self.normalize_feature(self._position, self.position_norm, 0)
 
-    def normalized_vector(self):
+    def vector(self, normalized=True):
         """ NN INPUT """
-        return list(self.residuals()) + list(self.time_distances()) + [self.is_flying()] + [self.objective()]
+        return list(self.residuals(normalized)) + list(self.time_distances(normalized)) + [self.is_flying(normalized)] + [self.objective(normalized)]
         # return [self.position()] + list(self.residuals()) + list(self.time_distances())
 
     def __repr__(self):
@@ -141,7 +141,7 @@ class RLModule:
         # rew = (-sum(state.residuals())) if config.POSITIVE else sum([1-i for i in state.residuals()])
         # rew = rew / self.N_ACTIONS  # media sui target
 
-        rew = -sum(dead_residuals) / self.N_ACTIONS if config.POSITIVE else -len(dead_residuals)
+        rew = -sum(dead_residuals) / self.N_ACTIONS if config.POSITIVE else -len(dead_residuals) / self.N_ACTIONS
         rew = rew if not state.is_final else config.PENALTY_ON_BS_EXPIRATION
         return rew
 
@@ -150,7 +150,7 @@ class RLModule:
 
     def invoke_train(self):
         if self.previous_state is None or self.previous_action is None:
-            return 0, self.previous_epsilon, self.previous_loss, False, None
+            return 0, self.previous_epsilon, self.previous_loss, False, None, None
 
         self.DQN.n_decision_step += 1
 
@@ -168,8 +168,8 @@ class RLModule:
 
         # Continuous Tasks: Reinforcement Learning tasks which are not made of episodes, but rather last forever.
         # This tasks have no terminal states. For simplicity, they are usually assumed to be made of one never-ending episode.
-        self.previous_loss = self.DQN.train(previous_state=s.normalized_vector(),
-                                            current_state=s_prime.normalized_vector(),
+        self.previous_loss = self.DQN.train(previous_state=s.vector(),
+                                            current_state=s_prime.vector(),
                                             action=a,
                                             reward=r,
                                             is_final=s_prime.is_final)
@@ -180,17 +180,19 @@ class RLModule:
             self.previous_action = None
             self.policy_cycle = 0
 
-        return r, self.previous_epsilon, self.DQN.current_loss, s_prime.is_final, s_prime
+        return r, self.previous_epsilon, self.DQN.current_loss, s_prime.is_final, s, s_prime
 
     def invoke_predict(self, state):
         if state is None:
             state = self.evaluate_state()
 
-        action_index = state.objective(False) if bool(state.is_flying()) else self.DQN.predict(state.normalized_vector())
+        action_index, q = self.DQN.predict(state.vector())
+        if bool(state.is_flying()):
+            action_index = state.objective(False)
+
         self.previous_state = state
         self.previous_action = action_index
-        self.policy_cycle += 1
-        return action_index
+        return action_index, q[0]
 
     def log_transition(self, s, s_prime, a, r, every=1):
         print(s)

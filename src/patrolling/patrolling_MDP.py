@@ -141,8 +141,8 @@ class RLModule:
         # rew = (-sum(state.residuals())) if config.POSITIVE else sum([1-i for i in state.residuals()])
         # rew = rew / self.N_ACTIONS  # media sui target
 
-        rew = -sum(dead_residuals) / self.N_ACTIONS if config.POSITIVE else -len(dead_residuals) / self.N_ACTIONS
-        rew = rew if not state.is_final else config.PENALTY_ON_BS_EXPIRATION
+        rew = -sum(dead_residuals) / self.N_ACTIONS if config.REW_MODE else -len(dead_residuals) / self.N_ACTIONS
+        rew += rew if not state.is_final else config.PENALTY_ON_BS_EXPIRATION
         return rew
 
     def evaluate_is_final_state(self, s, a, s_prime):

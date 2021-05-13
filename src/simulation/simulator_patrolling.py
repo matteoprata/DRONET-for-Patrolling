@@ -72,7 +72,7 @@ class PatrollingSimulator:
         self.bs_coords = bs_coords
         self.current_date = current_date()
 
-        self.metrics = Metrics(self)
+        self.metrics = None  # init later
         # create the world entites
         self.__set_randomness()
         self.__create_world_entities()
@@ -193,6 +193,10 @@ class PatrollingSimulator:
         self.selected_drone = drones[0]
         self.environment.add_drones(drones)
 
+        self.metrics = Metrics(self)
+        self.metrics.N_ACTIONS = drones[0].state_manager.N_ACTIONS
+        self.metrics.N_FEATURES = drones[0].state_manager.N_FEATURES
+
     def __plot(self, cur_step):
         """ Plot the simulation """
 
@@ -241,9 +245,13 @@ class PatrollingSimulator:
 
     def checkout(self, do=False):
         """ print metrics save stuff. """
-        CHECKOUT = 24000*6   # ogni 6 ore di simulazione
+        CHECKOUT = 24000*24   # every six hours of simulation
         if self.cur_step % CHECKOUT == 0 and self.cur_step > 0 or do:
-            self.metrics.save_dataframe()
+            try:
+                self.metrics.save_dataframe()
+            except:
+                print("Couldn't save data from step", self.cur_step)
+
             self.environment.drones[0].state_manager.DQN.save_model()
             
             try:

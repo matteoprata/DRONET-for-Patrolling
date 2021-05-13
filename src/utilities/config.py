@@ -85,12 +85,12 @@ LEARNING_PARAMETERS = {
     "learning_rate": 0.0001,
     "discount_factor": 0.98,
     "beta": 0.5,  # for continuous tasks
-    "epsilon_decay": 0.000005,
+    "epsilon_decay": 0.0000005,
     "replay_memory_depth": 100000,
     "swap_models_every_decision": 500,
 }
 
-POSITIVE = False
+REW_MODE = False
 DELTA_DEC = 15  # seconds
 LOG_STATE = False
 PENALTY_ON_BS_EXPIRATION = -5

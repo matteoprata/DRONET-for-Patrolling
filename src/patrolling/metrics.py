@@ -10,7 +10,6 @@ class Metrics:
         self.simulator = simulator
         self.targets_threshold = {}
 
-        self.visited_target = []
         self.target_aoi = defaultdict(list)
         self.cur_second = []
 
@@ -93,7 +92,7 @@ class Metrics:
         # Dataset with constants data
         df_const = pd.DataFrame()
         df_const["threshold"] = pd.Series(self.targets_threshold)
-        df_const.to_csv(self.simulator.directory_simulation() + "log_simulation_constants.csv", mode='a', header=has_header)
+        df_const.to_csv(self.simulator.directory_simulation() + "log_simulation_constants.csv")
 
         # ---- DF 4 ) Q VALUES
 
@@ -137,7 +136,6 @@ class Metrics:
 
     def reset_data_structures(self):
 
-        self.visited_target = []
         self.target_aoi = defaultdict(list)
         self.cur_second = []
 

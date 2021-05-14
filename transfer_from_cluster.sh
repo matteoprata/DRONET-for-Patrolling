@@ -1,1 +1,2 @@
-rsync -avz -e 'ssh -i ~/.ssh/matteo_prata' matteo_prata@35.202.70.186:/home/matteo_prata/uavsimulator_patrolling/data/rl/* "/Users/matteoprata/PycharmProjects/UAV Simulators/uavsimulator_patrolling/cluster_data" 
+rsync -avz -e 'ssh' novella@100.112.137.18:/home/novella/Desktop/rl_patrolling/uavsimulator_patrolling/data/rl/REW_0_PEN_5_SWA_500_LR_0001_DF_98-seed50-ndrones1-mode2/*.png "/Users/matteoprata/PycharmProjects/UAV Simulators/uavsimulator_patrolling/cluster_data" 
+#'ssh -i ~/.ssh/matteo_prata' matteo_prata@35.202.70.186

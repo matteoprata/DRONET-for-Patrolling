@@ -1,6 +1,7 @@
 
 from src.utilities.utilities import log, is_segments_intersect, distance_point_segment, TraversedCells, euclidean_distance
 from src.world_entities.target import Target
+from src.utilities.utilities import config
 
 from scipy.stats import truncnorm
 import numpy as np
@@ -52,7 +53,7 @@ class Environment:
     def reset_drones_targets(self):
         """ Reset the scenario. """
         for target in self.targets:
-            target.last_visit_ts = self.simulator.cur_step
+            target.last_visit_ts = self.simulator.cur_step + 1 #+ config.DELTA_DEC * config.SIM_TS_DURATION
 
         for drone in self.drones:
             drone.coords = drone.bs.coords

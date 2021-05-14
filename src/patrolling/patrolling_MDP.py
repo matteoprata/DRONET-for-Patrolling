@@ -125,6 +125,7 @@ class RLModule:
         residuals = self.get_current_residuals()
         future_residuals = self.get_future_residuals()
         is_flying = self.drone.is_flying()
+
         objective = self.previous_action if self.drone.is_flying() else self.N_ACTIONS + 1
         distances = self.get_current_time_distances()
 
@@ -178,7 +179,6 @@ class RLModule:
             self.simulator.environment.reset_drones_targets()
             self.previous_state = None
             self.previous_action = None
-            self.policy_cycle = 0
 
         return r, self.previous_epsilon, self.DQN.current_loss, s_prime.is_final, s, s_prime
 
@@ -195,8 +195,8 @@ class RLModule:
         return action_index, q[0]
 
     def log_transition(self, s, s_prime, a, r, every=1):
-        print(s)
-        print(s_prime)
+        print(s.vector())
+        print(s_prime.vector())
         print(a, r)
         print("---")
         time.sleep(every)

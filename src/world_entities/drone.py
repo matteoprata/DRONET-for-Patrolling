@@ -35,7 +35,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         self.com_range, self.sensing_range, self.radar_range = com_range, sensing_range, radar_range
         self.max_battery, self.max_buffer = max_battery, max_buffer
         self.bs = bs
-
+        self.was_final = False
         # parameters
         self.state_manager = RLModule(self)
         self.previous_ts_coordinate = None
@@ -56,13 +56,18 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 self.increase_waypoint_counter()
 
         elif self.mobility == config.Mobility.DECIDED:
-            if self.is_decision_step():
+            if self.is_decision_step() or self.was_final:
                 if self.will_reach_target():
                     self.coords = self.next_target()
                     self.prev_target.last_visit_ts = self.simulator.cur_step
 
+                if self.was_final:
+                    self.was_final = False
+
+                # 0, self.previous_epsilon, self.previous_loss, False, None, None
                 reward, epsilon, loss, is_end, s, s_prime = self.state_manager.invoke_train()
                 action, q = (0, None) if is_end else self.state_manager.invoke_predict(s_prime)
+                self.was_final = is_end
 
                 self.prev_target = self.simulator.environment.targets[action]
                 self.path.append(self.prev_target.coords)

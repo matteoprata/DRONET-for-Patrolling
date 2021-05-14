@@ -15,7 +15,8 @@ N_FEATURES = 12
 
 app = dash.Dash(__name__)
 
-df = pd.read_csv('data/rl/-seed50-ndrones1-mode2/qvalues.csv', index_col=0).sort_values(by="count", ascending=False)[:1000]
+df = pd.read_csv('data/rl/REW_0_PEN_5_SWA_500_LR_0001_DF_98-seed50-ndrones1-mode2/qvalues.csv', index_col=0)[:200] #\
+         #.sort_values(by="count", ascending=False)[:1000]
 
 app.layout = html.Div([
     html.H1(children="Q-Table",),

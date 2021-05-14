@@ -22,7 +22,7 @@ class Metrics:
         self.N_ACTIONS = 0
         self.N_FEATURES = 0
 
-    def append_statistics_on_target_reached(self, action, learning_tuple):
+    def append_statistics_on_target_reached(self, action, learning_tuple=None):
         """ Saves the current second, aoi, reward, epsilon, loss. For computing final plots. """
 
         for rep in [-1, 0]:

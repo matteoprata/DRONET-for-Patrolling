@@ -36,7 +36,7 @@ DRONE_ANGLE_INCREMENT = 45    # increment at every key stroke
 DRONE_COM_RANGE = 100         # float: meters, communication range of the drones.
 DRONE_SENSING_RANGE = 0       # float: meters, the sensing range of the drones.
 DRONE_MAX_BUFFER_SIZE = 0     # int: max number of packets in the buffer of a drone.
-DRONE_MAX_ENERGY = int(3600/4)        # int: max energy of a drone sec
+DRONE_MAX_ENERGY = 50 #int(3600/4)        # int: max energy of a drone sec
 DRONE_RADAR_RADIUS = 60       # meters
 
 # map

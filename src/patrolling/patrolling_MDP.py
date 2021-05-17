@@ -52,12 +52,11 @@ class State:
 
     def vector(self, normalized=True):
         """ NN INPUT """
-        return list(self.residuals(normalized)) + list(self.time_distances(normalized)) + [self.is_flying(normalized)] + [self.objective(normalized)]
+        return list(self.residuals(normalized)) + list(self.time_distances(normalized)) #+ [self.is_flying(normalized)] + [self.objective(normalized)]
         # return [self.position()] + list(self.residuals()) + list(self.time_distances())
 
     def __repr__(self):
-        return "res: {}\ndis: {}\nfly: {}\nobj: {}\n"\
-            .format(self.residuals(), self.time_distances(), self.is_flying(False), self.objective(False))
+        return "res: {}\ndis: {}\n".format(self.residuals(), self.time_distances()) #self.is_flying(False), self.objective(False))
 
     @staticmethod
     def normalize_feature(feature, maxi, mini):
@@ -82,7 +81,8 @@ class RLModule:
         self.policy_cycle = 0
 
         self.N_ACTIONS = len(self.simulator.environment.targets)
-        self.N_FEATURES = 2 * len(self.simulator.environment.targets) + 2
+        self.N_FEATURES = 2 * len(self.simulator.environment.targets)
+        self.MAX_RES_PRECISION = 10
 
         self.DQN = PatrollingDQN(n_actions=self.N_ACTIONS,
                                  n_features=self.N_FEATURES,
@@ -107,8 +107,7 @@ class RLModule:
 
     def get_current_residuals(self):
         """ max tra AOI / IDLENESS e 1 """
-        MAX_TOL = 10
-        return [min(target.aoi_idleness_ratio(), MAX_TOL)
+        return [min(target.aoi_idleness_ratio(), self.MAX_RES_PRECISION)
                 for target in self.simulator.environment.targets]
 
     def get_future_residuals(self):
@@ -133,18 +132,24 @@ class RLModule:
                      False, future_residuals, self.AOI_FUTURE_NORM, is_flying, objective)
         return state
 
-    def evaluate_reward(self, state):
-        norm_residuals = state.residuals()
-        dead_residuals_idx = [i for i, res in enumerate(state.residuals(False)) if res >= 1]
-        dead_residuals = [norm_residuals[i] for i in dead_residuals_idx]
-        # live_residuals = [res for res in state.residuals(False) if res < 1]
+    def evaluate_reward(self, s, a, s_prime):
+        REW = 0
+        time_dist_to_a = s.time_distances(False)[a]
+        n_steps = max(round(time_dist_to_a/config.DELTA_DEC), 1)
+        norm_factor_rew = self.N_ACTIONS * self.MAX_RES_PRECISION * round(self.simulator.max_travel_time() / config.DELTA_DEC)
 
-        # rew = (-sum(state.residuals())) if config.POSITIVE else sum([1-i for i in state.residuals()])
-        # rew = rew / self.N_ACTIONS  # media sui target
+        for step in range(n_steps):
+            # print(step, n_steps)
+            for target in self.simulator.environment.targets:
+                # residual of target at time of flight
+                residual = ((self.simulator.current_second() - config.DELTA_DEC * step) - (target.last_visit_ts * self.simulator.ts_duration_sec)) / target.maximum_tolerated_idleness
+                residual = min(residual, self.MAX_RES_PRECISION)
 
-        rew = -sum(dead_residuals) / self.N_ACTIONS if config.REW_MODE else -len(dead_residuals) / self.N_ACTIONS
-        rew += rew if not state.is_final else config.PENALTY_ON_BS_EXPIRATION
-        return rew
+                REW += - residual if residual > 1 else 0
+                # print(residual, target.last_visit_ts * self.simulator.ts_duration_sec, (self.simulator.current_second() - config.DELTA_DEC * step))
+        REW = REW / norm_factor_rew
+        REW += config.PENALTY_ON_BS_EXPIRATION if s_prime.is_final else 0
+        return REW
 
     def evaluate_is_final_state(self, s, a, s_prime):
         return s_prime.residuals(False)[0] >= 1  # or s.position() == s_prime.position()
@@ -159,7 +164,7 @@ class RLModule:
         a = self.previous_action
         s_prime = self.evaluate_state()
         s_prime.is_final = self.evaluate_is_final_state(s, a, s_prime)
-        r = self.evaluate_reward(s_prime)
+        r = self.evaluate_reward(s, a, s_prime)
 
         if config.LOG_STATE >= 0:
             self.log_transition(s, s_prime, a, r, every=config.LOG_STATE)
@@ -187,16 +192,16 @@ class RLModule:
             state = self.evaluate_state()
 
         action_index, q = self.DQN.predict(state.vector())
-        if bool(state.is_flying()):
-            action_index = state.objective(False)
+        # if bool(state.is_flying()):
+        #     action_index = state.objective(False)
 
         self.previous_state = state
         self.previous_action = action_index
         return action_index, q[0]
 
     def log_transition(self, s, s_prime, a, r, every=1):
-        print(s.vector())
-        print(s_prime.vector())
+        print(s.vector(False))
+        print(s_prime.vector(False))
         print(a, r)
         print("---")
         time.sleep(every)

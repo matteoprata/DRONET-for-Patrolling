@@ -15,7 +15,7 @@ parser.add_argument('-rm', '--replay_memory_depth', type=int)
 parser.add_argument('-sw', '--swap_models_every_decision', type=int)
 
 parser.add_argument('-de', '--description', type=str, default="")
-parser.add_argument('-du', '--duration', type=int, default=24000*24*100000)
+parser.add_argument('-du', '--duration', type=int, default=24000*24*1000)
 
 parser.add_argument('-rew', '--rew_mode', type=int, default=0)
 parser.add_argument('-pl', '--plotting', type=int, default=0)

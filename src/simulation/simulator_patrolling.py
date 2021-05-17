@@ -89,9 +89,9 @@ class PatrollingSimulator:
         """ Last second of the Simulation. """
         return self.sim_duration_ts * self.ts_duration_sec
 
-    def current_second(self, next=0):
+    def current_second(self, next=0, cur_second_tot=False):
         """ The current second of simulation, since the beginning. """
-        return self.cur_step * self.ts_duration_sec + next * self.ts_duration_sec
+        return (self.cur_step_total if cur_second_tot else self.cur_step) * self.ts_duration_sec + next * self.ts_duration_sec
 
     def max_distance(self):
         """ Maximum distance in the area. """
@@ -232,20 +232,23 @@ class PatrollingSimulator:
         """ The method starts the simulation. """
 
         self.print_sim_info()
-        for cur_step in tqdm(range(self.sim_duration_ts)):
-            self.cur_step = cur_step
-
+        self.cur_step = 0
+        self.cur_step_total = 0
+        for cur_step_total in tqdm(range(self.sim_duration_ts)):
             for drone in self.environment.drones:
                 self.environment.detect_collision(drone)
                 drone.move()
 
             self.checkout()
             if config.SAVE_PLOT or config.PLOT_SIM:
-                self.__plot(cur_step)
+                self.__plot(self.cur_step)
+
+            self.cur_step_total = cur_step_total
+            self.cur_step += 1
 
     def checkout(self, do=False):
         """ print metrics save stuff. """
-        CHECKOUT = 24000*24   # every six hours of simulation
+        CHECKOUT = 24000*1   # every six hours of simulation
         if self.cur_step % CHECKOUT == 0 and self.cur_step > 0 or do:
             try:
                 self.metrics.save_dataframe()
@@ -255,7 +258,10 @@ class PatrollingSimulator:
             self.environment.drones[0].state_manager.DQN.save_model()
             
             try:
-                self.plotting.plot()
+                if self.learning["is_pretrained"]:
+                    self.plotting.plot_patrolling_performance()
+                else:
+                    self.plotting.plot_learning_performance()
             except:
                 print("Couldn't plot from step", self.cur_step)
 

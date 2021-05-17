@@ -26,7 +26,7 @@ class Metrics:
         """ Saves the current second, aoi, reward, epsilon, loss. For computing final plots. """
 
         for rep in [-1, 0]:
-            self.cur_second.append(self.simulator.current_second(rep))
+            self.cur_second.append(self.simulator.current_second(rep, cur_second_tot=True))
             for t in self.simulator.environment.targets:
                 if rep == -1:
                     if t.identifier == action:
@@ -111,6 +111,7 @@ class Metrics:
         if has_header:
             df_qvalues.to_csv(self.simulator.directory_simulation() + "qvalues.csv")
         else:
+            # MERGE
             df_qvalues_disk = pd.read_csv(self.simulator.directory_simulation() + "qvalues.csv", index_col=0)
             key_columns = list(df_qvalues_disk.columns[:self.N_FEATURES])
             other_columns = list(df_qvalues_disk.columns[self.N_FEATURES:])

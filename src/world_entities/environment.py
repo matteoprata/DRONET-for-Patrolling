@@ -52,8 +52,10 @@ class Environment:
 
     def reset_drones_targets(self):
         """ Reset the scenario. """
+
+        self.simulator.cur_step = -1
         for target in self.targets:
-            target.last_visit_ts = self.simulator.cur_step + 1 #+ config.DELTA_DEC * config.SIM_TS_DURATION
+            target.last_visit_ts = 0  # + config.DELTA_DEC * config.SIM_TS_DURATION
 
         for drone in self.drones:
             drone.coords = drone.bs.coords

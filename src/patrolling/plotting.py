@@ -11,14 +11,13 @@ class Plotting:
         self.fig = plt.figure()
         self.simulation_name = simulation_name
 
-    def plot(self):
+    def plot_patrolling_performance(self):
         self.d1 = pd.read_csv(config.RL_DATA + self.simulation_name + "/log_simulation_constants.csv")
         self.tar_stats = pd.read_csv(config.RL_DATA + self.simulation_name + "/log_simulation.csv",
                                      index_col="date",
                                      infer_datetime_format=True,
                                      parse_dates=True)
 
-        self.dqn_stats = pd.read_csv(config.RL_DATA + self.simulation_name + "/dqn_training_data.csv")
 
         self.reindex_interpolate()
 
@@ -26,6 +25,9 @@ class Plotting:
         self.plot_average_residual()
         self.plot_n_violations()
         self.plot_average_expiration()
+
+    def plot_learning_performance(self):
+        self.dqn_stats = pd.read_csv(config.RL_DATA + self.simulation_name + "/dqn_training_data.csv")
         self.plot_dqn_stats()
 
     def plot_average_residual(self, is_min_std=True, window=120):
@@ -81,8 +83,9 @@ class Plotting:
     def plot_dqn_stats(self, window=50):
         """ Plot min residual of the targets population. """
         rolled_avg_loss = self.dqn_stats["loss"].rolling(window).mean()
-        rolled_avg_rew = self.dqn_stats["reward"].cumsum()
-        epsilon = self.dqn_stats["epsilon"].rolling(window).mean()
+        rolled_epsilon = self.dqn_stats["epsilon"].rolling(window).mean()
+        cumulative_rew = self.dqn_stats["reward"].cumsum()
+
         is_end = [i for i, j in enumerate(self.dqn_stats["is_end"]) if j == 1]
 
         plt.plot(list(self.dqn_stats.index), rolled_avg_loss, label="moving avg")
@@ -90,10 +93,10 @@ class Plotting:
             plt.axvline(i, color="red", alpha=0.10)
         self.__plot_now(self.simulation_name, "steps", "moving avg ({}) avg loss".format(window))
 
-        plt.plot(list(self.dqn_stats.index), rolled_avg_rew, label="rew")
+        plt.plot(list(self.dqn_stats.index), cumulative_rew, label="rew")
         self.__plot_now(self.simulation_name, "steps", "cumulative reward")
 
-        plt.plot(list(self.dqn_stats.index), epsilon, label="experience")
+        plt.plot(list(self.dqn_stats.index), rolled_epsilon, label="experience")
         self.__plot_now(self.simulation_name, "steps", "experience probability")
 
     def compute_residuals(self):

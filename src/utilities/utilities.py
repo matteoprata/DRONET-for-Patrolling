@@ -132,8 +132,9 @@ class PathManager:
         """ json file to read for take the paths of drones
             We assume json_file + seed + .json
         """
-        self.json_file = json_file.replace(".json", "") + str(seed) + ".json"
-        self.path_dict = json_to_paths(self.json_file)
+        if config.DRONE_MOBILITY == config.Mobility.PLANNED:
+            self.json_file = json_file.replace(".json", "") + str(seed) + ".json"
+            self.path_dict = json_to_paths(self.json_file)
 
     def path(self, drone_id):
         """ takes the drone id and

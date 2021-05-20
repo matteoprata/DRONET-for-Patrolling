@@ -1,1 +1,4 @@
-rsync -avz -e 'ssh -i ~/.ssh/matteo_prata' "/Users/matteoprata/PycharmProjects/UAV Simulators/uavsimulator_patrolling/src/*" matteo_prata@35.202.70.186:/home/matteo_prata/uavsimulator_patrolling/src 
+rsync -avz -e 'ssh' "/Users/matteoprata/PycharmProjects/UAV Simulators/uavsimulator_patrolling/run.sh" novella@100.112.137.18:/home/novella/Documents/uavsimulator_patrolling
+
+# 'ssh -i ~/.ssh/matteo_prata'
+# matteo_prata@35.202.70.186

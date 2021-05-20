@@ -15,6 +15,6 @@
 #python -m src.main -de REW_1_PEN_5_SWA_500_LR_0001_DF_85 -rew 1 -pe -5 -df 0.85 &
 #python -m src.main -de REW_1_PEN_5_SWA_500_LR_0001_DF_90 -rew 1 -pe -5 -df 0.90
 
-python -m src.main -de FUNC_PE_1 -pe -1 &
-python -m src.main -de FUNC_PE_2 -pe -3 &
-python -m src.main -de FUNC_PE_3 -pe -5
+python -m src.main -de FUNC_PE_1 -pen -1 &
+python -m src.main -de FUNC_PE_3 -pen -3 &
+python -m src.main -de FUNC_PE_5 -pen -5

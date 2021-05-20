@@ -235,6 +235,7 @@ class PatrollingSimulator:
         self.cur_step = 0
         self.cur_step_total = 0
         for cur_step_total in tqdm(range(self.sim_duration_ts)):
+            self.cur_step_total = cur_step_total
             for drone in self.environment.drones:
                 self.environment.detect_collision(drone)
                 drone.move()
@@ -242,18 +243,16 @@ class PatrollingSimulator:
             self.checkout()
             if config.SAVE_PLOT or config.PLOT_SIM:
                 self.__plot(self.cur_step)
-
-            self.cur_step_total = cur_step_total
             self.cur_step += 1
 
     def checkout(self, do=False):
         """ print metrics save stuff. """
-        CHECKOUT = 24000*1   # every six hours of simulation
-        if self.cur_step % CHECKOUT == 0 and self.cur_step > 0 or do:
+        CHECKOUT = 24000*24   # every day of simulation
+        if self.cur_step_total % CHECKOUT == 0 and self.cur_step_total > 0 or do:
             try:
                 self.metrics.save_dataframe()
             except:
-                print("Couldn't save data from step", self.cur_step)
+                print("Couldn't save data from step", self.cur_step_total)
 
             self.environment.drones[0].state_manager.DQN.save_model()
             
@@ -263,7 +262,7 @@ class PatrollingSimulator:
                 else:
                     self.plotting.plot_learning_performance()
             except:
-                print("Couldn't plot from step", self.cur_step)
+                print("Couldn't plot from step", self.cur_step_total)
 
     def close(self):
         self.checkout(True)

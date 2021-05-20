@@ -56,7 +56,14 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 self.increase_waypoint_counter()
 
         elif self.mobility == config.Mobility.DECIDED:
-            if (self.will_reach_target() and self.is_decision_step()) or self.was_final:
+            # reset episode every 3 HOURS
+            if self.simulator.cur_step == 3 * config.Time.HOUR.value:
+                self.state_manager.reset_MDP()
+                self.prev_target = self.simulator.environment.targets[0]
+                self.path.append(self.prev_target.coords)
+                self.increase_waypoint_counter()
+
+            elif self.will_reach_target() or self.was_final:  # self.is_decision_step()
                 self.was_final = False
 
                 self.coords = self.next_target()

@@ -17,10 +17,9 @@ parser.add_argument('-sw', '--swap_models_every_decision', type=int)
 parser.add_argument('-de', '--description', type=str, default="")
 parser.add_argument('-du', '--duration', type=int, default=24000*24*1000)
 
-parser.add_argument('-rew', '--rew_mode', type=int, default=0)
 parser.add_argument('-pl', '--plotting', type=int, default=0)
 parser.add_argument('-lo', '--log_state', type=float, default=-1)
-parser.add_argument('-pe', '--penalty', type=int)
+parser.add_argument('-pen', '--penalty', type=int)
 
 args = parser.parse_args()
 
@@ -33,7 +32,6 @@ for arg in vars(args):
     if val is not None and arg in learning:
         learning[arg] = val
 
-config.REW_MODE = bool(args.rew_mode)
 config.PLOT_SIM = bool(args.plotting)
 config.LOG_STATE = args.log_state
 config.PENALTY_ON_BS_EXPIRATION = args.penalty if args.penalty is not None else config.PENALTY_ON_BS_EXPIRATION

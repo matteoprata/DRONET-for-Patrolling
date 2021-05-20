@@ -10,7 +10,7 @@ simulation. For an extensive experimental campaign read the header at src.simula
 # ----------------------------- SIMULATION PARAMS ---------------------------- #
 
 SIM_SEED = 50                # int: seed of this simulation.
-SIM_DURATION = 24000*24*60      # int: steps of simulation. (np.inf)
+SIM_DURATION = 24000*24*10      # int: steps of simulation. (np.inf)
 SIM_TS_DURATION = 0.150     # float: seconds duration of a step in seconds.
 
 ENV_WIDTH = 1500      # float: meters, width of environment
@@ -81,16 +81,24 @@ RL_DATA = "data/rl/"
 LEARNING_PARAMETERS = {
     "is_pretrained": False,
     "model_name": "data/rl/model.h5",
-    "batch_size": 32,
+    "beta": 0.5,  # for continuous tasks
+    "replay_memory_depth": 100000,
+
     "learning_rate": 0.0001,
     "discount_factor": 0.98,
-    "beta": 0.5,  # for continuous tasks
-    "epsilon_decay": 0.000005,
-    "replay_memory_depth": 100000,
+    "epsilon_decay": 0.000001,
+    "batch_size": 32,
     "swap_models_every_decision": 500,
 }
 
-REW_MODE = False
 DELTA_DEC = 15  # seconds
 LOG_STATE = False
-PENALTY_ON_BS_EXPIRATION = -5
+PENALTY_ON_BS_EXPIRATION = -1
+
+
+class Time(Enum):
+    DAY = int(60*60*24/SIM_TS_DURATION)
+    HOUR = int(60*60/SIM_TS_DURATION)
+    HALF_HOUR = int(60*30/SIM_TS_DURATION)
+    QUARTER_HOUR = int(60*15/SIM_TS_DURATION)
+    ONE_MIN = int(60/SIM_TS_DURATION)

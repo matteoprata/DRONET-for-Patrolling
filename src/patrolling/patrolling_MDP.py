@@ -135,14 +135,15 @@ class RLModule:
     def evaluate_reward(self, s, a, s_prime):
         REW = 0
         time_dist_to_a = s.time_distances(False)[a]
-        n_steps = max(round(time_dist_to_a/config.DELTA_DEC), 1)
+        n_steps = max(int(time_dist_to_a/config.DELTA_DEC), 1)
         norm_factor_rew = self.N_ACTIONS * self.MAX_RES_PRECISION * round(self.simulator.max_travel_time() / config.DELTA_DEC)
 
         for step in range(n_steps):
             # print(step, n_steps)
             for target in self.simulator.environment.targets:
                 # residual of target at time of flight
-                residual = ((self.simulator.current_second() - config.DELTA_DEC * step) - (target.last_visit_ts * self.simulator.ts_duration_sec)) / target.maximum_tolerated_idleness
+                delta_dec = (config.DELTA_DEC * step) if time_dist_to_a/config.DELTA_DEC >= 1 else self.simulator.ts_duration_sec   # se fai loop, vai back di config.DELTA_DEC
+                residual = ((self.simulator.current_second() - delta_dec) - (target.last_visit_ts * self.simulator.ts_duration_sec)) / target.maximum_tolerated_idleness
                 residual = min(residual, self.MAX_RES_PRECISION)
 
                 REW += - residual if residual > 1 else 0
@@ -181,9 +182,7 @@ class RLModule:
                                             is_final=s_prime.is_final)
 
         if s_prime.is_final:
-            self.simulator.environment.reset_drones_targets()
-            self.previous_state = None
-            self.previous_action = None
+            self.reset_MDP()
 
         return r, self.previous_epsilon, self.DQN.current_loss, s_prime.is_final, s, s_prime
 
@@ -192,12 +191,15 @@ class RLModule:
             state = self.evaluate_state()
 
         action_index, q = self.DQN.predict(state.vector())
-        # if bool(state.is_flying()):
-        #     action_index = state.objective(False)
 
         self.previous_state = state
         self.previous_action = action_index
         return action_index, q[0]
+
+    def reset_MDP(self):
+        self.simulator.environment.reset_drones_targets()
+        self.previous_state = None
+        self.previous_action = None
 
     def log_transition(self, s, s_prime, a, r, every=1):
         print(s.vector(False))

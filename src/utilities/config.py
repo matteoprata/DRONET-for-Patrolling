@@ -36,7 +36,7 @@ DRONE_ANGLE_INCREMENT = 45    # increment at every key stroke
 DRONE_COM_RANGE = 100         # float: meters, communication range of the drones.
 DRONE_SENSING_RANGE = 0       # float: meters, the sensing range of the drones.
 DRONE_MAX_BUFFER_SIZE = 0     # int: max number of packets in the buffer of a drone.
-DRONE_MAX_ENERGY = int(3600/4)        # int: max energy of a drone sec
+DRONE_MAX_ENERGY = 40000       # int: max energy of a drone sec
 DRONE_RADAR_RADIUS = 60       # meters
 
 # map
@@ -56,12 +56,12 @@ SAVE_PLOT = False              # bool: whether to save the plots of the simulati
 SAVE_PLOT_DIR = "data/plots/"  # string: where to save plots
 
 # ------------------------------- PATROLLING ------------------------------- #
-N_TARGETS = 7       # number of random targets in the map
+N_TARGETS = 4       # number of random targets in the map
 
-TARGETS = [(BASE_STATION_COORDS[0]-600, BASE_STATION_COORDS[1]+400, 400),
-           (BASE_STATION_COORDS[0]-250, BASE_STATION_COORDS[1]+1100, 400),
-           (BASE_STATION_COORDS[0]+250, BASE_STATION_COORDS[1]+1100, 400),
-           (BASE_STATION_COORDS[0]+600, BASE_STATION_COORDS[1]+400, 400)]
+TARGETS = [(BASE_STATION_COORDS[0]-600, BASE_STATION_COORDS[1]+400, 4000),
+           (BASE_STATION_COORDS[0]-250, BASE_STATION_COORDS[1]+1100, 300),
+           (BASE_STATION_COORDS[0]+250, BASE_STATION_COORDS[1]+1100, 300),
+           (BASE_STATION_COORDS[0]+600, BASE_STATION_COORDS[1]+400, 4000)]
 
 
 class Mobility(Enum):
@@ -83,22 +83,30 @@ LEARNING_PARAMETERS = {
     "model_name": "data/rl/model.h5",
     "beta": 0.5,  # for continuous tasks
     "replay_memory_depth": 100000,
+    "epsilon_decay": None,
 
     "learning_rate": 0.0001,
     "discount_factor": 0.98,
-    "epsilon_decay": 0.000001,
     "batch_size": 32,
     "swap_models_every_decision": 500,
 }
-
-DELTA_DEC = 15  # seconds
-LOG_STATE = False
-PENALTY_ON_BS_EXPIRATION = -1
 
 
 class Time(Enum):
     DAY = int(60*60*24/SIM_TS_DURATION)
     HOUR = int(60*60/SIM_TS_DURATION)
-    HALF_HOUR = int(60*30/SIM_TS_DURATION)
-    QUARTER_HOUR = int(60*15/SIM_TS_DURATION)
-    ONE_MIN = int(60/SIM_TS_DURATION)
+    MIN = int(60/SIM_TS_DURATION)
+
+
+DELTA_DEC = 15     # seconds
+LOG_STATE = False  # print rhe state or not
+PENALTY_ON_BS_EXPIRATION = -1
+ZERO_TOLERANCE = 0.1     # 10% at 80% of the simulation
+EXPLORE_PORTION = 0.8    # what portion of time of the simulation is spent exploring
+
+N_EPOCHS = 500
+N_EPISODES = 300
+EPISODE_DURATION = 5 * Time.HOUR.value
+
+
+

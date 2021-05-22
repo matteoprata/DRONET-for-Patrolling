@@ -25,7 +25,6 @@ class PatrollingDQN:
                  swap_models_every_decision=500,  # 10000
                  load_model=True,
                  ):
-
         self.simulator = simulator
         self.metrics = metrics
         self.batch_size = batch_size
@@ -44,7 +43,7 @@ class PatrollingDQN:
 
         # learning parameters
         self.discount_factor = discount_factor
-        self.epsilon_decay = epsilon_decay
+        self.epsilon_decay = self.compute_epsilon_decay()
         self.replay_memory = util.LimitedList(replay_memory_depth)
         self.swap_models_every_decision = swap_models_every_decision
 
@@ -70,14 +69,22 @@ class PatrollingDQN:
             self.model = kr.models.load_model(pretrained_model_path)
             self.model_hat = kr.models.load_model(pretrained_model_path)
 
+    def compute_epsilon_decay(self, zero_perc_simulation=config.EXPLORE_PORTION, prob_threshold=config.ZERO_TOLERANCE):
+        # keep the experience > .0001 until the first %80 of the steps
+        # e^(- step_with_zero_exp * epsilon_decay) = 10^-4 -> - step_with_zero_exp * epsilon_decay = log_e 10^-4
+        sim_duration = config.EPISODE_DURATION * config.N_EPISODES * config.N_EPOCHS
+        step_with_zero_exp = sim_duration * zero_perc_simulation
+        return - np.log(prob_threshold) / step_with_zero_exp
 
     @staticmethod
-    def exponential_decay(step, exp_coeff, base=np.e):
+    def explore_probability(step, exp_coeff, base=np.e):
         return base ** (-step*exp_coeff)
 
     def decay(self):
         """ Probability of exploration now. """
-        return self.exponential_decay(self.n_decision_step, self.epsilon_decay)
+        explore_prob = self.explore_probability(self.simulator.cur_step_total, self.epsilon_decay)
+        # print(self.simulator.cur_step_total, explore_prob)
+        return explore_prob
 
     def flip_biased_coin(self, p):
         """ Return true with probability p, false with probability 1-p. """

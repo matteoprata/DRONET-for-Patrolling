@@ -21,11 +21,11 @@ class Target(SimulatedEntity):
     def age_of_information(self, next=0):
         return (self.simulator.cur_step - self.last_visit_ts)*self.simulator.ts_duration_sec + next * self.simulator.ts_duration_sec
 
-    def residual_of_information(self):
-        return 1 - self.age_of_information() / self.maximum_tolerated_idleness
+    def residual_of_information(self, next=0):
+        return 1 - self.age_of_information(next) / self.maximum_tolerated_idleness
 
-    def aoi_idleness_ratio(self):
-        return self.age_of_information() / self.maximum_tolerated_idleness
+    def aoi_idleness_ratio(self, next=0):
+        return self.age_of_information(next) / self.maximum_tolerated_idleness
 
     # ------ AGE OF INFORMATION -- RESIDUAL OF INFORMATION
 

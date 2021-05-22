@@ -2,7 +2,10 @@
 from src.utilities.utilities import log, is_segments_intersect, distance_point_segment, TraversedCells, euclidean_distance
 from src.world_entities.target import Target
 from src.utilities.utilities import config
-
+import networkx as nx
+import dimod
+from tqdm import tqdm
+from src.utilities import tsp
 from scipy.stats import truncnorm
 import numpy as np
 
@@ -25,6 +28,7 @@ class Environment:
 
         self.closest_target = []
         self.furthest_target = []
+        self.targets_dataset = []
 
     def add_drones(self, drones: list):
         """ add a list of drones in the env """
@@ -53,7 +57,6 @@ class Environment:
     def reset_drones_targets(self):
         """ Reset the scenario. """
 
-        self.simulator.cur_step = -1
         for target in self.targets:
             target.last_visit_ts = 0  # + config.DELTA_DEC * config.SIM_TS_DURATION
 
@@ -61,25 +64,50 @@ class Environment:
             drone.coords = drone.bs.coords
             # drone.path.append(drone.bs.coords)
 
+    def generate_target_combinations(self):
+        # Creates a dataset of targets to iterate over to
+        print("START: generating random episodes")
+
+        for _ in tqdm(range(config.N_EPISODES)):
+            coordinates = []
+            for i in range(self.simulator.n_targets):
+                point_coords = [self.simulator.rnd_env.randint(0, self.width), self.simulator.rnd_env.randint(0, self.height)]
+                coordinates.append(point_coords)
+            tsp_path_time = self.tsp_path_time(coordinates)
+
+            epoch_targets = []
+            for i in range(self.simulator.n_targets):
+                rtt = 2 * (euclidean_distance(coordinates[i], self.base_stations[0].coords) / self.simulator.drone_speed_meters_sec)
+                idleness = self.simulator.rnd_env.randint(int(rtt), int(tsp_path_time))
+
+                t = Target(identifier=len(self.base_stations) + i,
+                           coords=tuple(coordinates[i]),
+                           maximum_tolerated_idleness=idleness,
+                           simulator=self.simulator)
+
+                epoch_targets.append(t)
+            self.targets_dataset.append(epoch_targets)
+
+        print("DONE: generating random episodes")
+        return self.targets_dataset
+
     def spawn_targets(self, targets=None):
+
+        self.targets = []
+
+        if targets is None:
+            targets = self.generate_target_combinations()[0]
 
         # The base station is a target
         for i in range(self.simulator.n_base_stations):
             self.targets.append(Target(i, self.base_stations[i].coords, self.simulator.drone_max_battery, self.simulator))
 
+        self.targets += targets
+
         # targets may be
-        if targets is not None:
-            for j, (x, y, tol_del) in enumerate(targets):
-                self.targets.append(Target(i+j+1, (x, y), tol_del, self.simulator))
-        else:
-            # delays_distribution = self.get_truncated_normal(mean=2*self.simulator.max_travel_time(), sd=200, low=self.simulator.max_travel_time(), upp=self.simulator.sim_duration_ts*self.simulator.ts_duration_sec)
-            # delays_sample = delays_distribution.rvs(self.simulator.n_targets)
-            delays_sample = [500, 950, 400, 790, 200, 600, 1200]
-            offset = self.simulator.n_base_stations
-            for i in range(self.simulator.n_targets):
-                coords = [self.simulator.rnd_env.randint(0, self.width), self.simulator.rnd_env.randint(0, self.height)]
-                tolerated_idleness = delays_sample[i]  # self.simulator.rnd_env.randint(self.simulator.max_travel_time()*min_idlness_factor, self.simulator.max_travel_time()*max_idlness_factor)
-                self.targets.append(Target(offset+i, coords, tolerated_idleness, self.simulator))
+        # if targets is not None:
+        #     for j, (x, y, tol_del) in enumerate(targets):
+        #         self.targets.append(Target(i+j+1, (x, y), tol_del, self.simulator))
 
         # FOR each target set the furthest and closest target
         for tar1 in self.targets:
@@ -161,3 +189,18 @@ class Environment:
     @staticmethod
     def get_truncated_normal(mean=0, sd=1, low=0, upp=10):
         return truncnorm((low - mean) / sd, (upp - mean) / sd, loc=mean, scale=sd)
+
+    # def time_cost_hamiltonian(self, coords):
+    #     for i in range(len(coords)-1):
+    #         a = coords[i]
+    #         a_prime = coords[i+1]
+    #         time = euclidean_distance(a, a_prime) / self.drones[0].speed
+    #
+
+    def tsp_path_time(self, coordinates):
+        coordinates_plus = [self.base_stations[0].coords] + coordinates
+        tsp_ob = tsp.TSP()
+        tsp_ob.read_data(coordinates_plus)
+        two_opt = tsp.TwoOpt_solver(initial_tour='NN', iter_num=100)
+        path, cost = tsp_ob.get_approx_solution(two_opt, star_node=0)
+        return cost / self.simulator.drone_speed_meters_sec

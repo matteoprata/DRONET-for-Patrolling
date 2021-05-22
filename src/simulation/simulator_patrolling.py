@@ -46,6 +46,8 @@ class PatrollingSimulator:
         self.learning = learning
         self.sim_peculiarity = sim_description
         self.cur_step = 0
+        self.cur_step_total = 0
+
         self.sim_seed = sim_seed
         self.ts_duration_sec = ts_duration_sec
         self.sim_duration_ts = sim_duration_ts
@@ -170,7 +172,7 @@ class PatrollingSimulator:
         self.environment.add_base_station(base_stations)
 
         self.environment.spawn_obstacles()
-        self.environment.spawn_targets(targets=self.targets)
+        self.environment.spawn_targets()
 
         drones = []
         for i in range(self.n_drones):
@@ -197,7 +199,7 @@ class PatrollingSimulator:
         self.metrics.N_ACTIONS = drones[0].state_manager.N_ACTIONS
         self.metrics.N_FEATURES = drones[0].state_manager.N_FEATURES
 
-    def __plot(self, cur_step):
+    def __plot(self, cur_step, max_steps):
         """ Plot the simulation """
 
         if cur_step % config.SKIP_SIM_STEP != 0:
@@ -218,7 +220,7 @@ class PatrollingSimulator:
         for event in self.environment.get_valid_events(cur_step):
             self.draw_manager.draw_event(event)
 
-        self.draw_manager.draw_simulation_info(cur_step=cur_step, max_steps=self.sim_duration_ts)
+        self.draw_manager.draw_simulation_info(cur_step=cur_step, max_steps=max_steps)
         self.draw_manager.draw_obstacles()
         self.draw_manager.draw_targets()
         self.draw_manager.update(save=config.SAVE_PLOT, filename=self.name() + str(cur_step) + ".png")
@@ -230,20 +232,32 @@ class PatrollingSimulator:
 
     def run(self):
         """ The method starts the simulation. """
-
         self.print_sim_info()
-        self.cur_step = 0
         self.cur_step_total = 0
-        for cur_step_total in tqdm(range(self.sim_duration_ts)):
-            self.cur_step_total = cur_step_total
-            for drone in self.environment.drones:
-                self.environment.detect_collision(drone)
-                drone.move()
 
-            self.checkout()
-            if config.SAVE_PLOT or config.PLOT_SIM:
-                self.__plot(self.cur_step)
-            self.cur_step += 1
+        for epoch in tqdm(range(config.N_EPOCHS), desc='epoch'):
+            episodes_perm = self.rstate_sample_batch_training.permutation(config.N_EPISODES)
+            for episode in tqdm(range(len(episodes_perm)), desc='episodes', leave=False):
+                ie = episodes_perm[episode]
+                for drone in self.environment.drones:
+                    drone.reset_environment_info()
+
+                targets = self.environment.targets_dataset[ie]
+                self.environment.spawn_targets(targets)
+                self.cur_step = 0
+                for cur_step in tqdm(range(config.EPISODE_DURATION), desc='step', leave=False):
+                    for drone in self.environment.drones:
+                        self.environment.detect_collision(drone)
+                        drone.move()
+
+                    if config.SAVE_PLOT or config.PLOT_SIM:
+                        self.__plot(self.cur_step, config.EPISODE_DURATION)
+
+                    self.cur_step = cur_step
+                    self.cur_step_total += 1
+                self.checkout(do=True)
+            for drone in self.environment.drones:
+                drone.was_final_epoch = True
 
     def checkout(self, do=False):
         """ print metrics save stuff. """

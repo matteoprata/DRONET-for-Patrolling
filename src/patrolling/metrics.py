@@ -16,7 +16,8 @@ class Metrics:
         self.reward = []
         self.epsilon = []
         self.loss = []
-        self.end_epoch = []
+        self.is_final = []
+        self.is_new_epoch = []
 
         self.Q_vectors = defaultdict(lambda: (0, None))
         self.N_ACTIONS = 0
@@ -40,12 +41,13 @@ class Metrics:
                         self.target_aoi[t.identifier].append(t.age_of_information())
 
         if learning_tuple is not None:
-            reward, epsilon, loss, end_epoch, s, q = learning_tuple
+            reward, epsilon, loss, end_epoch, s, q, was_new_epoch = learning_tuple
             # if reward is not None and epsilon is not None and loss is not None and end_epoch is not None:
             self.reward.append(reward)
             self.epsilon.append(epsilon)
             self.loss.append(loss)
-            self.end_epoch.append(1 if end_epoch else 0)
+            self.is_final.append(1 if end_epoch else None)
+            self.is_new_epoch.append(1 if was_new_epoch else None)
 
             if len(self.targets_threshold.keys()) == 0:
                 self.targets_threshold = {t.identifier: t.maximum_tolerated_idleness for t in self.simulator.environment.targets}
@@ -62,10 +64,11 @@ class Metrics:
         # ---- DF 1 ) DQN LEARNING PARAMETERS
         df_dqn = pd.DataFrame()
 
-        df_dqn["loss"] = pd.Series(self.loss)
-        df_dqn["reward"] = pd.Series(self.reward)
-        df_dqn["epsilon"] = pd.Series(self.epsilon)
-        df_dqn["is_end"] = self.end_epoch
+        df_dqn["loss"] = self.loss
+        df_dqn["reward"] = self.reward
+        df_dqn["epsilon"] = self.epsilon
+        df_dqn["is_end"] = self.is_final
+        df_dqn["is_new_epoch"] = self.is_new_epoch
 
         df_dqn.to_csv(self.simulator.directory_simulation() + "dqn_training_data.csv", mode='a', header=has_header)
 
@@ -143,6 +146,7 @@ class Metrics:
         self.reward = []
         self.epsilon = []
         self.loss = []
-        self.end_epoch = []
+        self.is_final = []
+        self.is_new_epoch = []
 
         self.Q_vectors = defaultdict(lambda: (0, None))

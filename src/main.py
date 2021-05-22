@@ -1,7 +1,6 @@
 
 from src.simulation.simulator_patrolling import PatrollingSimulator
 import src.utilities.config as config
-import sys
 
 import argparse
 
@@ -14,12 +13,14 @@ parser.add_argument('-be', '--beta', type=float)
 parser.add_argument('-rm', '--replay_memory_depth', type=int)
 parser.add_argument('-sw', '--swap_models_every_decision', type=int)
 
-parser.add_argument('-de', '--description', type=str, default="")
-parser.add_argument('-du', '--duration', type=int, default=24000*24*1000)
+parser.add_argument('-de', '--description', type=str, default="default")
+parser.add_argument('-du', '--duration', type=int)
 
 parser.add_argument('-pl', '--plotting', type=int, default=0)
 parser.add_argument('-lo', '--log_state', type=float, default=-1)
 parser.add_argument('-pen', '--penalty', type=int)
+
+# END PARAMETERS DEFINITION
 
 args = parser.parse_args()
 
@@ -47,3 +48,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+

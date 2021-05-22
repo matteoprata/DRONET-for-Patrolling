@@ -41,6 +41,8 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         self.previous_ts_coordinate = None
         self.buffer = list()
         self.was_final = False
+        self.was_final_epoch = False
+
         self.decision_time = 0
 
         # self.random_targets_visits = self.__set_policy()
@@ -56,14 +58,8 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 self.increase_waypoint_counter()
 
         elif self.mobility == config.Mobility.DECIDED:
-            # reset episode every 3 HOURS
-            if self.simulator.cur_step == 3 * config.Time.HOUR.value:
-                self.state_manager.reset_MDP()
-                self.prev_target = self.simulator.environment.targets[0]
-                self.path.append(self.prev_target.coords)
-                self.increase_waypoint_counter()
 
-            elif self.will_reach_target() or self.was_final:  # self.is_decision_step()
+            if self.will_reach_target() or self.was_final:
                 self.was_final = False
 
                 self.coords = self.next_target()
@@ -77,10 +73,12 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 self.was_final = is_end
 
                 if not self.simulator.learning["is_pretrained"]:
-                    learning_tuple = reward, epsilon, loss, is_end, s, q
+                    learning_tuple = reward, epsilon, loss, is_end, s, q, self.was_final_epoch
                     self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier, learning_tuple)
                 else:
                     self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
+
+                self.was_final_epoch = False
 
         elif self.mobility == config.Mobility.RANDOM_MOVEMENT:
             if self.will_reach_target():
@@ -131,6 +129,13 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         if self.is_flying():
             self.set_next_target_angle()
             self.__movement(self.angle)
+
+    def reset_environment_info(self):
+        self.simulator.environment.reset_drones_targets()
+        self.state_manager.reset_MDP()
+        self.prev_target = self.simulator.environment.targets[0]
+        self.path.append(self.prev_target.coords)
+        self.increase_waypoint_counter()
 
     def is_decision_step(self):
         """ Whether is time to make a decision step or not """

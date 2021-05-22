@@ -80,17 +80,17 @@ class Plotting:
 
         self.__plot_now(self.simulation_name, "seconds", "moving avg ({}) avg expiration".format(window))
 
-    def plot_dqn_stats(self, window=50):
+    def plot_dqn_stats(self, window=100):
         """ Plot min residual of the targets population. """
         rolled_avg_loss = self.dqn_stats["loss"].rolling(window).mean()
         rolled_epsilon = self.dqn_stats["epsilon"].rolling(window).mean()
         cumulative_rew = self.dqn_stats["reward"].cumsum()
 
-        is_end = [i for i, j in enumerate(self.dqn_stats["is_end"]) if j == 1]
+        is_end = [i for i, j in enumerate(self.dqn_stats["is_new_epoch"]) if j == 1]
 
         plt.plot(list(self.dqn_stats.index), rolled_avg_loss, label="moving avg")
         for i in is_end:
-            plt.axvline(i, color="red", alpha=0.10)
+            plt.axvline(i, color="blue", alpha=0.10)
         self.__plot_now(self.simulation_name, "steps", "moving avg ({}) avg loss".format(window))
 
         plt.plot(list(self.dqn_stats.index), cumulative_rew, label="rew")

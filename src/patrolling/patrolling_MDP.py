@@ -105,15 +105,15 @@ class RLModule:
         self.TIME_NORM = self.simulator.max_travel_time()
         self.ACTION_NORM = self.N_ACTIONS
 
-    def get_current_residuals(self):
+    def get_current_residuals(self, next=0):
         """ max tra AOI / IDLENESS e 1 """
-        return [min(target.aoi_idleness_ratio(), self.MAX_RES_PRECISION)
+        return [min(target.aoi_idleness_ratio(next), self.MAX_RES_PRECISION)
                 for target in self.simulator.environment.targets]
 
-    def get_future_residuals(self):
-        """ max tra (AOI + TRANSIT) / IDLENESS e 1 """
-        fut = lambda i, t: (t.age_of_information() + self.get_current_time_distances()[i]) / t.maximum_tolerated_idleness
-        return [min(fut(i, target), 1) for i, target in enumerate(self.simulator.environment.targets)]
+    # def get_future_residuals(self):
+    #     """ max tra (AOI + TRANSIT) / IDLENESS e 1 """
+    #     fut = lambda i, t: (t.age_of_information() + self.get_current_time_distances()[i]) / t.maximum_tolerated_idleness
+    #     return [min(fut(i, target), 1) for i, target in enumerate(self.simulator.environment.targets)]
 
     def get_current_time_distances(self):
         """ TIME of TRANSIT """
@@ -122,14 +122,13 @@ class RLModule:
     def evaluate_state(self):
         pa = self.previous_action if self.previous_action is not None else 0
         residuals = self.get_current_residuals()
-        future_residuals = self.get_future_residuals()
+        # future_residuals = self.get_future_residuals()
         is_flying = self.drone.is_flying()
-
         objective = self.previous_action if self.drone.is_flying() else self.N_ACTIONS + 1
         distances = self.get_current_time_distances()
 
         state = State(residuals, distances, pa, self.AOI_NORM, self.TIME_NORM, self.ACTION_NORM,
-                     False, future_residuals, self.AOI_FUTURE_NORM, is_flying, objective)
+                     False, None, self.AOI_FUTURE_NORM, is_flying, objective)
         return state
 
     def evaluate_reward(self, s, a, s_prime):
@@ -182,6 +181,7 @@ class RLModule:
                                             is_final=s_prime.is_final)
 
         if s_prime.is_final:
+            self.simulator.environment.reset_drones_targets()
             self.reset_MDP()
 
         return r, self.previous_epsilon, self.DQN.current_loss, s_prime.is_final, s, s_prime
@@ -197,7 +197,6 @@ class RLModule:
         return action_index, q[0]
 
     def reset_MDP(self):
-        self.simulator.environment.reset_drones_targets()
         self.previous_state = None
         self.previous_action = None
 

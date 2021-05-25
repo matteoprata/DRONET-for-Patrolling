@@ -2,15 +2,12 @@
 from src.utilities.utilities import log, is_segments_intersect, distance_point_segment, TraversedCells, euclidean_distance
 from src.world_entities.target import Target
 from src.utilities.utilities import config
-import networkx as nx
-import dimod
 from tqdm import tqdm
 from src.utilities import tsp
 from scipy.stats import truncnorm
 import numpy as np
 from src.utilities import utilities as util
 from collections import defaultdict
-import os
 
 class Environment:
     """ The environment is an entity that represents the area of interest."""

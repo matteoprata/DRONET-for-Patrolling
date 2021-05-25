@@ -29,7 +29,7 @@ BASE_STATION_COM_RANGE = 200               # float: meters, communication range 
 # fixed tours determined in FIXED_TOURS_DIR
 DRONE_COORDS = BASE_STATION_COORDS
 
-DRONE_SPEED = 10              # float: m/s, drone speed.
+DRONE_SPEED = 22  # 10              # float: m/s, drone speed.
 DRONE_ANGLE = 0               # degrees (0, 359)
 DRONE_SPEED_INCREMENT = 5     # increment at every key stroke
 DRONE_ANGLE_INCREMENT = 45    # increment at every key stroke
@@ -104,9 +104,9 @@ PENALTY_ON_BS_EXPIRATION = -1
 ZERO_TOLERANCE = 0.1     # 10% at 80% of the simulation
 EXPLORE_PORTION = 0.8    # what portion of time of the simulation is spent exploring
 
-N_EPOCHS = 500
-N_EPISODES = 300
+N_EPOCHS = 1000
+N_EPISODES = 50
 EPISODE_DURATION = 5 * Time.HOUR.value
-
+TARGETS_FILE = "data/targets/"
 
 

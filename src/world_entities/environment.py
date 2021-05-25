@@ -8,7 +8,9 @@ from tqdm import tqdm
 from src.utilities import tsp
 from scipy.stats import truncnorm
 import numpy as np
-
+from src.utilities import utilities as util
+from collections import defaultdict
+import os
 
 class Environment:
     """ The environment is an entity that represents the area of interest."""
@@ -64,31 +66,52 @@ class Environment:
             drone.coords = drone.bs.coords
             # drone.path.append(drone.bs.coords)
 
-    def generate_target_combinations(self):
+    def generate_target_combinations(self, seed):
+        """
+        Assumption, file stores for each seed, up to 100 targets, up to 500 episodes
+        :param seed:
+        :return:
+        """
         # Creates a dataset of targets to iterate over to
-        print("START: generating random episodes")
 
-        for _ in tqdm(range(config.N_EPISODES)):
-            coordinates = []
-            for i in range(self.simulator.n_targets):
-                point_coords = [self.simulator.rnd_env.randint(0, self.width), self.simulator.rnd_env.randint(0, self.height)]
-                coordinates.append(point_coords)
-            tsp_path_time = self.tsp_path_time(coordinates)
+        # loading targets list
+        to_json = util.read_json(config.TARGETS_FILE + "targets_s{}_nt{}.json".format(seed, config.N_TARGETS))
+        MAX_N_EPISODES = 2000
+        MAX_N_TARGETS = config.N_TARGETS
 
+        if to_json is None:
+            to_json = defaultdict(list)
+            print("START: generating random episodes")
+
+            for ep in tqdm(range(MAX_N_EPISODES)):
+                coordinates = []
+                for i in range(MAX_N_TARGETS):
+                    point_coords = [self.simulator.rnd_env.randint(0, self.width), self.simulator.rnd_env.randint(0, self.height)]
+                    coordinates.append(point_coords)
+                tsp_path_time = self.tsp_path_time(coordinates)
+
+                for i in range(MAX_N_TARGETS):
+                    rtt = 2 * (euclidean_distance(coordinates[i], self.base_stations[0].coords) / self.simulator.drone_speed_meters_sec)
+                    LOW = int(rtt)
+                    UP = int(rtt)+1 if int(rtt) >= int(tsp_path_time) else int(tsp_path_time)
+                    idleness = self.simulator.rnd_env.randint(LOW, UP)
+                    to_json[ep].append((i, tuple(coordinates[i]), idleness))
+            util.save_json(to_json, config.TARGETS_FILE + "targets_s{}_nt{}.json".format(seed, config.N_TARGETS))
+            print("DONE: generating random episodes")
+
+        print("LOADING random episodes")
+        assert(config.N_EPISODES <= MAX_N_EPISODES)
+        for ep in range(config.N_EPISODES):
             epoch_targets = []
-            for i in range(self.simulator.n_targets):
-                rtt = 2 * (euclidean_distance(coordinates[i], self.base_stations[0].coords) / self.simulator.drone_speed_meters_sec)
-                idleness = self.simulator.rnd_env.randint(int(rtt), int(tsp_path_time))
+            for t_id, t_coord, t_idleness in to_json[str(ep)][:config.N_TARGETS]:
 
-                t = Target(identifier=len(self.base_stations) + i,
-                           coords=tuple(coordinates[i]),
-                           maximum_tolerated_idleness=idleness,
+                t = Target(identifier=len(self.base_stations) + t_id,
+                           coords=tuple(t_coord),
+                           maximum_tolerated_idleness=t_idleness,
                            simulator=self.simulator)
 
                 epoch_targets.append(t)
             self.targets_dataset.append(epoch_targets)
-
-        print("DONE: generating random episodes")
         return self.targets_dataset
 
     def spawn_targets(self, targets=None):
@@ -96,7 +119,7 @@ class Environment:
         self.targets = []
 
         if targets is None:
-            targets = self.generate_target_combinations()[0]
+            targets = self.generate_target_combinations(self.simulator.sim_seed)[0]
 
         # The base station is a target
         for i in range(self.simulator.n_base_stations):

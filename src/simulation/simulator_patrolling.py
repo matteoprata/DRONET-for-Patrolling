@@ -244,10 +244,11 @@ class PatrollingSimulator:
 
                 targets = self.environment.targets_dataset[ie]
                 self.environment.spawn_targets(targets)
+
                 self.cur_step = 0
                 for cur_step in tqdm(range(config.EPISODE_DURATION), desc='step', leave=False):
                     for drone in self.environment.drones:
-                        self.environment.detect_collision(drone)
+                        # self.environment.detect_collision(drone)
                         drone.move()
 
                     if config.SAVE_PLOT or config.PLOT_SIM:
@@ -255,7 +256,8 @@ class PatrollingSimulator:
 
                     self.cur_step = cur_step
                     self.cur_step_total += 1
-                self.checkout(do=True)
+
+            self.checkout(do=True)
             for drone in self.environment.drones:
                 drone.was_final_epoch = True
 

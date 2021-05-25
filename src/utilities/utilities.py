@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 import pickle
 from ast import literal_eval as make_tuple
-
+import os
 from shapely.geometry import LineString
 
 
@@ -192,8 +192,10 @@ def save_json(msg, fname):
 
 
 def read_json(fname):
-    with open(fname, 'r') as fp:
-        data = json.load(fp)
+    data = None
+    if os.path.exists(fname):
+        with open(fname, 'r') as fp:
+            data = json.load(fp)
     return data
 
 

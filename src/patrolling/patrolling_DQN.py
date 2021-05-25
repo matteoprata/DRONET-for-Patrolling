@@ -158,7 +158,6 @@ class PatrollingDQN:
 
             old_out[0, action] = (reward - self.avg_reward) + self.discount_factor * np.max(cur_out[0]) if not is_final else reward
             # self.avg_reward += 0  # self.beta * old_out[0, action]
-
             X.append(previous_state)
             y.append(old_out[0])
 
@@ -166,8 +165,8 @@ class PatrollingDQN:
         self.current_loss = training_result.history["loss"][0]
 
         if self.time_to_swap_models():
-            print(self.decay(), "steps", self.simulator.cur_step, "/", self.simulator.sim_duration_ts)
-            print('swapped', self.n_decision_step)
+            # print(self.decay(), "steps", self.simulator.cur_step, "/", self.simulator.sim_duration_ts)
+            # print('swapped', self.n_decision_step)
             self.swap_learning_model()
 
         return self.current_loss

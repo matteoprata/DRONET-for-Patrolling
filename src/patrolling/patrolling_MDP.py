@@ -50,10 +50,13 @@ class State:
     def position(self, normalized=True):
         return self._position if not normalized else self.normalize_feature(self._position, self.position_norm, 0)
 
-    def vector(self, normalized=True):
+    def vector(self, normalized=True, rounded=False):
         """ NN INPUT """
-        return list(self.residuals(normalized)) + list(self.time_distances(normalized)) #+ [self.is_flying(normalized)] + [self.objective(normalized)]
-        # return [self.position()] + list(self.residuals()) + list(self.time_distances())
+        if not rounded:
+            return list(self.residuals(normalized)) + list(self.time_distances(normalized))
+        else:
+            return [round(i, 2) for i in list(self.residuals(normalized))] + \
+                   [round(i, 2) for i in list(self.time_distances(normalized))]
 
     def __repr__(self):
         return "res: {}\ndis: {}\n".format(self.residuals(), self.time_distances()) #self.is_flying(False), self.objective(False))
@@ -79,7 +82,7 @@ class RLModule:
 
         self.com_rewards = 0
         self.policy_cycle = 0
-
+        self.prev_learning_tuple = None
         self.N_ACTIONS = len(self.simulator.environment.targets)
         self.N_FEATURES = 2 * len(self.simulator.environment.targets)
         self.MAX_RES_PRECISION = 10
@@ -165,6 +168,8 @@ class RLModule:
         s_prime = self.evaluate_state()
         s_prime.is_final = self.evaluate_is_final_state(s, a, s_prime)
         r = self.evaluate_reward(s, a, s_prime)
+
+        self.prev_learning_tuple = s.vector(False,True), a, s_prime.vector(False,True), r
 
         if config.LOG_STATE >= 0:
             self.log_transition(s, s_prime, a, r, every=config.LOG_STATE)

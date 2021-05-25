@@ -44,8 +44,6 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         self.was_final_epoch = False
 
         self.decision_time = 0
-
-        # self.random_targets_visits = self.__set_policy()
         self.prev_target = self.simulator.environment.targets[0]
 
     # MOVEMENT ROUTINES
@@ -61,6 +59,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
             if self.will_reach_target() or self.was_final:
                 self.was_final = False
+                self.prev_target.last_visit_ts = self.simulator.cur_step
 
                 self.coords = self.next_target()
                 reward, epsilon, loss, is_end, s, s_prime = self.state_manager.invoke_train()
@@ -74,7 +73,8 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
                 if not self.simulator.learning["is_pretrained"]:
                     learning_tuple = reward, epsilon, loss, is_end, s, q, self.was_final_epoch
-                    self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier, learning_tuple)
+                    self.simulator.metrics.append_statistics_on_target_reached_light(learning_tuple)
+                    # self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier, learning_tuple)
                 else:
                     self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
 

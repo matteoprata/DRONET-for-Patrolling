@@ -395,7 +395,7 @@ class SoftConstraintsModel(AbstractPatrollingModel):
         self.model.addConstrs(
             self.cum_deadline_vars[i, t] >=
                 self.cum_deadline_vars[i, t - 1] + 1
-                    - (1 - self.deadline_vars[i, t-1])*self.M
+                    - (1 - self.deadline_vars[i, t])*self.M
             for i in range(self.ndepots, self.ntargets)
             for t in range(self.mission_time)
             if t > 0)
@@ -404,7 +404,7 @@ class SoftConstraintsModel(AbstractPatrollingModel):
         self.model.addConstrs(
             self.cum_deadline_vars[i, t] <=
                 self.cum_deadline_vars[i, t - 1]  + 1
-                    + (1 - self.deadline_vars[i, t-1])*self.M
+                    + (1 - self.deadline_vars[i, t])*self.M
             for i in range(self.ndepots, self.ntargets)
             for t in range(self.mission_time)
             if t > 0)

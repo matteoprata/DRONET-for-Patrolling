@@ -233,11 +233,11 @@ class PatrollingSimulator:
     def run(self):
         """ The method starts the simulation. """
         self.print_sim_info()
-        self.cur_step_total = 0
 
-        for epoch in tqdm(range(config.N_EPOCHS), desc='epoch'):
+        IS_PRO_BARS = not config.PLOT_SIM
+        for epoch in tqdm(range(config.N_EPOCHS), desc='epoch', disable=not IS_PRO_BARS):
             episodes_perm = self.rstate_sample_batch_training.permutation(config.N_EPISODES)
-            for episode in tqdm(range(len(episodes_perm)), desc='episodes', leave=False):
+            for episode in tqdm(range(len(episodes_perm)), desc='episodes', leave=False, disable=not IS_PRO_BARS):
                 ie = episodes_perm[episode]
                 for drone in self.environment.drones:
                     drone.reset_environment_info()
@@ -246,7 +246,7 @@ class PatrollingSimulator:
                 self.environment.spawn_targets(targets)
 
                 self.cur_step = 0
-                for cur_step in tqdm(range(config.EPISODE_DURATION), desc='step', leave=False):
+                for cur_step in tqdm(range(config.EPISODE_DURATION), desc='step', leave=False, disable=not IS_PRO_BARS):
                     for drone in self.environment.drones:
                         # self.environment.detect_collision(drone)
                         drone.move()
@@ -257,21 +257,24 @@ class PatrollingSimulator:
                     self.cur_step = cur_step
                     self.cur_step_total += 1
 
-            self.checkout(do=True)
+                self.checkout(do=True)
             for drone in self.environment.drones:
                 drone.was_final_epoch = True
 
     def checkout(self, do=False):
         """ print metrics save stuff. """
-        CHECKOUT = 24000*24   # every day of simulation
-        if self.cur_step_total % CHECKOUT == 0 and self.cur_step_total > 0 or do:
+        if do:
+            print("Doing checkout at", self.cur_step_total)
             try:
-                self.metrics.save_dataframe()
+                if self.learning["is_pretrained"]:
+                    self.metrics.save_dataframe()
+                else:
+                    self.metrics.save_dataframe_light()
             except:
                 print("Couldn't save data from step", self.cur_step_total)
 
             self.environment.drones[0].state_manager.DQN.save_model()
-            
+
             try:
                 if self.learning["is_pretrained"]:
                     self.plotting.plot_patrolling_performance()

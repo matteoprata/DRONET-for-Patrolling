@@ -9,7 +9,7 @@ simulation. For an extensive experimental campaign read the header at src.simula
 
 # ----------------------------- SIMULATION PARAMS ---------------------------- #
 
-SIM_SEED = 50                # int: seed of this simulation.
+SIM_SEED = 100                # int: seed of this simulation.
 SIM_DURATION = 24000*24*10      # int: steps of simulation. (np.inf)
 SIM_TS_DURATION = 0.150     # float: seconds duration of a step in seconds.
 
@@ -29,14 +29,12 @@ BASE_STATION_COM_RANGE = 200               # float: meters, communication range 
 # fixed tours determined in FIXED_TOURS_DIR
 DRONE_COORDS = BASE_STATION_COORDS
 
-DRONE_SPEED = 22  # 10              # float: m/s, drone speed.
 DRONE_ANGLE = 0               # degrees (0, 359)
 DRONE_SPEED_INCREMENT = 5     # increment at every key stroke
 DRONE_ANGLE_INCREMENT = 45    # increment at every key stroke
 DRONE_COM_RANGE = 100         # float: meters, communication range of the drones.
 DRONE_SENSING_RANGE = 0       # float: meters, the sensing range of the drones.
 DRONE_MAX_BUFFER_SIZE = 0     # int: max number of packets in the buffer of a drone.
-DRONE_MAX_ENERGY = 40000       # int: max energy of a drone sec
 DRONE_RADAR_RADIUS = 60       # meters
 
 # map
@@ -56,7 +54,6 @@ SAVE_PLOT = False              # bool: whether to save the plots of the simulati
 SAVE_PLOT_DIR = "data/plots/"  # string: where to save plots
 
 # ------------------------------- PATROLLING ------------------------------- #
-N_TARGETS = 4       # number of random targets in the map
 
 TARGETS = [(BASE_STATION_COORDS[0]-600, BASE_STATION_COORDS[1]+400, 4000),
            (BASE_STATION_COORDS[0]-250, BASE_STATION_COORDS[1]+1100, 300),
@@ -98,7 +95,7 @@ class Time(Enum):
     MIN = int(60/SIM_TS_DURATION)
 
 
-DELTA_DEC = 15     # seconds
+DELTA_DEC = 1     # seconds
 LOG_STATE = False  # print rhe state or not
 PENALTY_ON_BS_EXPIRATION = -1
 ZERO_TOLERANCE = 0.1     # 10% at 80% of the simulation
@@ -110,3 +107,6 @@ EPISODE_DURATION = 5 * Time.HOUR.value
 TARGETS_FILE = "data/targets/"
 
 
+N_TARGETS = 4       # number of random targets in the map
+DRONE_MAX_ENERGY = 10 * Time.MIN.value       # int: max energy of a drone sec
+DRONE_SPEED = 18  # 10              # float: m/s, drone speed.

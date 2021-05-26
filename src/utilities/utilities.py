@@ -258,8 +258,7 @@ class PathToDepot:
             |-> the depot if the drones are already in the channel or have overpass the cluster head
         """
         # only channel mode
-        if abs(drone_pos[
-                   0] - self.x_position) < 1:  # the drone is already on the channel with an error of 1 meter
+        if abs(drone_pos[0] - self.x_position) < 1:  # the drone is already on the channel with an error of 1 meter
             return self.simulator.depot_coordinates
         else:
             return self.x_position, drone_pos[1]  # the closest point to the channel

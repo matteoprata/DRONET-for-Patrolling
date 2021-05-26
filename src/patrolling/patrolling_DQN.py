@@ -83,7 +83,6 @@ class PatrollingDQN:
     def decay(self):
         """ Probability of exploration now. """
         explore_prob = self.explore_probability(self.simulator.cur_step_total, self.epsilon_decay)
-        # print(self.simulator.cur_step_total, explore_prob)
         return explore_prob
 
     def flip_biased_coin(self, p):

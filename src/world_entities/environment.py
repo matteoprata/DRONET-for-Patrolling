@@ -8,6 +8,7 @@ from scipy.stats import truncnorm
 import numpy as np
 from src.utilities import utilities as util
 from collections import defaultdict
+import os
 
 class Environment:
     """ The environment is an entity that represents the area of interest."""
@@ -57,11 +58,10 @@ class Environment:
         """ Reset the scenario. """
 
         for target in self.targets:
-            target.last_visit_ts = 0  # + config.DELTA_DEC * config.SIM_TS_DURATION
+            target.last_visit_ts = 0
 
         for drone in self.drones:
             drone.coords = drone.bs.coords
-            # drone.path.append(drone.bs.coords)
 
     def generate_target_combinations(self, seed):
         """
@@ -72,11 +72,11 @@ class Environment:
         # Creates a dataset of targets to iterate over to
 
         # loading targets list
-        to_json = util.read_json(config.TARGETS_FILE + "targets_s{}_nt{}.json".format(seed, config.N_TARGETS))
+        path_exists = os.path.exists(config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, config.N_TARGETS, self.simulator.drone_speed_meters_sec))
         MAX_N_EPISODES = 2000
         MAX_N_TARGETS = config.N_TARGETS
 
-        if to_json is None:
+        if not path_exists:
             to_json = defaultdict(list)
             print("START: generating random episodes")
 
@@ -93,8 +93,11 @@ class Environment:
                     UP = int(rtt)+1 if int(rtt) >= int(tsp_path_time) else int(tsp_path_time)
                     idleness = self.simulator.rnd_env.randint(LOW, UP)
                     to_json[ep].append((i, tuple(coordinates[i]), idleness))
-            util.save_json(to_json, config.TARGETS_FILE + "targets_s{}_nt{}.json".format(seed, config.N_TARGETS))
+
+            util.save_json(to_json, config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, config.N_TARGETS, self.simulator.drone_speed_meters_sec))
             print("DONE: generating random episodes")
+
+        to_json = util.read_json(config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, config.N_TARGETS, self.simulator.drone_speed_meters_sec))
 
         print("LOADING random episodes")
         assert(config.N_EPISODES <= MAX_N_EPISODES)

@@ -42,7 +42,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         self.buffer = list()
         self.was_final = False
         self.was_final_epoch = False
-
+        self.learning_tuple = None
         self.decision_time = 0
         self.prev_target = self.simulator.environment.targets[0]
 
@@ -71,14 +71,8 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 self.increase_waypoint_counter()
                 self.was_final = is_end
 
-                if not self.simulator.learning["is_pretrained"]:
-                    learning_tuple = reward, epsilon, loss, is_end, s, q, self.was_final_epoch
-                    self.simulator.metrics.append_statistics_on_target_reached_light(learning_tuple)
-                    # self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier, learning_tuple)
-                else:
-                    self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
-
-                self.was_final_epoch = False
+                self.learning_tuple = reward, epsilon, loss, is_end, s, q, self.was_final_epoch
+                self.save_metrics()
 
         elif self.mobility == config.Mobility.RANDOM_MOVEMENT:
             if self.will_reach_target():
@@ -124,11 +118,16 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         elif self.mobility == config.Mobility.FREE:
             if self.will_reach_target():
                 self.update_target_reached()
-            # print(self.state_manager.evaluate_state())
 
         if self.is_flying():
             self.set_next_target_angle()
             self.__movement(self.angle)
+
+    def save_metrics(self):
+        if not self.simulator.learning["is_pretrained"]:
+            self.simulator.metrics.append_statistics_on_target_reached_light(self.learning_tuple)
+        else:
+            self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
 
     def reset_environment_info(self):
         self.simulator.environment.reset_drones_targets()

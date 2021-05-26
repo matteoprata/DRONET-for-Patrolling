@@ -59,14 +59,13 @@ class Metrics:
     def append_statistics_on_target_reached_light(self, learning_tuple=None):
         """ Saves the current second, aoi, reward, epsilon, loss. For computing final plots. """
 
-        if learning_tuple is not None:
-            reward, epsilon, loss, end_epoch, s, q, was_new_epoch = learning_tuple
-            # if reward is not None and epsilon is not None and loss is not None and end_epoch is not None:
-            self.reward.append(reward)
-            self.epsilon.append(epsilon)
-            self.loss.append(loss)
-            self.is_final.append(1 if end_epoch else None)
-            self.is_new_epoch.append(1 if was_new_epoch else None)
+        reward, epsilon, loss, end_epoch, s, q, was_new_epoch = learning_tuple
+        # if reward is not None and epsilon is not None and loss is not None and end_epoch is not None:
+        self.reward.append(reward)
+        self.epsilon.append(epsilon)
+        self.loss.append(loss)
+        self.is_final.append(1 if end_epoch else None)
+        self.is_new_epoch.append(1 if was_new_epoch else None)
 
     def save_dataframe_light(self):
         has_header = not os.path.isfile(self.simulator.directory_simulation() + "dqn_training_data.csv")
@@ -81,6 +80,9 @@ class Metrics:
         df_dqn["is_new_epoch"] = self.is_new_epoch
 
         df_dqn.to_csv(self.simulator.directory_simulation() + "dqn_training_data.csv", mode='a', header=has_header)
+
+        # Resetting the data structure
+        self.reset_data_structures()
 
     def save_dataframe(self):
         """ Saves data to disk. """

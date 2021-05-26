@@ -83,7 +83,7 @@ class Plotting:
     def plot_dqn_stats(self, window=100):
         """ Plot min residual of the targets population. """
         rolled_avg_loss = self.dqn_stats["loss"].rolling(window).mean()
-        rolled_epsilon = self.dqn_stats["epsilon"].rolling(window).mean()
+        rolled_epsilon = self.dqn_stats["epsilon"]
         cumulative_rew = self.dqn_stats["reward"].cumsum()
 
         is_end = [i for i, j in enumerate(self.dqn_stats["is_new_epoch"]) if j == 1]

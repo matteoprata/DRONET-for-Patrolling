@@ -15,17 +15,14 @@ import time
 
 
 class State:
-    def __init__(self, aois, time_distances, position, aoi_norm, time_norm, position_norm, is_final,
-                 future_residuals, aoi_future_norm, is_flying, objective):
+    def __init__(self, aois, time_distances, position, aoi_norm, time_norm, position_norm, is_final, is_flying, objective):
 
-        self._future_residuals: list = future_residuals
         self._residuals: list = aois
         self._time_distances: list = time_distances
         self._position = position
         self.is_final = is_final
         self._is_flying = is_flying
 
-        self.aoi_future_norm = aoi_future_norm
         self.aoi_norm = aoi_norm
         self.time_norm = time_norm
         self.position_norm = position_norm
@@ -37,9 +34,6 @@ class State:
 
     def is_flying(self, normalized=True):
         return self._is_flying if not normalized else int(self._is_flying)
-
-    def future_residuals(self, normalized=True):
-        return self._future_residuals if not normalized else self.normalize_feature(self._future_residuals, self.aoi_future_norm, 0)
 
     def residuals(self, normalized=True):
         return self._residuals if not normalized else self.normalize_feature(self._residuals, self.aoi_norm, 0)
@@ -81,7 +75,6 @@ class RLModule:
         self.previous_loss = None
 
         self.com_rewards = 0
-        self.policy_cycle = 0
         self.prev_learning_tuple = None
         self.N_ACTIONS = len(self.simulator.environment.targets)
         self.N_FEATURES = 2 * len(self.simulator.environment.targets)
@@ -102,11 +95,11 @@ class RLModule:
                                  swap_models_every_decision = self.simulator.learning["swap_models_every_decision"],
                                  )
 
-        min_threshold = min([t.maximum_tolerated_idleness for t in self.simulator.environment.targets])
-        self.AOI_FUTURE_NORM = 1  # self.simulator.duration_seconds() / min_threshold
-        self.AOI_NORM = 10 # self.simulator.duration_seconds() / min_threshold
+        # min_threshold = min([t.maximum_tolerated_idleness for t in self.simulator.environment.targets])
+        # self.AOI_FUTURE_NORM = 1  # self.simulator.duration_seconds() / min_threshold
+        self.AOI_NORM = self.MAX_RES_PRECISION  # self.simulator.duration_seconds() / min_threshold
         self.TIME_NORM = self.simulator.max_travel_time()
-        self.ACTION_NORM = self.N_ACTIONS
+        # self.ACTION_NORM = self.N_ACTIONS
 
     def get_current_residuals(self, next=0):
         """ max tra AOI / IDLENESS e 1 """
@@ -117,14 +110,15 @@ class RLModule:
         return [euclidean_distance(self.drone.coords, target.coords)/self.drone.speed for target in self.drone.simulator.environment.targets]
 
     def evaluate_state(self):
-        pa = self.previous_action if self.previous_action is not None else 0
-        residuals = self.get_current_residuals()
-        is_flying = self.drone.is_flying()
-        objective = self.previous_action if self.drone.is_flying() else self.N_ACTIONS + 1
-        distances = self.get_current_time_distances()
+        # pa = self.previous_action if self.previous_action is not None else 0
+        # is_flying = self.drone.is_flying()
+        # objective = self.previous_action if self.drone.is_flying() else self.N_ACTIONS + 1
 
-        state = State(residuals, distances, pa, self.AOI_NORM, self.TIME_NORM, self.ACTION_NORM,
-                     False, None, self.AOI_FUTURE_NORM, is_flying, objective)
+        # - - # - - # - - # - - # - - # - - # - - # - - # - - #
+        distances = self.get_current_time_distances()
+        residuals = self.get_current_residuals()
+
+        state = State(residuals, distances, None, self.AOI_NORM, self.TIME_NORM, None, False, None, None)
         return state
 
     def evaluate_reward(self, s, a, s_prime):
@@ -134,15 +128,20 @@ class RLModule:
         norm_factor_rew = self.N_ACTIONS * self.MAX_RES_PRECISION * round(self.simulator.max_travel_time() / config.DELTA_DEC)
 
         for step in range(n_steps):
-            # print(step, n_steps)
+            # print("STEP", step)
             for target in self.simulator.environment.targets:
                 # residual of target at time of flight
                 delta_dec = (config.DELTA_DEC * step) if time_dist_to_a/config.DELTA_DEC >= 1 else self.simulator.ts_duration_sec   # se fai loop, vai back di config.DELTA_DEC
-                residual = ((self.simulator.current_second() - delta_dec) - (target.last_visit_ts * self.simulator.ts_duration_sec)) / target.maximum_tolerated_idleness
+
+                residual = ((self.simulator.current_second() - delta_dec) -
+                            ((target.last_visit_ts * self.simulator.ts_duration_sec - (time_dist_to_a if target.identifier == a else 0))  # upon reaching a target
+                             )) / target.maximum_tolerated_idleness
+
+                # print(target.identifier, a, time_dist_to_a, target.last_visit_ts * self.simulator.ts_duration_sec, self.simulator.current_second(), residual)
                 residual = min(residual, self.MAX_RES_PRECISION)
 
                 REW += - residual if residual > 1 else 0
-                # print(residual, target.last_visit_ts * self.simulator.ts_duration_sec, (self.simulator.current_second() - config.DELTA_DEC * step))
+        # print(REW, REW / norm_factor_rew)
         REW = REW / norm_factor_rew
         REW += config.PENALTY_ON_BS_EXPIRATION if s_prime.is_final else 0
         return REW
@@ -179,7 +178,7 @@ class RLModule:
                                             is_final=s_prime.is_final)
 
         if s_prime.is_final:
-            self.simulator.environment.reset_drones_targets()
+            self.simulator.environment.reset_drones_targets(False)
             self.reset_MDP()
 
         return r, self.previous_epsilon, self.DQN.current_loss, s_prime.is_final, s, s_prime

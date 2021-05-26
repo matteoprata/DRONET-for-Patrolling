@@ -234,10 +234,10 @@ class PatrollingSimulator:
         """ The method starts the simulation. """
         self.print_sim_info()
 
-        IS_PRO_BARS = not config.PLOT_SIM
-        for epoch in tqdm(range(config.N_EPOCHS), desc='epoch', disable=not IS_PRO_BARS):
+        IS_PRO_BARS = config.PLOT_SIM
+        for epoch in tqdm(range(config.N_EPOCHS), desc='epoch', disable=IS_PRO_BARS):
             episodes_perm = self.rstate_sample_batch_training.permutation(config.N_EPISODES)
-            for episode in tqdm(range(len(episodes_perm)), desc='episodes', leave=False, disable=not IS_PRO_BARS):
+            for episode in tqdm(range(len(episodes_perm)), desc='episodes', leave=False, disable=IS_PRO_BARS):
                 ie = episodes_perm[episode]
                 for drone in self.environment.drones:
                     drone.reset_environment_info()
@@ -246,7 +246,7 @@ class PatrollingSimulator:
                 self.environment.spawn_targets(targets)
 
                 self.cur_step = 0
-                for cur_step in tqdm(range(config.EPISODE_DURATION), desc='step', leave=False, disable=not IS_PRO_BARS):
+                for cur_step in tqdm(range(config.EPISODE_DURATION), desc='step', leave=False, disable=IS_PRO_BARS):
                     for drone in self.environment.drones:
                         # self.environment.detect_collision(drone)
                         drone.move()

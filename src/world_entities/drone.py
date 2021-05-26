@@ -73,6 +73,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
                 self.learning_tuple = reward, epsilon, loss, is_end, s, q, self.was_final_epoch
                 self.save_metrics()
+                self.was_final_epoch = False
 
         elif self.mobility == config.Mobility.RANDOM_MOVEMENT:
             if self.will_reach_target():

@@ -264,7 +264,7 @@ class PatrollingSimulator:
     def checkout(self, do=False):
         """ print metrics save stuff. """
         if do:
-            print("Doing checkout at", self.cur_step_total)
+            # print("Doing checkout at", self.cur_step_total)
             try:
                 if self.learning["is_pretrained"]:
                     self.metrics.save_dataframe()

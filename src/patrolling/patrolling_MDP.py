@@ -128,19 +128,18 @@ class RLModule:
         norm_factor_rew = self.N_ACTIONS * self.MAX_RES_PRECISION * round(self.simulator.max_travel_time() / config.DELTA_DEC)
 
         for step in range(n_steps):
-            # print("STEP", step)
+            go_back = (config.DELTA_DEC * step) if time_dist_to_a / config.DELTA_DEC >= 1 else self.simulator.ts_duration_sec
+            TIME = self.simulator.current_second() - go_back
+            # print("STEP", step, TIME)
+
             for target in self.simulator.environment.targets:
-                # residual of target at time of flight
-                delta_dec = (config.DELTA_DEC * step) if time_dist_to_a/config.DELTA_DEC >= 1 else self.simulator.ts_duration_sec   # se fai loop, vai back di config.DELTA_DEC
+                LAST_VISIT = target.last_visit_ts * self.simulator.ts_duration_sec
+                residual = (TIME - LAST_VISIT) / target.maximum_tolerated_idleness
 
-                residual = ((self.simulator.current_second() - delta_dec) -
-                            ((target.last_visit_ts * self.simulator.ts_duration_sec - (time_dist_to_a if target.identifier == a else 0))  # upon reaching a target
-                             )) / target.maximum_tolerated_idleness
-
-                # print(target.identifier, a, time_dist_to_a, target.last_visit_ts * self.simulator.ts_duration_sec, self.simulator.current_second(), residual)
+                # print(target.identifier, a, time_dist_to_a, LAST_VISIT, residual)
                 residual = min(residual, self.MAX_RES_PRECISION)
 
-                REW += - residual if residual > 1 else 0
+                REW += - residual if residual >= 1 else 0
         # print(REW, REW / norm_factor_rew)
         REW = REW / norm_factor_rew
         REW += config.PENALTY_ON_BS_EXPIRATION if s_prime.is_final else 0

@@ -59,12 +59,12 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
             if self.will_reach_target() or self.was_final:
                 self.was_final = False
-                self.prev_target.last_visit_ts = self.simulator.cur_step
 
                 self.coords = self.next_target()
                 reward, epsilon, loss, is_end, s, s_prime = self.state_manager.invoke_train()
                 action, q = (0, None) if is_end else self.state_manager.invoke_predict(s_prime)
 
+                # self.prev_target.last_visit_ts = self.simulator.cur_step
                 self.prev_target.last_visit_ts = self.simulator.cur_step + (1 if is_end else 0)
                 self.prev_target = self.simulator.environment.targets[action]
                 self.path.append(self.prev_target.coords)

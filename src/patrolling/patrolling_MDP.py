@@ -123,14 +123,13 @@ class RLModule:
 
     def evaluate_reward(self, s, a, s_prime):
         REW = 0
+        EMPHASYZE = - 1
         time_dist_to_a = s.time_distances(False)[a]
         n_steps = max(int(time_dist_to_a/config.DELTA_DEC), 1)
         norm_factor_rew = self.N_ACTIONS * self.MAX_RES_PRECISION * round(self.simulator.max_travel_time() / config.DELTA_DEC)
 
         for step in range(n_steps):
-            go_back = (config.DELTA_DEC * step) if time_dist_to_a / config.DELTA_DEC >= 1 else self.simulator.ts_duration_sec
-            TIME = self.simulator.current_second() - go_back
-            # print("STEP", step, TIME)
+            TIME = self.simulator.current_second() - (config.DELTA_DEC * step)
 
             for target in self.simulator.environment.targets:
                 LAST_VISIT = target.last_visit_ts * self.simulator.ts_duration_sec
@@ -141,7 +140,7 @@ class RLModule:
 
                 REW += - residual if residual >= 1 else 0
         # print(REW, REW / norm_factor_rew)
-        REW = REW / norm_factor_rew
+        REW = REW / norm_factor_rew + EMPHASYZE
         REW += config.PENALTY_ON_BS_EXPIRATION if s_prime.is_final else 0
         return REW
 
@@ -159,8 +158,9 @@ class RLModule:
         s_prime = self.evaluate_state()
         s_prime.is_final = self.evaluate_is_final_state(s, a, s_prime)
         r = self.evaluate_reward(s, a, s_prime)
+        s_prime._residuals[a] = 0
 
-        self.prev_learning_tuple = s.vector(False, True), a, s_prime.vector(False,True), r
+        self.prev_learning_tuple = s.vector(False, True), a, s_prime.vector(False, True), r
 
         if config.LOG_STATE >= 0:
             self.log_transition(s, s_prime, a, r, every=config.LOG_STATE)

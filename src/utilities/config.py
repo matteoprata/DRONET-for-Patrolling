@@ -97,7 +97,7 @@ class Time(Enum):
 
 DELTA_DEC = 1     # seconds
 LOG_STATE = False  # print rhe state or not
-PENALTY_ON_BS_EXPIRATION = -1
+PENALTY_ON_BS_EXPIRATION = -1.5
 ZERO_TOLERANCE = 0.1     # 10% at 80% of the simulation
 EXPLORE_PORTION = 0.8    # what portion of time of the simulation is spent exploring
 
@@ -108,5 +108,5 @@ TARGETS_FILE = "data/targets/"
 
 
 N_TARGETS = 4       # number of random targets in the map
-DRONE_MAX_ENERGY = 1 * Time.MIN.value       # int: max energy of a drone sec
+DRONE_MAX_ENERGY = 5 * Time.MIN.value       # int: max energy of a drone sec
 DRONE_SPEED = 18  # 10              # float: m/s, drone speed.

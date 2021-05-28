@@ -72,9 +72,9 @@ class Environment:
         # Creates a dataset of targets to iterate over to
 
         # loading targets list
-        path_exists = os.path.exists(config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, config.N_TARGETS, self.simulator.drone_speed_meters_sec))
+        path_exists = os.path.exists(config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec))
         MAX_N_EPISODES = 2000
-        MAX_N_TARGETS = config.N_TARGETS
+        MAX_N_TARGETS = self.simulator.n_targets
 
         if not path_exists:
             to_json = defaultdict(list)
@@ -94,16 +94,16 @@ class Environment:
                     idleness = self.simulator.rnd_env.randint(LOW, UP)
                     to_json[ep].append((i, tuple(coordinates[i]), idleness))
 
-            util.save_json(to_json, config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, config.N_TARGETS, self.simulator.drone_speed_meters_sec))
+            util.save_json(to_json, config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec))
             print("DONE: generating random episodes")
 
-        to_json = util.read_json(config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, config.N_TARGETS, self.simulator.drone_speed_meters_sec))
+        to_json = util.read_json(config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec))
 
         print("LOADING random episodes")
-        assert(config.N_EPISODES <= MAX_N_EPISODES)
-        for ep in range(config.N_EPISODES):
+        assert(self.simulator.n_episodes <= MAX_N_EPISODES)
+        for ep in range(self.simulator.n_episodes):
             epoch_targets = []
-            for t_id, t_coord, t_idleness in to_json[str(ep)][:config.N_TARGETS]:
+            for t_id, t_coord, t_idleness in to_json[str(ep)][:self.simulator.n_targets]:
 
                 t = Target(identifier=len(self.base_stations) + t_id,
                            coords=tuple(t_coord),

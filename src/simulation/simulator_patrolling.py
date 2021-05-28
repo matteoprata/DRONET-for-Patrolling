@@ -18,7 +18,7 @@ import time
 class PatrollingSimulator:
 
     def __init__(self,
-                 sim_description="",
+                 sim_description=config.SIM_DESCRIPTION,
                  sim_seed=config.SIM_SEED,
                  ts_duration_sec=config.SIM_TS_DURATION,
                  sim_duration_ts=config.SIM_DURATION,
@@ -39,12 +39,26 @@ class PatrollingSimulator:
                  n_grid_cells=config.N_GRID_CELLS,
                  n_targets=config.N_TARGETS,
                  drone_mobility=config.DRONE_MOBILITY,
-                 targets=config.TARGETS,
-                 learning=config.LEARNING_PARAMETERS
+                 learning=config.LEARNING_PARAMETERS,
+
+                 log_state=config.LOG_STATE,
+                 penalty_on_bs_expiration=config.PENALTY_ON_BS_EXPIRATION,
+                 n_epochs=config.N_EPOCHS,
+                 n_episodes=config.N_EPISODES,
+                 episode_duration=config.EPISODE_DURATION,
+                 is_plot=config.PLOT_SIM
                  ):
+
+        self.log_state=log_state
+        self.penalty_on_bs_expiration=penalty_on_bs_expiration
+        self.n_epochs=n_epochs
+        self.n_episodes=n_episodes
+        self.episode_duration=episode_duration
+        self.is_plot = is_plot
 
         self.learning = learning
         self.sim_peculiarity = sim_description
+
         self.cur_step = 0
         self.cur_step_total = 0
 
@@ -56,7 +70,6 @@ class PatrollingSimulator:
         self.n_targets = n_targets
         self.n_obstacles = n_obstacles
         self.grid_cell_size = 0 if n_grid_cells <= 0 else int(self.env_width_meters / n_grid_cells)
-        self.targets = targets
 
         # if this coo is not none, then the drones are self driven
         self.drone_coo = drone_coo
@@ -150,7 +163,7 @@ class PatrollingSimulator:
     # ---- # OTHER # ---- #
 
     def __setup_plotting(self):
-        if config.PLOT_SIM or config.SAVE_PLOT:
+        if self.is_plot or config.SAVE_PLOT:
             self.draw_manager = pp_draw.PathPlanningDrawer(self.environment, self, borders=True)
 
     def __set_randomness(self):
@@ -234,9 +247,9 @@ class PatrollingSimulator:
         """ The method starts the simulation. """
         self.print_sim_info()
 
-        IS_PRO_BARS = config.PLOT_SIM
-        for epoch in tqdm(range(config.N_EPOCHS), desc='epoch', disable=IS_PRO_BARS):
-            episodes_perm = self.rstate_sample_batch_training.permutation(config.N_EPISODES)
+        IS_PRO_BARS = self.is_plot
+        for epoch in tqdm(range(self.n_epochs), desc='epoch', disable=IS_PRO_BARS):
+            episodes_perm = self.rstate_sample_batch_training.permutation(self.n_episodes)
             for episode in tqdm(range(len(episodes_perm)), desc='episodes', leave=False, disable=IS_PRO_BARS):
                 ie = episodes_perm[episode]
                 for drone in self.environment.drones:
@@ -246,13 +259,13 @@ class PatrollingSimulator:
                 self.environment.spawn_targets(targets)
 
                 self.cur_step = 0
-                for cur_step in tqdm(range(config.EPISODE_DURATION), desc='step', leave=False, disable=IS_PRO_BARS):
+                for cur_step in tqdm(range(self.episode_duration), desc='step', leave=False, disable=IS_PRO_BARS):
                     for drone in self.environment.drones:
                         # self.environment.detect_collision(drone)
                         drone.move()
 
-                    if config.SAVE_PLOT or config.PLOT_SIM:
-                        self.__plot(self.cur_step, config.EPISODE_DURATION)
+                    if config.SAVE_PLOT or self.is_plot:
+                        self.__plot(self.cur_step, self.episode_duration)
 
                     self.cur_step = cur_step
                     self.cur_step_total += 1
@@ -264,7 +277,6 @@ class PatrollingSimulator:
     def checkout(self, do=False):
         """ print metrics save stuff. """
         if do:
-            # print("Doing checkout at", self.cur_step_total)
             try:
                 if self.learning["is_pretrained"]:
                     self.metrics.save_dataframe()

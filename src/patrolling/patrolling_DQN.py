@@ -72,7 +72,7 @@ class PatrollingDQN:
     def compute_epsilon_decay(self, zero_perc_simulation=config.EXPLORE_PORTION, prob_threshold=config.ZERO_TOLERANCE):
         # keep the experience > .0001 until the first %80 of the steps
         # e^(- step_with_zero_exp * epsilon_decay) = 10^-4 -> - step_with_zero_exp * epsilon_decay = log_e 10^-4
-        sim_duration = config.EPISODE_DURATION * config.N_EPISODES * config.N_EPOCHS
+        sim_duration = self.simulator.episode_duration * self.simulator.n_episodes * self.simulator.n_epochs
         step_with_zero_exp = sim_duration * zero_perc_simulation
         return - np.log(prob_threshold) / step_with_zero_exp
 

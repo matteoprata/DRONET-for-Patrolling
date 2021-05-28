@@ -9,6 +9,7 @@ simulation. For an extensive experimental campaign read the header at src.simula
 
 # ----------------------------- SIMULATION PARAMS ---------------------------- #
 
+SIM_DESCRIPTION = "default"
 SIM_SEED = 100                # int: seed of this simulation.
 SIM_DURATION = 24000*24*10      # int: steps of simulation. (np.inf)
 SIM_TS_DURATION = 0.150     # float: seconds duration of a step in seconds.
@@ -55,11 +56,6 @@ SAVE_PLOT_DIR = "data/plots/"  # string: where to save plots
 
 # ------------------------------- PATROLLING ------------------------------- #
 
-TARGETS = [(BASE_STATION_COORDS[0]-600, BASE_STATION_COORDS[1]+400, 4000),
-           (BASE_STATION_COORDS[0]-250, BASE_STATION_COORDS[1]+1100, 300),
-           (BASE_STATION_COORDS[0]+250, BASE_STATION_COORDS[1]+1100, 300),
-           (BASE_STATION_COORDS[0]+600, BASE_STATION_COORDS[1]+400, 4000)]
-
 
 class Mobility(Enum):
     FREE = 0
@@ -72,13 +68,16 @@ class Mobility(Enum):
     GO_MIN_SUM_RESIDUAL = 6
 
 
-DRONE_MOBILITY = Mobility.DECIDED
-RL_DATA = "data/rl/"
+class Time(Enum):
+    DAY = int(60*60*24/SIM_TS_DURATION)
+    HOUR = int(60*60/SIM_TS_DURATION)
+    MIN = int(60/SIM_TS_DURATION)
+
 
 LEARNING_PARAMETERS = {
     "is_pretrained": False,
     "model_name": "data/rl/model.h5",
-    "beta": 0.5,  # for continuous tasks
+    "beta": None,  # for continuous tasks
     "replay_memory_depth": 100000,
     "epsilon_decay": None,
 
@@ -88,25 +87,28 @@ LEARNING_PARAMETERS = {
     "swap_models_every_decision": 500,
 }
 
+# paths
+RL_DATA = "data/rl/"
+TARGETS_FILE = "data/targets/"
 
-class Time(Enum):
-    DAY = int(60*60*24/SIM_TS_DURATION)
-    HOUR = int(60*60/SIM_TS_DURATION)
-    MIN = int(60/SIM_TS_DURATION)
-
-
-DELTA_DEC = 1     # seconds
-LOG_STATE = False  # print rhe state or not
-PENALTY_ON_BS_EXPIRATION = -1.5
+# how much exploration, careful to edit
 ZERO_TOLERANCE = 0.1     # 10% at 80% of the simulation
 EXPLORE_PORTION = 0.8    # what portion of time of the simulation is spent exploring
 
-N_EPOCHS = 1000
-N_EPISODES = 50
-EPISODE_DURATION = 5 * Time.HOUR.value
-TARGETS_FILE = "data/targets/"
+DRONE_MOBILITY = Mobility.DECIDED
+DELTA_DEC = 1      # seconds
 
-
-N_TARGETS = 4       # number of random targets in the map
+# variables from here
 DRONE_MAX_ENERGY = 5 * Time.MIN.value       # int: max energy of a drone sec
-DRONE_SPEED = 18  # 10              # float: m/s, drone speed.
+DRONE_SPEED = 18                            # float: m/s, drone speed.
+N_TARGETS = 4                               # number of random targets in the map
+
+LOG_STATE = False  # print rhe state or not
+PENALTY_ON_BS_EXPIRATION = -1
+
+N_EPOCHS = 100      # 44
+N_EPISODES = 25     # 50
+EPISODE_DURATION = 5 * Time.HOUR.value
+
+
+

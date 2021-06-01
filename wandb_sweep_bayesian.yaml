@@ -1,0 +1,30 @@
+
+program: wandb_param_search.py
+
+method: bayes
+
+metric:
+  goal: maximize
+  name: cumulative_reward
+
+parameters:
+  n_epochs:
+    value: 500
+  n_episodes:
+    value: 1
+  episode_duration:
+    value: 24000
+  learning_rate:
+    values: [0.01, 0.001, 0.0001, 0.005, 0.0005, 0.0001]
+  discount_factor:
+    values: [0.2, 0.5, 0.95, 0.98, 1]
+  swap_models_every_decision:
+    values: [100, 500, 1000, 2000]
+
+command:
+  - ${env}
+  - python3.7
+  - ${program}
+  - ${args}
+
+

@@ -85,11 +85,14 @@ LEARNING_PARAMETERS = {
     "discount_factor": 0.98,
     "batch_size": 32,
     "swap_models_every_decision": 500,
+    "optimizer": "sgd",
+    "loss": "mse"
 }
 
 # paths
 RL_DATA = "data/rl/"
 TARGETS_FILE = "data/targets/"
+YAML_FILE = "src/patrolling/wandb_sweep_bayesian.yaml"
 
 # how much exploration, careful to edit
 ZERO_TOLERANCE = 0.1     # 10% at 80% of the simulation

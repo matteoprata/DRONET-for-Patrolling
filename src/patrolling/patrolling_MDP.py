@@ -1,5 +1,5 @@
 
-from src.patrolling.patrolling_DQN import PatrollingDQN
+from src.patrolling.patrolling_DQN_TORCH import PatrollingDQN
 from src.utilities.utilities import euclidean_distance
 from src.utilities import config
 import numpy as np
@@ -84,11 +84,9 @@ class RLModule:
                                  n_features=self.N_FEATURES,
                                  simulator=self.simulator,
                                  metrics=self.simulator.metrics,
-                                 beta =                     self.simulator.learning["beta"],
                                  lr =                       self.simulator.learning["learning_rate"],
                                  batch_size =               self.simulator.learning["batch_size"],
                                  load_model =               self.simulator.learning["is_pretrained"],
-                                 epsilon_decay =            self.simulator.learning["epsilon_decay"],
                                  pretrained_model_path =    self.simulator.learning["model_name"],
                                  discount_factor =          self.simulator.learning["discount_factor"],
                                  replay_memory_depth =      self.simulator.learning["replay_memory_depth"],

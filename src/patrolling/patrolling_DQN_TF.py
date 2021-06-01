@@ -1,12 +1,10 @@
 
 import numpy as np
 from src.utilities import config, utilities as util
-import tensorflow.compat.v1 as tf
 
-from keras.models import Sequential, Input
-from keras.layers import Dense
-from keras import optimizers
-import keras as kr
+from tensorflow import keras
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
 
 
 class PatrollingDQN:
@@ -18,9 +16,7 @@ class PatrollingDQN:
                  metrics,
                  batch_size=32,
                  lr=0.0001,
-                 beta=0.5,
                  discount_factor=.99,  # .99,
-                 epsilon_decay=0.0002,
                  replay_memory_depth=100000,
                  swap_models_every_decision=500,  # 10000
                  load_model=True,
@@ -49,7 +45,7 @@ class PatrollingDQN:
 
         # make the simulation reproducible
         np.random.seed(self.simulator.sim_seed)
-        tf.set_random_seed(self.simulator.sim_seed)
+        # tf.set_random_seed(self.simulator.sim_seed)
 
         # sess = tf.Session(graph=tf.get_default_graph())
         # tf.keras.backend.set_session(sess)
@@ -66,8 +62,8 @@ class PatrollingDQN:
             # import os
             # assert os.path.isdir("./model")
             # exit()
-            self.model = kr.models.load_model(pretrained_model_path)
-            self.model_hat = kr.models.load_model(pretrained_model_path)
+            self.model = keras.models.load_model(pretrained_model_path)
+            self.model_hat = keras.models.load_model(pretrained_model_path)
 
     def compute_epsilon_decay(self, zero_perc_simulation=config.EXPLORE_PORTION, prob_threshold=config.ZERO_TOLERANCE):
         # keep the experience > .0001 until the first %80 of the steps
@@ -103,8 +99,9 @@ class PatrollingDQN:
         model.add(Dense(n_hidden_neurons, input_dim=self.n_features, activation='relu'))
         model.add(Dense(self.n_actions))
 
-        opt = optimizers.Adam(learning_rate=self.lr)
-        model.compile(loss='mean_squared_error', optimizer=opt)
+        opt = keras.optimizers.Adam(learning_rate=self.lr)
+        model.compile(loss='mse', optimizer=opt)
+        # model.compile(optimizer="adam", loss="mean_squared_error", optimizer=opt)
 
         return model
 
@@ -176,11 +173,12 @@ class PatrollingDQN:
         # self.model_hat = self.build_neural_net()
         self.model_hat.set_weights(self.model.get_weights())
 
-    def save_model(self):
-        self.model.save(config.RL_DATA + self.simulator.name() + "/model.h5")
+    def save_model(self, path):
+        self.model.save(path)
 
     def time_to_batch_training(self):
         return len(self.replay_memory) > self.batch_size  # and self.n_decison_step % self.batch_training_every_decision == 0
 
     def time_to_swap_models(self):
         return self.n_decision_step % self.swap_models_every_decision == 0
+

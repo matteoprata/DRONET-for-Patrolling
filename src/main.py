@@ -2,10 +2,11 @@
 from src.simulation.simulator_patrolling import PatrollingSimulator
 import src.utilities.config as config
 import argparse
-
+import wandb
 
 parser = argparse.ArgumentParser(description='Run experiments of patrolling.')
 
+parser.add_argument('-wandb', '--is_wandb', type=int, default=1)
 parser.add_argument('-de', '--description', type=str, default=config.SIM_DESCRIPTION)
 
 # -- learning params
@@ -25,6 +26,7 @@ parser.add_argument('-sp', '--drone_speed', type=int, default=config.DRONE_SPEED
 parser.add_argument('-bat', '--drone_max_energy', type=int, default=config.DRONE_MAX_ENERGY)
 parser.add_argument('-tar', '--n_targets', type=int, default=config.N_TARGETS)
 parser.add_argument('-pen', '--penalty', type=int, default=config.PENALTY_ON_BS_EXPIRATION)
+parser.add_argument('-seed', '--seed', type=int, default=config.SIM_SEED)
 
 # epochs episodes
 parser.add_argument('-epo', '--n_epochs', type=int, default=config.N_EPOCHS)
@@ -43,18 +45,44 @@ for arg in vars(args):
 
 def main():
     """ the place where to run simulations and experiments. """
-    sim = PatrollingSimulator(learning=learning,
-                              sim_description=args.description,
-                              n_targets=args.n_targets,
-                              drone_speed=args.drone_speed,
-                              drone_max_battery=args.drone_max_energy,
-                              log_state=args.log_state,
-                              is_plot=bool(args.plotting),
-                              n_epochs=args.n_epochs,
-                              n_episodes=args.n_episodes,
-                              episode_duration=args.episode_duration,
-                              penalty_on_bs_expiration=args.penalty)
-    sim.run()
+    if bool(args.is_wandb):
+        with wandb.init() as wandb_instance:
+            wandb_config = wandb_instance.config
+
+            learning["learning_rate"] = wandb_config["learning_rate"]
+            learning["discount_factor"] = wandb_config["discount_factor"]
+            learning["swap_models_every_decision"] = wandb_config["swap_models_every_decision"]
+
+            sim = PatrollingSimulator(learning=learning,
+                                      sim_description=args.description,
+                                      n_targets=args.n_targets,
+                                      drone_speed=args.drone_speed,
+                                      drone_max_battery=args.drone_max_energy,
+                                      log_state=args.log_state,
+                                      is_plot=bool(args.plotting),
+                                      n_epochs=wandb_config['n_epochs'],
+                                      n_episodes=wandb_config['n_episodes'],
+                                      episode_duration=wandb_config['episode_duration'],
+                                      penalty_on_bs_expiration=args.penalty,
+                                      sim_seed=args.seed,
+
+                                      wandb=wandb_instance)
+            sim.run()
+    else:
+        sim = PatrollingSimulator(learning=learning,
+                                  sim_description=args.description,
+                                  n_targets=args.n_targets,
+                                  drone_speed=args.drone_speed,
+                                  drone_max_battery=args.drone_max_energy,
+                                  log_state=args.log_state,
+                                  is_plot=bool(args.plotting),
+                                  n_epochs=args.n_epochs,
+                                  n_episodes=args.n_episodes,
+                                  episode_duration=args.episode_duration,
+                                  penalty_on_bs_expiration=args.penalty,
+                                  sim_seed=args.seed)
+        sim.run()
+
 
 
 if __name__ == "__main__":

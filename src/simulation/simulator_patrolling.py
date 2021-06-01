@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 import numpy as np
 import time
+import os
 
 
 class PatrollingSimulator:
@@ -46,7 +47,8 @@ class PatrollingSimulator:
                  n_epochs=config.N_EPOCHS,
                  n_episodes=config.N_EPISODES,
                  episode_duration=config.EPISODE_DURATION,
-                 is_plot=config.PLOT_SIM
+                 is_plot=config.PLOT_SIM,
+                 wandb=None
                  ):
 
         self.log_state=log_state
@@ -55,6 +57,9 @@ class PatrollingSimulator:
         self.n_episodes=n_episodes
         self.episode_duration=episode_duration
         self.is_plot = is_plot
+
+        # HYPER TUNING
+        self.wandb = wandb
 
         self.learning = learning
         self.sim_peculiarity = sim_description
@@ -270,7 +275,7 @@ class PatrollingSimulator:
                     self.cur_step = cur_step
                     self.cur_step_total += 1
 
-                self.checkout(do=True)
+                self.checkout(do=self.wandb is None)
             for drone in self.environment.drones:
                 drone.was_final_epoch = True
 
@@ -285,8 +290,6 @@ class PatrollingSimulator:
             except:
                 print("Couldn't save data from step", self.cur_step_total)
 
-            self.environment.drones[0].state_manager.DQN.save_model()
-
             try:
                 if self.learning["is_pretrained"]:
                     self.plotting.plot_patrolling_performance()
@@ -295,6 +298,8 @@ class PatrollingSimulator:
             except:
                 print("Couldn't plot from step", self.cur_step_total)
 
-    def close(self):
-        self.checkout(True)
+        path = config.RL_DATA + self.name() + "/model.h5" if self.wandb is None else os.path.join(self.wandb.dir, "model.h5")
+        self.environment.drones[0].state_manager.DQN.save_model(path)
 
+    # def close(self):
+    #     self.checkout(True)

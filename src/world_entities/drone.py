@@ -45,6 +45,8 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         self.learning_tuple = None
         self.decision_time = 0
         self.prev_target = self.simulator.environment.targets[0]
+        self.cum_rew = 0
+        self.prev_step_at_decision = 0
 
     # MOVEMENT ROUTINES
 
@@ -74,6 +76,8 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 self.learning_tuple = reward, epsilon, loss, is_end, s, q, self.was_final_epoch
                 self.save_metrics()
                 self.was_final_epoch = False
+
+                self.prev_step_at_decision = self.simulator.cur_step
 
         elif self.mobility == config.Mobility.RANDOM_MOVEMENT:
             if self.will_reach_target():
@@ -126,7 +130,13 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
     def save_metrics(self):
         if not self.simulator.learning["is_pretrained"]:
-            self.simulator.metrics.append_statistics_on_target_reached_light(self.learning_tuple)
+            # self.simulator.metrics.append_statistics_on_target_reached_light(self.learning_tuple)
+            if self.simulator.wandb is not None:
+                reward, epsilon, loss, _, _, _, _ = self.learning_tuple
+                self.cum_rew += reward
+
+                metrics = {"cumulative_reward": self.cum_rew, "experience": epsilon, "loss": 0 if loss is None else loss}
+                self.simulator.wandb.log(metrics)  # , commit=self.is_new_episode())
         else:
             self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
 
@@ -229,3 +239,6 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
     def __hash__(self):
         return hash(self.identifier)
+
+    def is_new_episode(self):
+        return self.prev_step_at_decision >= self.simulator.cur_step

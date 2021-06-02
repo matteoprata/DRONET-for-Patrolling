@@ -92,7 +92,7 @@ LEARNING_PARAMETERS = {
 # paths
 RL_DATA = "data/rl/"
 TARGETS_FILE = "data/targets/"
-YAML_FILE = "src/patrolling/wandb_sweep_bayesian.yaml"
+YAML_FILE = "wandb_sweep_bayesian.yaml"
 
 # how much exploration, careful to edit
 ZERO_TOLERANCE = 0.1     # 10% at 80% of the simulation
@@ -103,15 +103,15 @@ DELTA_DEC = 1      # seconds
 
 # variables from here
 DRONE_MAX_ENERGY = 5 * Time.MIN.value       # int: max energy of a drone sec
-DRONE_SPEED = 18                            # float: m/s, drone speed.
+DRONE_SPEED = 15                            # float: m/s, drone speed.
 N_TARGETS = 4                               # number of random targets in the map
 
 LOG_STATE = False  # print rhe state or not
 PENALTY_ON_BS_EXPIRATION = -1
 
 N_EPOCHS = 100      # 44
-N_EPISODES = 25     # 50
-EPISODE_DURATION = 5 * Time.HOUR.value
+N_EPISODES = 20     # 50
+EPISODE_DURATION = 3 * Time.HOUR.value
 
 
 

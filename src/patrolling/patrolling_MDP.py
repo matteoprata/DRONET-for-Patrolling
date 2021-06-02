@@ -86,7 +86,7 @@ class RLModule:
                                  metrics=self.simulator.metrics,
                                  lr =                       self.simulator.learning["learning_rate"],
                                  batch_size =               self.simulator.learning["batch_size"],
-                                 load_model =               self.simulator.learning["is_pretrained"],
+                                 is_load_model=               self.simulator.learning["is_pretrained"],
                                  pretrained_model_path =    self.simulator.learning["model_name"],
                                  discount_factor =          self.simulator.learning["discount_factor"],
                                  replay_memory_depth =      self.simulator.learning["replay_memory_depth"],

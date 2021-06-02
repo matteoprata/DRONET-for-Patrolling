@@ -18,7 +18,7 @@ class PatrollingDQN:
                  discount_factor=.99,
                  replay_memory_depth=100000,
                  swap_models_every_decision=500,
-                 load_model=True,
+                 is_load_model=True,
                  ):
 
         self.simulator = simulator
@@ -32,7 +32,6 @@ class PatrollingDQN:
         self.n_features = n_features
 
         self.n_decision_step = 0
-        self.n_epochs = 1
 
         # learning parameters
         self.discount_factor = discount_factor
@@ -43,15 +42,11 @@ class PatrollingDQN:
         # make the simulation reproducible
         np.random.seed(self.simulator.sim_seed)
         # tf.set_random_seed(self.simulator.sim_seed)
-
-        # sess = tf.Session(graph=tf.get_default_graph())
-        # tf.keras.backend.set_session(sess)
-
-        self.load_model = load_model
+        self.is_load_model = is_load_model
         self.current_loss = None
 
         # build neural models
-        if not self.load_model:
+        if not self.is_load_model:
             n_hidden_neurons = int(np.sqrt(self.n_features * self.n_actions))
             self.model = DQN(self.n_features, n_hidden_neurons, self.n_actions)      # MODEL 1
             self.model_hat = DQN(self.n_features, n_hidden_neurons, self.n_actions)  # MODEL 2
@@ -84,28 +79,12 @@ class PatrollingDQN:
         """ Returns True if it is time to explore, False otherwise. """
         return self.flip_biased_coin(self.decay())
 
-    # def build_neural_net(self):
-    #     """ Construct the model from scratch """
-    #
-    #     # -------------- Q-NN module body --------------
-    #     model = Sequential()
-    #
-    #     n_hidden_neurons = int(np.sqrt(self.n_features * self.n_actions))
-    #     model.add(Dense(n_hidden_neurons, input_dim=self.n_features, activation='relu'))
-    #     model.add(Dense(self.n_actions))
-    #
-    #     opt = keras.optimizers.Adam(learning_rate=self.lr)
-    #     model.compile(loss='mse', optimizer=opt)
-    #     # model.compile(optimizer="adam", loss="mean_squared_error", optimizer=opt)
-    #
-    #     return model
-
     @torch.no_grad()
     def predict(self, state, is_explore=True):
         """  Given an input state, it returns the action predicted by the model if no exploration is done
           and the model is given as an input, if the exploration goes through. """
 
-        if self.load_model:
+        if self.is_load_model:
             is_explore = False
 
         state = np.asarray(state).astype(np.float32)
@@ -122,11 +101,8 @@ class PatrollingDQN:
 
     def train(self, previous_state=None, current_state=None, action=None, reward=None, is_final=None):
         """ train the NN accumulate the experience and each X data the method actually train the network. """
-        if self.load_model:
+        if self.is_load_model:
             return
-
-        if is_final:
-            self.n_epochs += 1
 
         if not (previous_state is None and current_state is None and action is None and reward is None and is_final is None):
             experience = [previous_state, current_state, action, reward, is_final]

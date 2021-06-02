@@ -46,7 +46,7 @@ for arg in vars(args):
 def main():
     """ the place where to run simulations and experiments. """
     if bool(args.is_wandb):
-        with wandb.init() as wandb_instance:
+        with wandb.init(project="uavsimulator_patrolling") as wandb_instance:
             wandb_config = wandb_instance.config
 
             learning["learning_rate"] = wandb_config["learning_rate"]

@@ -19,6 +19,7 @@ class PatrollingDQN:
                  replay_memory_depth=100000,
                  swap_models_every_decision=500,
                  is_load_model=True,
+                 n_hidden_neurons=None
                  ):
 
         self.simulator = simulator
@@ -30,7 +31,8 @@ class PatrollingDQN:
         # number of actions, actions, number of states
         self.n_actions = n_actions
         self.n_features = n_features
-
+        self.n_hidden_neurons = n_hidden_neurons
+        
         self.n_decision_step = 0
 
         # learning parameters
@@ -47,9 +49,9 @@ class PatrollingDQN:
 
         # build neural models
         if not self.is_load_model:
-            n_hidden_neurons = int(np.sqrt(self.n_features * self.n_actions))
-            self.model = DQN(self.n_features, n_hidden_neurons, self.n_actions)      # MODEL 1
-            self.model_hat = DQN(self.n_features, n_hidden_neurons, self.n_actions)  # MODEL 2
+            n_hidden = self.n_hidden_neurons #int(np.sqrt(self.n_features * self.n_actions))
+            self.model = DQN(self.n_features, n_hidden, self.n_actions)      # MODEL 1
+            self.model_hat = DQN(self.n_features, n_hidden, self.n_actions)  # MODEL 2
             self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         else:
             self.model = torch.load(pretrained_model_path)
@@ -119,13 +121,13 @@ class PatrollingDQN:
 
     def __train_model_batched(self, random_sample_batch):
         """ Given an input batch, it trains the model. """
-
+        
         previous_states, current_states, actions, rewards, is_finals = random_sample_batch
 
-        previous_states_v = torch.tensor(np.asarray(previous_states).astype(np.float32)).to(self.device)
-        current_states_v = torch.tensor(np.asarray(current_states).astype(np.float32)).to(self.device)
-        actions_v = torch.tensor(actions).to(self.device)
-        rewards_v = torch.tensor(rewards).to(self.device)
+        previous_states_v = torch.tensor(np.asarray(previous_states), dtype=torch.float32).to(self.device)
+        current_states_v = torch.tensor(np.asarray(current_states), dtype=torch.float32).to(self.device)
+        actions_v = torch.tensor(actions, dtype=torch.int64).to(self.device)
+        rewards_v = torch.tensor(rewards, dtype=torch.float32).to(self.device)
         is_finals_mask = torch.BoolTensor(is_finals).to(self.device)
 
         # Q-VALUES for all the actions of the batch

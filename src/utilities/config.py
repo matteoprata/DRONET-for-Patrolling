@@ -86,7 +86,8 @@ LEARNING_PARAMETERS = {
     "batch_size": 32,
     "swap_models_every_decision": 500,
     "optimizer": "sgd",
-    "loss": "mse"
+    "loss": "mse",
+    "n_hidden_neurons" : 7
 }
 
 # paths

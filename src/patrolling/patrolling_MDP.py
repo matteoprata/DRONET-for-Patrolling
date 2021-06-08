@@ -91,6 +91,7 @@ class RLModule:
                                  discount_factor =          self.simulator.learning["discount_factor"],
                                  replay_memory_depth =      self.simulator.learning["replay_memory_depth"],
                                  swap_models_every_decision=self.simulator.learning["swap_models_every_decision"],
+                                 n_hidden_neurons=self.simulator.learning["n_hidden_neurons"],
                                  )
 
         self.AOI_NORM = self.MAX_RES_PRECISION  # self.simulator.duration_seconds() / min_threshold
@@ -137,10 +138,23 @@ class RLModule:
                 residual = min(residual, self.MAX_RES_PRECISION)  # 10
                 REW += - residual if residual >= 1 else 0
 
+        # compute my personal positive reward (THIS MUST DONE BEFORE MOVE TO 0 the AoI of the visited target)
+        my_target = self.simulator.environment.targets[a]
+        res = s_prime.vector()[a] * self.MAX_RES_PRECISION
+        if (s.vector()[a + self.N_ACTIONS] == 0 and s_prime.vector()[a + self.N_ACTIONS] == 0):
+            pos_reward = 0  # we are on the same target
+        elif res < 1:
+            pos_reward = min((((- np.e ** res) / (res - 1)) - 1) / 30, 1)
+        elif res == 1:
+            pos_reward = 1
+        else:  # deadline is ggone
+            pos_reward = 0
+        
         norm_factor_rew = self.N_ACTIONS * self.MAX_RES_PRECISION * int(self.simulator.max_travel_time() / config.DELTA_DEC)
 
+        #print("POS_REW", res, pos_reward)
         # print(REW, REW / norm_factor_rew)
-        REW = REW / norm_factor_rew + EMPHASYZE
+        REW = (REW + pos_reward) / (norm_factor_rew + 1) + EMPHASYZE
 
         REW += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
         return REW

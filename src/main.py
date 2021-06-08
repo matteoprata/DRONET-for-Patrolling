@@ -16,6 +16,7 @@ parser.add_argument('-lr', '--learning_rate', type=float, default=config.LEARNIN
 parser.add_argument('-df', '--discount_factor', type=float, default=config.LEARNING_PARAMETERS['discount_factor'])
 parser.add_argument('-rm', '--replay_memory_depth', type=int, default=config.LEARNING_PARAMETERS['replay_memory_depth'])
 parser.add_argument('-sw', '--swap_models_every_decision', type=int, default=config.LEARNING_PARAMETERS['swap_models_every_decision'])
+parser.add_argument('-nhd', '--n_hidden_neurons', type=int, default=config.LEARNING_PARAMETERS['n_hidden_neurons'])
 
 # -- logging
 parser.add_argument('-pl', '--plotting', type=int, default=0)
@@ -52,6 +53,7 @@ def main():
             learning["learning_rate"] = wandb_config["learning_rate"]
             learning["discount_factor"] = wandb_config["discount_factor"]
             learning["swap_models_every_decision"] = wandb_config["swap_models_every_decision"]
+            learning["n_hidden_neurons"] = wandb_config["n_hidden_neurons"]
 
             sim = PatrollingSimulator(learning=learning,
                                       sim_description=args.description,

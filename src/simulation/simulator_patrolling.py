@@ -265,6 +265,8 @@ class PatrollingSimulator:
 
                 self.cur_step = 0
                 for cur_step in tqdm(range(self.episode_duration), desc='step', leave=False, disable=IS_PRO_BARS):
+                    self.cur_step = cur_step
+
                     for drone in self.environment.drones:
                         # self.environment.detect_collision(drone)
                         drone.move()
@@ -272,7 +274,6 @@ class PatrollingSimulator:
                     if config.SAVE_PLOT or self.is_plot:
                         self.__plot(self.cur_step, self.episode_duration)
 
-                    self.cur_step = cur_step
                     self.cur_step_total += 1
 
                 self.checkout(do=self.wandb is None)

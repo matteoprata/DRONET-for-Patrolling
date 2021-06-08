@@ -54,11 +54,11 @@ class Environment:
                                                   y_pos=drone_coods[1])
         return cell_index
 
-    def reset_drones_targets(self, is_zero=True):
+    def reset_drones_targets(self, is_end_epoch=True):
         """ Reset the scenario. """
 
         for target in self.targets:
-            target.last_visit_ts = 0 if is_zero else self.simulator.cur_step
+            target.last_visit_ts = 0 if is_end_epoch else self.simulator.cur_step + 1
 
         for drone in self.drones:
             drone.coords = drone.bs.coords

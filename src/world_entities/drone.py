@@ -59,18 +59,25 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
         elif self.mobility == config.Mobility.DECIDED:
 
-            if self.will_reach_target() or self.was_final:
+            # if self.will_reach_target() or self.was_final:
+            if self.is_decision_step() or self.was_final:
+                # print(self.was_final, self.is_decision_step())
                 self.was_final = False
 
-                self.coords = self.next_target()
+                if self.will_reach_target():
+                    self.coords = self.next_target()
+
+                # t
                 reward, epsilon, loss, is_end, s, s_prime = self.state_manager.invoke_train()
                 action, q = (0, None) if is_end else self.state_manager.invoke_predict(s_prime)
 
-                # self.prev_target.last_visit_ts = self.simulator.cur_step
-                self.prev_target.last_visit_ts = self.simulator.cur_step + (1 if is_end else 0)
-                self.prev_target = self.simulator.environment.targets[action]
-                self.path.append(self.prev_target.coords)
-                self.increase_waypoint_counter()
+                # it takes one step to realize it was an end None state
+                if not self.is_flying():
+                    self.prev_target.last_visit_ts = self.simulator.cur_step + (1 if is_end else 0)
+                    self.prev_target = self.simulator.environment.targets[action]
+                    self.path.append(self.prev_target.coords)
+                    self.increase_waypoint_counter()
+
                 self.was_final = is_end
 
                 self.learning_tuple = reward, epsilon, loss, is_end, s, q, self.was_final_epoch

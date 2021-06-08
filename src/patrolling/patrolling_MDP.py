@@ -120,30 +120,35 @@ class RLModule:
         return state
 
     def evaluate_reward(self, s, a, s_prime):
-        REW = 0
-        EMPHASYZE = 0
+        # REW = 0
+        # EMPHASYZE = 0
+        #
+        # time_dist_to_a = s.time_distances(False)[a]
+        # n_steps = max(int(time_dist_to_a/config.DELTA_DEC), 1)
+        #
+        # for step in range(n_steps):
+        #     TIME = self.simulator.current_second() - (config.DELTA_DEC * step)
+        #
+        #     for target in self.simulator.environment.targets:
+        #         LAST_VISIT = target.last_visit_ts * self.simulator.ts_duration_sec
+        #         residual = (TIME - LAST_VISIT) / target.maximum_tolerated_idleness
+        #
+        #         # print(target.identifier, a, time_dist_to_a, LAST_VISIT, residual)
+        #         residual = min(residual, self.MAX_RES_PRECISION)  # 10
+        #         REW += - residual if residual >= 1 else 0
+        #
+        # norm_factor_rew = self.N_ACTIONS * self.MAX_RES_PRECISION * int(self.simulator.max_travel_time() / config.DELTA_DEC)
+        #
+        # # print(REW, REW / norm_factor_rew)
+        # REW = REW / norm_factor_rew + EMPHASYZE
+        #
+        # REW += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
+        # return REW
 
-        time_dist_to_a = s.time_distances(False)[a]
-        n_steps = max(int(time_dist_to_a/config.DELTA_DEC), 1)
+        rew = - sum([i for i in s_prime.residuals(False) if i >= 1]) / (self.MAX_RES_PRECISION * self.N_ACTIONS)
+        rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
+        return rew
 
-        for step in range(n_steps):
-            TIME = self.simulator.current_second() - (config.DELTA_DEC * step)
-
-            for target in self.simulator.environment.targets:
-                LAST_VISIT = target.last_visit_ts * self.simulator.ts_duration_sec
-                residual = (TIME - LAST_VISIT) / target.maximum_tolerated_idleness
-
-                # print(target.identifier, a, time_dist_to_a, LAST_VISIT, residual)
-                residual = min(residual, self.MAX_RES_PRECISION)  # 10
-                REW += - residual if residual >= 1 else 0
-
-        norm_factor_rew = self.N_ACTIONS * self.MAX_RES_PRECISION * int(self.simulator.max_travel_time() / config.DELTA_DEC)
-
-        # print(REW, REW / norm_factor_rew)
-        REW = REW / norm_factor_rew + EMPHASYZE
-
-        REW += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
-        return REW
 
     def evaluate_is_final_state(self, s, a, s_prime):
         """ The residual of the base station is >= 1, i.e. it is expired. """
@@ -160,7 +165,9 @@ class RLModule:
         s_prime = self.evaluate_state()
         s_prime.is_final = self.evaluate_is_final_state(s, a, s_prime)
         r = self.evaluate_reward(s, a, s_prime)
-        s_prime._residuals[a] = 0  # set to 0 the residual of the just visited target (it will be reset later from drone.py)
+
+        if not self.drone.is_flying():
+            s_prime._residuals[a] = 0  # set to 0 the residual of the just visited target (it will be reset later from drone.py)
 
         self.prev_learning_tuple = s.vector(False, True), a, s_prime.vector(False, True), r
 
@@ -189,6 +196,9 @@ class RLModule:
             state = self.evaluate_state()
 
         action_index, q = self.DQN.predict(state.vector())
+
+        if self.drone.is_flying():
+            action_index = self.previous_action
 
         self.previous_state = state
         self.previous_action = action_index

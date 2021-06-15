@@ -23,7 +23,7 @@ parser.add_argument('-lo', '--log_state', type=float, default=-1)
 
 # -- battery, speed, number of targets
 parser.add_argument('-sp', '--drone_speed', type=int, default=config.DRONE_SPEED)
-parser.add_argument('-bat', '--drone_max_energy', type=int, default=config.DRONE_MAX_ENERGY)
+parser.add_argument('-bat', '--battery', type=int, default=config.DRONE_MAX_ENERGY)
 parser.add_argument('-tar', '--n_targets', type=int, default=config.N_TARGETS)
 parser.add_argument('-pen', '--penalty', type=int, default=config.PENALTY_ON_BS_EXPIRATION)
 parser.add_argument('-seed', '--seed', type=int, default=config.SIM_SEED)
@@ -73,7 +73,7 @@ def main():
                                   sim_description=args.description,
                                   n_targets=args.n_targets,
                                   drone_speed=args.drone_speed,
-                                  drone_max_battery=args.drone_max_energy,
+                                  drone_max_battery=args.battery,
                                   log_state=args.log_state,
                                   is_plot=bool(args.plotting),
                                   n_epochs=args.n_epochs,

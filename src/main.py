@@ -57,7 +57,7 @@ def main():
                                       sim_description=args.description,
                                       n_targets=args.n_targets,
                                       drone_speed=args.drone_speed,
-                                      drone_max_battery=args.drone_max_energy,
+                                      drone_max_battery=wandb_config['battery'],
                                       log_state=args.log_state,
                                       is_plot=bool(args.plotting),
                                       n_epochs=wandb_config['n_epochs'],

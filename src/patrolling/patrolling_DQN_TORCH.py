@@ -123,9 +123,9 @@ class PatrollingDQN:
         previous_states, current_states, actions, rewards, is_finals = random_sample_batch
 
         previous_states_v = torch.tensor(np.asarray(previous_states).astype(np.float32)).to(self.device)
-        current_states_v = torch.tensor(np.asarray(current_states).astype(np.float32)).to(self.device)
-        actions_v = torch.tensor(actions).to(self.device)
-        rewards_v = torch.tensor(rewards).to(self.device)
+        current_states_v = torch.tensor(np.asarray(current_states)  .astype(np.float32)).to(self.device)
+        actions_v = torch.tensor(np.asarray(actions)                .astype(np.int64)).to(self.device)
+        rewards_v = torch.tensor(np.asarray(rewards)                .astype(np.float32)).to(self.device)
         is_finals_mask = torch.BoolTensor(is_finals).to(self.device)
 
         # Q-VALUES for all the actions of the batch

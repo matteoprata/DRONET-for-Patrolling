@@ -181,6 +181,10 @@ class RLModule:
 
         # Continuous Tasks: Reinforcement Learning tasks which are not made of episodes, but rather last forever.
         # This tasks have no terminal states. For simplicity, they are usually assumed to be made of one never-ending episode.
+        print(s.vector())
+        print(s_prime.vector())
+        print()
+
         self.previous_loss = self.DQN.train(previous_state=s.vector(),
                                             current_state=s_prime.vector(),
                                             action=a,

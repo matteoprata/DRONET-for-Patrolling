@@ -1,6 +1,6 @@
 
 from src.patrolling.patrolling_DQN_TORCH import PatrollingDQN
-from src.utilities.utilities import euclidean_distance
+from src.utilities.utilities import euclidean_distance, min_max_normalizer
 from src.utilities import config
 import numpy as np
 import time
@@ -31,19 +31,19 @@ class State:
         self._objective = objective
 
     def objective(self, normalized=True):
-        return self._objective if not normalized else self.normalize_feature(self._objective, self.position_norm+1, 0)
+        return self._objective if not normalized else min_max_normalizer(self._objective, 0, self.position_norm+1)
 
     def is_flying(self, normalized=True):
         return self._is_flying if not normalized else int(self._is_flying)
 
     def residuals(self, normalized=True):
-        return self._residuals if not normalized else self.normalize_feature(self._residuals, self.aoi_norm, 0)
+        return self._residuals if not normalized else min_max_normalizer(self._residuals, 0, self.aoi_norm)
 
     def time_distances(self, normalized=True):
-        return self._time_distances if not normalized else self.normalize_feature(self._time_distances, self.time_norm, 0)
+        return self._time_distances if not normalized else min_max_normalizer(self._time_distances, 0, self.time_norm)
 
     def position(self, normalized=True):
-        return self._position if not normalized else self.normalize_feature(self._position, self.position_norm, 0)
+        return self._position if not normalized else min_max_normalizer(self._position, 0, self.position_norm)
 
     def vector(self, normalized=True, rounded=False):
         """ NN INPUT """
@@ -55,10 +55,6 @@ class State:
 
     def __repr__(self):
         return "res: {}\ndis: {}\n".format(self.residuals(), self.time_distances()) #self.is_flying(False), self.objective(False))
-
-    @staticmethod
-    def normalize_feature(feature, maxi, mini):
-        return ((np.asarray(feature) - mini) / (maxi - mini)) if not (maxi is None or mini is None) else np.asarray(feature)
 
     @staticmethod
     def round_feature_vector(feature, rounding_digit):
@@ -78,7 +74,7 @@ class RLModule:
         self.prev_learning_tuple = None
         self.N_ACTIONS = len(self.simulator.environment.targets)
         self.N_FEATURES = 2 * len(self.simulator.environment.targets)
-        self.MAX_RES_PRECISION = 10  # above this we are not interested on how much the
+        self.MAX_RES_PRECISION = 2  # above this we are not interested on how much the
 
         self.DQN = PatrollingDQN(n_actions=self.N_ACTIONS,
                                  n_features=self.N_FEATURES,
@@ -86,7 +82,7 @@ class RLModule:
                                  metrics=self.simulator.metrics,
                                  lr =                       self.simulator.learning["learning_rate"],
                                  batch_size =               self.simulator.learning["batch_size"],
-                                 is_load_model=               self.simulator.learning["is_pretrained"],
+                                 is_load_model=             self.simulator.learning["is_pretrained"],
                                  pretrained_model_path =    self.simulator.learning["model_name"],
                                  discount_factor =          self.simulator.learning["discount_factor"],
                                  replay_memory_depth =      self.simulator.learning["replay_memory_depth"],
@@ -144,11 +140,17 @@ class RLModule:
         #
         # REW += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
         # return REW
+        sum_exp_res = sum([i for i in s_prime.residuals(False) if i >= 1])
+        rew = sum_exp_res
+        rew = rew + (self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0)
+        rew = min_max_normalizer(rew,
+                                 startLB=0, startUB=self.simulator.penalty_on_bs_expiration + (self.MAX_RES_PRECISION * self.N_ACTIONS),
+                                 endLB=0, endUB=5)
 
-        rew = - sum([i for i in s_prime.residuals(False) if i >= 1]) / (self.MAX_RES_PRECISION * self.N_ACTIONS)
-        rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
-        return rew
+        pen = - rew
+        pen = 0 if pen == 0 else pen
 
+        return pen
 
     def evaluate_is_final_state(self, s, a, s_prime):
         """ The residual of the base station is >= 1, i.e. it is expired. """
@@ -197,6 +199,11 @@ class RLModule:
 
         action_index, q = self.DQN.predict(state.vector())
 
+        # print(state.vector(False, True))
+        # print(action_index)
+        # print(q)
+        # print()
+
         if self.drone.is_flying():
             action_index = self.previous_action
 
@@ -209,8 +216,8 @@ class RLModule:
         self.previous_action = None
 
     def log_transition(self, s, s_prime, a, r, every=1):
-        print(s.vector(False))
-        print(s_prime.vector(False))
+        print(s.vector(False, True))
+        print(s_prime.vector(False, True))
         print(a, r)
         print("---")
         time.sleep(every)

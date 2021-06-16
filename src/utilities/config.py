@@ -96,7 +96,7 @@ YAML_FILE = "wandb_sweep_bayesian.yaml"
 
 # how much exploration, careful to edit
 ZERO_TOLERANCE = 0.1     # 10% at 80% of the simulation
-EXPLORE_PORTION = 0.8    # what portion of time of the simulation is spent exploring
+EXPLORE_PORTION = 0.7    # what portion of time of the simulation is spent exploring
 
 DRONE_MOBILITY = Mobility.DECIDED
 DELTA_DEC = 4.95       # seconds

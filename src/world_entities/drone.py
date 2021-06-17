@@ -58,33 +58,10 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 self.increase_waypoint_counter()
 
         elif self.mobility == config.Mobility.DECIDED:
-
-            # if self.will_reach_target() or self.was_final:
-            if self.is_decision_step() or self.was_final:
-                # print(self.was_final, self.is_decision_step())
-                self.was_final = False
-
-                if self.will_reach_target():
-                    self.coords = self.next_target()
-
-                # t
-                reward, epsilon, loss, is_end, s, s_prime = self.state_manager.invoke_train()
-                action, q = (0, None) if is_end else self.state_manager.invoke_predict(s_prime)
-
-                # it takes one step to realize it was an end None state
-                if not self.is_flying():
-                    self.prev_target.last_visit_ts = self.simulator.cur_step + (1 if is_end else 0)
-                    self.prev_target = self.simulator.environment.targets[action]
-                    self.path.append(self.prev_target.coords)
-                    self.increase_waypoint_counter()
-
-                self.was_final = is_end
-
-                self.learning_tuple = reward, epsilon, loss, is_end, s, q, self.was_final_epoch
-                self.save_metrics()
-                self.was_final_epoch = False
-
-                self.prev_step_at_decision = self.simulator.cur_step
+            if config.IS_DECIDED_ON_TARGET:
+                self.decided_on_target(self.will_reach_target())
+            else:
+                self.decided_on_flight(self.is_decision_step())
 
         elif self.mobility == config.Mobility.RANDOM_MOVEMENT:
             if self.will_reach_target():
@@ -249,3 +226,33 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
     def is_new_episode(self):
         return self.prev_step_at_decision >= self.simulator.cur_step
+
+    def decided_on_target(self, eval_trigger):
+        # if self.will_reach_target() or self.was_final:
+        if eval_trigger or self.was_final:
+            # print(self.was_final, self.is_decision_step())
+            self.was_final = False
+
+            if self.will_reach_target():
+                self.coords = self.next_target()
+            # t
+            reward, epsilon, loss, is_end, s, s_prime = self.state_manager.invoke_train()
+            action, q = (0, None) if is_end else self.state_manager.invoke_predict(s_prime)
+
+            # it takes one step to realize it was an end None state
+            if not self.is_flying():
+                self.prev_target.last_visit_ts = self.simulator.cur_step + (1 if is_end else 0)
+                self.prev_target = self.simulator.environment.targets[action]
+                self.path.append(self.prev_target.coords)
+                self.increase_waypoint_counter()
+
+            self.was_final = is_end
+
+            self.learning_tuple = reward, epsilon, loss, is_end, s, q, self.was_final_epoch
+            self.save_metrics()
+            self.was_final_epoch = False
+
+            self.prev_step_at_decision = self.simulator.cur_step
+
+    def decided_on_flight(self, eval_trigger):
+        self.decided_on_target(eval_trigger)

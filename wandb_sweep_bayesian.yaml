@@ -17,11 +17,11 @@ parameters:
   learning_rate:
     values: [0.001, 0.0001]
   discount_factor:
-    values: [0.95, 1]
+    value: 1
   swap_models_every_decision:
     values: [500, 3000, 5000]
   battery:
-    values: [60, 300, 1200]
+    values: [300, 600, 1200]
 
 command:
   - ${env}

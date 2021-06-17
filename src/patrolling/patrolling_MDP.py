@@ -15,9 +15,10 @@ import time
 
 
 class State:
-    def __init__(self, residuals, time_distances, position, aoi_norm, time_norm, position_norm, is_final, is_flying, objective):
+    def __init__(self, aoi_idleness_ratio, time_distances, position, aoi_norm, time_norm,
+                 position_norm, is_final, is_flying, objective):
 
-        self._residuals: list = residuals
+        self._aoi_idleness_ratio: list = aoi_idleness_ratio
         self._time_distances: list = time_distances
 
         self.aoi_norm = aoi_norm
@@ -36,8 +37,8 @@ class State:
     def is_flying(self, normalized=True):
         return self._is_flying if not normalized else int(self._is_flying)
 
-    def residuals(self, normalized=True):
-        return self._residuals if not normalized else min_max_normalizer(self._residuals, 0, self.aoi_norm)
+    def aoi_idleness_ratio(self, normalized=True):
+        return self._aoi_idleness_ratio if not normalized else min_max_normalizer(self._aoi_idleness_ratio, 0, self.aoi_norm)
 
     def time_distances(self, normalized=True):
         return self._time_distances if not normalized else min_max_normalizer(self._time_distances, 0, self.time_norm)
@@ -48,13 +49,13 @@ class State:
     def vector(self, normalized=True, rounded=False):
         """ NN INPUT """
         if not rounded:
-            return list(self.residuals(normalized)) + list(self.time_distances(normalized))
+            return list(self.aoi_idleness_ratio(normalized)) + list(self.time_distances(normalized))
         else:
-            return [round(i, 2) for i in list(self.residuals(normalized))] + \
+            return [round(i, 2) for i in list(self.aoi_idleness_ratio(normalized))] + \
                    [round(i, 2) for i in list(self.time_distances(normalized))]
 
     def __repr__(self):
-        return "res: {}\ndis: {}\n".format(self.residuals(), self.time_distances()) #self.is_flying(False), self.objective(False))
+        return "res: {}\ndis: {}\n".format(self.aoi_idleness_ratio(), self.time_distances()) #self.is_flying(False), self.objective(False))
 
     @staticmethod
     def round_feature_vector(feature, rounding_digit):
@@ -70,11 +71,11 @@ class RLModule:
         self.previous_action = None
         self.previous_epsilon = 1
         self.previous_loss = None
-
-        self.prev_learning_tuple = None
+        self.previous_learning_tuple = None
+        
         self.N_ACTIONS = len(self.simulator.environment.targets)
         self.N_FEATURES = 2 * len(self.simulator.environment.targets)
-        self.MAX_RES_PRECISION = 2  # above this we are not interested on how much the
+        self.TARGET_VIOLATION_FACTOR = config.TARGET_VIOLATION_FACTOR  # above this we are not interested on how much the
 
         self.DQN = PatrollingDQN(n_actions=self.N_ACTIONS,
                                  n_features=self.N_FEATURES,
@@ -89,15 +90,15 @@ class RLModule:
                                  swap_models_every_decision=self.simulator.learning["swap_models_every_decision"],
                                  )
 
-        self.AOI_NORM = self.MAX_RES_PRECISION  # self.simulator.duration_seconds() / min_threshold
+        self.AOI_NORM = self.TARGET_VIOLATION_FACTOR  # self.simulator.duration_seconds() / min_threshold
         self.TIME_NORM = self.simulator.max_travel_time()
 
         # min_threshold = min([t.maximum_tolerated_idleness for t in self.simulator.environment.targets])
         # self.AOI_FUTURE_NORM = 1  # self.simulator.duration_seconds() / min_threshold
         # self.ACTION_NORM = self.N_ACTIONS
 
-    def get_current_residuals(self, next=0):
-        return [min(target.aoi_idleness_ratio(next), self.MAX_RES_PRECISION) for target in self.simulator.environment.targets]
+    def get_current_aoi_idleness_ratio(self, next=0):
+        return [min(target.aoi_idleness_ratio(next), self.TARGET_VIOLATION_FACTOR) for target in self.simulator.environment.targets]
 
     def get_current_time_distances(self):
         """ TIME of TRANSIT """
@@ -110,51 +111,55 @@ class RLModule:
 
         # - - # - - # - - # - - # - - # - - # - - # - - # - - #
         distances = self.get_current_time_distances()
-        residuals = self.get_current_residuals()
+        residuals = self.get_current_aoi_idleness_ratio()
 
         state = State(residuals, distances, None, self.AOI_NORM, self.TIME_NORM, None, False, None, None)
         return state
 
+    def __rew_on_flight(self, s, a, s_prime):
+        sum_exp_res = sum([max(1-i, -self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
+        rew = sum_exp_res + (self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0)
+        # rew = min_max_normalizer(rew,
+        #                          startLB=-(self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS)-self.simulator.penalty_on_bs_expiration,
+        #                          startUB=self.N_ACTIONS,
+        #                          endLB=-1,
+        #                          endUB=1)
+        return rew
+
+    def __rew_on_target(self, s, a, s_prime):
+        rew = 0
+
+        time_dist_to_a = s.time_distances(False)[a]
+        n_steps = max(int(time_dist_to_a/config.DELTA_DEC), 1)
+
+        for step in range(n_steps):
+            TIME = self.simulator.current_second() - (config.DELTA_DEC * step)
+
+            for target in self.simulator.environment.targets:
+                LAST_VISIT = target.last_visit_ts * self.simulator.ts_duration_sec
+                residual = 1 - (TIME - LAST_VISIT) / target.maximum_tolerated_idleness
+
+                # print(target.identifier, a, time_dist_to_a, LAST_VISIT, residual)
+                residual = max(residual, -self.TARGET_VIOLATION_FACTOR)  # 10
+                rew += residual
+        rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
+
+        # n_steps = int(self.simulator.max_travel_time() / config.DELTA_DEC)
+        # rew = min_max_normalizer(rew,
+        #                          startLB=(-(self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS)) * n_steps - self.simulator.penalty_on_bs_expiration,
+        #                          startUB=(self.N_ACTIONS)*n_steps,
+        #                          endLB=-1,
+        #                          endUB=1,
+        #                          active=False)
+
+        return rew
+
     def evaluate_reward(self, s, a, s_prime):
-        # REW = 0
-        # EMPHASYZE = 0
-        #
-        # time_dist_to_a = s.time_distances(False)[a]
-        # n_steps = max(int(time_dist_to_a/config.DELTA_DEC), 1)
-        #
-        # for step in range(n_steps):
-        #     TIME = self.simulator.current_second() - (config.DELTA_DEC * step)
-        #
-        #     for target in self.simulator.environment.targets:
-        #         LAST_VISIT = target.last_visit_ts * self.simulator.ts_duration_sec
-        #         residual = (TIME - LAST_VISIT) / target.maximum_tolerated_idleness
-        #
-        #         # print(target.identifier, a, time_dist_to_a, LAST_VISIT, residual)
-        #         residual = min(residual, self.MAX_RES_PRECISION)  # 10
-        #         REW += - residual if residual >= 1 else 0
-        #
-        # norm_factor_rew = self.N_ACTIONS * self.MAX_RES_PRECISION * int(self.simulator.max_travel_time() / config.DELTA_DEC)
-        #
-        # # print(REW, REW / norm_factor_rew)
-        # REW = REW / norm_factor_rew + EMPHASYZE
-        #
-        # REW += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
-        # return REW
-        sum_exp_res = sum([i for i in s_prime.residuals(False) if i >= 1])
-        rew = sum_exp_res
-        rew = rew + (self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0)
-        rew = min_max_normalizer(rew,
-                                 startLB=0, startUB=self.simulator.penalty_on_bs_expiration + (self.MAX_RES_PRECISION * self.N_ACTIONS),
-                                 endLB=0, endUB=5)
-
-        pen = - rew
-        pen = 0 if pen == 0 else pen
-
-        return pen
+        return self.__rew_on_target(s, a, s_prime) if config.IS_DECIDED_ON_TARGET else self.__rew_on_flight(s, a, s_prime)
 
     def evaluate_is_final_state(self, s, a, s_prime):
         """ The residual of the base station is >= 1, i.e. it is expired. """
-        return s_prime.residuals(False)[0] >= 1  # or s.position() == s_prime.position()
+        return s_prime.aoi_idleness_ratio(False)[0] >= 1  # or s.position() == s_prime.position()
 
     def invoke_train(self):
         if self.previous_state is None or self.previous_action is None:
@@ -169,9 +174,9 @@ class RLModule:
         r = self.evaluate_reward(s, a, s_prime)
 
         if not self.drone.is_flying():
-            s_prime._residuals[a] = 0  # set to 0 the residual of the just visited target (it will be reset later from drone.py)
+            s_prime._aoi_idleness_ratio[a] = 0  # set to 0 the residual of the just visited target (it will be reset later from drone.py)
 
-        self.prev_learning_tuple = s.vector(False, True), a, s_prime.vector(False, True), r
+        self.previous_learning_tuple = s.vector(False, True), a, s_prime.vector(False, True), r
 
         if self.simulator.log_state >= 0:
             self.log_transition(s, s_prime, a, r, every=self.simulator.log_state)
@@ -199,16 +204,12 @@ class RLModule:
 
         action_index, q = self.DQN.predict(state.vector())
 
-        # print(state.vector(False, True))
-        # print(action_index)
-        # print(q)
-        # print()
-
-        if self.drone.is_flying():
+        if self.drone.is_flying() and self.previous_action is not None:
             action_index = self.previous_action
 
         self.previous_state = state
         self.previous_action = action_index
+
         return action_index, q[0]
 
     def reset_MDP(self):

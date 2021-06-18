@@ -117,14 +117,18 @@ class RLModule:
         return state
 
     def __rew_on_flight(self, s, a, s_prime):
-        sum_exp_res = sum([max(1-i, -self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
+        if config.IS_RESIDUAL_REWARD:
+            sum_exp_res = sum([max(1-i, -self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
+        else:
+            sum_exp_res = sum([max(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False) if i >= 1])
+
         rew = sum_exp_res + (self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0)
         # rew = min_max_normalizer(rew,
         #                          startLB=-(self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS)-self.simulator.penalty_on_bs_expiration,
         #                          startUB=self.N_ACTIONS,
         #                          endLB=-1,
         #                          endUB=1)
-        rew = -100 if s.vector()[a] == 0 else rew
+        # rew = -100 if s.vector()[a] == 0 else rew
         return rew
 
     def __rew_on_target(self, s, a, s_prime):
@@ -138,14 +142,16 @@ class RLModule:
 
             for target in self.simulator.environment.targets:
                 LAST_VISIT = target.last_visit_ts * self.simulator.ts_duration_sec
-                residual = 1 - (TIME - LAST_VISIT) / target.maximum_tolerated_idleness
-
-                # print(target.identifier, a, time_dist_to_a, LAST_VISIT, residual)
-                residual = max(residual, -self.TARGET_VIOLATION_FACTOR)  # 10
+                if config.IS_RESIDUAL_REWARD:
+                    residual = 1 - (TIME - LAST_VISIT) / target.maximum_tolerated_idleness
+                    residual = max(residual, -self.TARGET_VIOLATION_FACTOR)  # 10
+                else:
+                    residual = (TIME - LAST_VISIT) / target.maximum_tolerated_idleness
+                    residual = max(residual, self.TARGET_VIOLATION_FACTOR)  # 10
                 rew += residual
 
         rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
-        rew = -100 if s.vector()[a] == 0 else rew
+        # rew = -100 if s.vector()[a] == 0 else rew
 
         # n_steps = int(self.simulator.max_travel_time() / config.DELTA_DEC)
         # rew = min_max_normalizer(rew,
@@ -154,7 +160,6 @@ class RLModule:
         #                          endLB=-1,
         #                          endUB=1,
         #                          active=False)
-
         return rew
 
     def evaluate_reward(self, s, a, s_prime):

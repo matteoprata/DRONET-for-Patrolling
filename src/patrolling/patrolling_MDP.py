@@ -124,6 +124,7 @@ class RLModule:
         #                          startUB=self.N_ACTIONS,
         #                          endLB=-1,
         #                          endUB=1)
+        rew = -100 if s.vector()[a] == 0 else rew
         return rew
 
     def __rew_on_target(self, s, a, s_prime):
@@ -142,7 +143,9 @@ class RLModule:
                 # print(target.identifier, a, time_dist_to_a, LAST_VISIT, residual)
                 residual = max(residual, -self.TARGET_VIOLATION_FACTOR)  # 10
                 rew += residual
+
         rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
+        rew = -100 if s.vector()[a] == 0 else rew
 
         # n_steps = int(self.simulator.max_travel_time() / config.DELTA_DEC)
         # rew = min_max_normalizer(rew,

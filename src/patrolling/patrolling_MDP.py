@@ -120,7 +120,7 @@ class RLModule:
         if config.IS_RESIDUAL_REWARD:
             sum_exp_res = sum([max(1-i, -self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
         else:
-            sum_exp_res = sum([max(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False) if i >= 1])
+            sum_exp_res = - sum([max(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False) if i >= 1])
 
         rew = sum_exp_res + (self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0)
         # rew = min_max_normalizer(rew,
@@ -145,10 +145,11 @@ class RLModule:
                 if config.IS_RESIDUAL_REWARD:
                     residual = 1 - (TIME - LAST_VISIT) / target.maximum_tolerated_idleness
                     residual = max(residual, -self.TARGET_VIOLATION_FACTOR)  # 10
+                    rew += residual
                 else:
                     residual = (TIME - LAST_VISIT) / target.maximum_tolerated_idleness
                     residual = max(residual, self.TARGET_VIOLATION_FACTOR)  # 10
-                rew += residual
+                    rew += - residual
 
         rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
         # rew = -100 if s.vector()[a] == 0 else rew

@@ -119,16 +119,15 @@ class RLModule:
     def __rew_on_flight(self, s, a, s_prime):
         if config.IS_RESIDUAL_REWARD:
             sum_exp_res = sum([max(1-i, -self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
+            rew = sum_exp_res + (self.simulator.petnalty_on_bs_expiration if s_prime.is_final else 0)
         else:
-            sum_exp_res = - sum([max(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False) if i >= 1])
-
-        rew = sum_exp_res + (self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0)
-        # rew = min_max_normalizer(rew,
-        #                          startLB=-(self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS)-self.simulator.penalty_on_bs_expiration,
-        #                          startUB=self.N_ACTIONS,
-        #                          endLB=-1,
-        #                          endUB=1)
-        # rew = -100 if s.vector()[a] == 0 else rew
+            sum_exp_res = - sum([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False) if i >= 1])
+            rew = sum_exp_res + (self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0)
+            rew = min_max_normalizer(rew,
+                                     startLB=(- (self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS) + self.simulator.penalty_on_bs_expiration),
+                                     startUB=0,
+                                     endLB=-1,
+                                     endUB=0)
         return rew
 
     def __rew_on_target(self, s, a, s_prime):

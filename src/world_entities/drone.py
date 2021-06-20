@@ -119,7 +119,9 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 reward, epsilon, loss, _, _, _, _ = self.learning_tuple
                 self.cum_rew += reward
 
-                metrics = {"cumulative_reward": self.cum_rew, "experience": epsilon, "loss": 0 if loss is None else loss}
+                metrics = {"cumulative_reward": self.cum_rew,
+                           "experience": epsilon,
+                           "loss": 0 if loss is None else loss}
                 self.simulator.wandb.log(metrics)  # , commit=self.is_new_episode())
         else:
             self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
@@ -133,7 +135,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
     def is_decision_step(self):
         """ Whether is time to make a decision step or not """
-        return self.simulator.cur_step % (config.DELTA_DEC / self.simulator.ts_duration_sec) == 0
+        return (self.simulator.cur_step * self.simulator.ts_duration_sec) % config.DELTA_DEC == 0
 
     def is_flying(self):
         return not self.will_reach_target()

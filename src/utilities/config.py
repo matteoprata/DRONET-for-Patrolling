@@ -99,7 +99,7 @@ ZERO_TOLERANCE = 0.1     # 10% at 80% of the simulation
 EXPLORE_PORTION = 0.7    # what portion of time of the simulation is spent exploring
 
 DRONE_MOBILITY = Mobility.DECIDED
-DELTA_DEC = 4.95       # seconds
+DELTA_DEC = 3       # seconds
 
 # variables from here
 DRONE_MAX_ENERGY = 5 * Time.MIN.value       # int: max energy of a drone sec
@@ -107,7 +107,7 @@ DRONE_SPEED = 15                            # float: m/s, drone speed.
 N_TARGETS = 4                               # number of random targets in the map
 
 LOG_STATE = False  # print rhe state or not
-PENALTY_ON_BS_EXPIRATION = -100  # - N_TARGETS - 1
+PENALTY_ON_BS_EXPIRATION = - N_TARGETS - 1
 
 N_EPOCHS = 100      # 44
 N_EPISODES = 20     # 50
@@ -115,4 +115,4 @@ EPISODE_DURATION = 3 * Time.HOUR.value
 
 TARGET_VIOLATION_FACTOR = 2
 IS_DECIDED_ON_TARGET = False
-IS_RESIDUAL_REWARD = True
+IS_RESIDUAL_REWARD = False  # - residual

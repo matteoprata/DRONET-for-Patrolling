@@ -11,6 +11,7 @@ class PatrollingDQN:
                  pretrained_model_path,
                  n_actions,
                  n_features,
+                 n_hidden_neurons,
                  simulator,
                  metrics,
                  batch_size=32,
@@ -30,7 +31,7 @@ class PatrollingDQN:
         # number of actions, actions, number of states
         self.n_actions = n_actions
         self.n_features = n_features
-
+        self.n_hidden_neurons = n_hidden_neurons
         self.n_decision_step = 0
 
         # learning parameters
@@ -47,7 +48,7 @@ class PatrollingDQN:
 
         # build neural models
         if not self.is_load_model:
-            n_hidden_neurons = int(np.sqrt(self.n_features * self.n_actions))
+            n_hidden_neurons = self.n_hidden_neurons  # int(np.sqrt(self.n_features * self.n_actions))
             self.model = DQN(self.n_features, n_hidden_neurons, self.n_actions)      # MODEL 1
             self.model_hat = DQN(self.n_features, n_hidden_neurons, self.n_actions)  # MODEL 2
             self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)

@@ -9,13 +9,14 @@ parser = argparse.ArgumentParser(description='Run experiments of patrolling.')
 parser.add_argument('-wandb', '--is_wandb', type=int, default=1)
 parser.add_argument('-de', '--description', type=str, default=config.SIM_DESCRIPTION)
 
-# -- learning params
+# -- learning params, n_hidden_naurons
 parser.add_argument('-ip', '--is_pretrained', type=int, default=config.LEARNING_PARAMETERS['is_pretrained'])
 parser.add_argument('-bs', '--batch_size', type=int, default=config.LEARNING_PARAMETERS['batch_size'])
 parser.add_argument('-lr', '--learning_rate', type=float, default=config.LEARNING_PARAMETERS['learning_rate'])
 parser.add_argument('-df', '--discount_factor', type=float, default=config.LEARNING_PARAMETERS['discount_factor'])
 parser.add_argument('-rm', '--replay_memory_depth', type=int, default=config.LEARNING_PARAMETERS['replay_memory_depth'])
 parser.add_argument('-sw', '--swap_models_every_decision', type=int, default=config.LEARNING_PARAMETERS['swap_models_every_decision'])
+parser.add_argument('-hn', '--n_hidden_neurons', type=int, default=config.LEARNING_PARAMETERS['n_hidden_neurons'])
 
 # -- logging
 parser.add_argument('-pl', '--plotting', type=int, default=0)
@@ -52,6 +53,7 @@ def main():
             learning["learning_rate"] = wandb_config["learning_rate"]
             learning["discount_factor"] = wandb_config["discount_factor"]
             learning["swap_models_every_decision"] = wandb_config["swap_models_every_decision"]
+            learning["n_hidden_neurons"] = wandb_config["n_hidden_neurons"]
 
             sim = PatrollingSimulator(learning=learning,
                                       sim_description=args.description,

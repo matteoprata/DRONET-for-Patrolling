@@ -85,6 +85,7 @@ LEARNING_PARAMETERS = {
     "discount_factor": 0.98,
     "batch_size": 32,
     "swap_models_every_decision": 500,
+    "n_hidden_neurons": 8,
     "optimizer": "sgd",
     "loss": "mse"
 }
@@ -99,7 +100,7 @@ ZERO_TOLERANCE = 0.1     # 10% at 80% of the simulation
 EXPLORE_PORTION = 0.7    # what portion of time of the simulation is spent exploring
 
 DRONE_MOBILITY = Mobility.DECIDED
-DELTA_DEC = 3       # seconds
+DELTA_DEC = 5       # seconds
 
 # variables from here
 DRONE_MAX_ENERGY = 5 * Time.MIN.value       # int: max energy of a drone sec

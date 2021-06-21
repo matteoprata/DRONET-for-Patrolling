@@ -9,19 +9,21 @@ metric:
 
 parameters:
   n_epochs:
-    value: 3000
+    value: 200
   n_episodes:
-    value: 1
+    value: 20
   episode_duration:
-    value: 48000
+    value: 24000
   learning_rate:
     values: [0.001, 0.0001]
   discount_factor:
     value: 1
+  n_hidden_neurons:
+    values: [8, 15, 20]
   swap_models_every_decision:
     values: [500, 3000, 5000]
   battery:
-    value: 1200
+    value: 600
 
 command:
   - ${env}

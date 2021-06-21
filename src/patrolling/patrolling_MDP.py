@@ -79,6 +79,7 @@ class RLModule:
 
         self.DQN = PatrollingDQN(n_actions=self.N_ACTIONS,
                                  n_features=self.N_FEATURES,
+                                 n_hidden_neurons= self.simulator.learning["n_hidden_neurons"],
                                  simulator=self.simulator,
                                  metrics=self.simulator.metrics,
                                  lr =                       self.simulator.learning["learning_rate"],

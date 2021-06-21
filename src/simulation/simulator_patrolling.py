@@ -276,11 +276,11 @@ class PatrollingSimulator:
 
                     self.cur_step_total += 1
 
-                self.checkout(do=self.wandb is None)
+                self.checkout(do=self.wandb is None, epoch=epoch, is_last_epoch=self.n_epochs-1 == epoch)
             for drone in self.environment.drones:
                 drone.was_final_epoch = True
 
-    def checkout(self, do=False):
+    def checkout(self, epoch, is_last_epoch, do=False):
         """ print metrics save stuff. """
         if do:
             try:
@@ -299,8 +299,12 @@ class PatrollingSimulator:
             except:
                 print("Couldn't plot from step", self.cur_step_total)
 
-        path = config.RL_DATA + self.name() + "/model.h5" if self.wandb is None else os.path.join(self.wandb.dir, "model.h5")
-        self.environment.drones[0].state_manager.DQN.save_model(path)
+        SAVE_EPOCH_EVERY = 25
+
+        if epoch % SAVE_EPOCH_EVERY == 0 or is_last_epoch:
+            model_file_name = "/model-epoch{}.h5".format(epoch)
+            path = config.RL_DATA + self.name() + model_file_name if self.wandb is None else os.path.join(self.wandb.dir, model_file_name)
+            self.environment.drones[0].state_manager.DQN.save_model(path)
 
     # def close(self):
     #     self.checkout(True)

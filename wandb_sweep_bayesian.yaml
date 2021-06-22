@@ -15,17 +15,17 @@ parameters:
   episode_duration:
     value: 24000
   learning_rate:
-    value: 0.001
+    value: [0.001, 0.0001]
   discount_factor:
     value: 1
   n_hidden_neurons:
-    value: 20
+    values: [15, 20, 25]
   swap_models_every_decision:
     value: 3000
   battery:
     value: 600
   is_allow_self_loop:
-    values: [0,1]
+    value: 0
 
 command:
   - ${env}

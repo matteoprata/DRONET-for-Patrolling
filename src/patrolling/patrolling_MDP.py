@@ -8,10 +8,11 @@ import time
 
 class State:
     def __init__(self, aoi_idleness_ratio, time_distances, position, aoi_norm, time_norm,
-                 position_norm, is_final, is_flying, objective):
+                 position_norm, is_final, is_flying, objective, closests):
 
         self._aoi_idleness_ratio: list = aoi_idleness_ratio
         self._time_distances: list = time_distances
+        self._closests: list = closests
 
         self.aoi_norm = aoi_norm
         self.time_norm = time_norm
@@ -38,16 +39,20 @@ class State:
     def position(self, normalized=True):
         return self._position if not normalized else min_max_normalizer(self._position, 0, self.position_norm)
 
+    def closests(self, normalized=True):
+        return self._closests if not normalized else min_max_normalizer(self._closests, 0, self.time_norm)
+
     def vector(self, normalized=True, rounded=False):
         """ NN INPUT """
         if not rounded:
-            return list(self.aoi_idleness_ratio(normalized)) + list(self.time_distances(normalized))
+            return list(self.aoi_idleness_ratio(normalized)) + list(self.time_distances(normalized)) + list(self.closests(normalized))
         else:
             return [round(i, 2) for i in list(self.aoi_idleness_ratio(normalized))] + \
-                   [round(i, 2) for i in list(self.time_distances(normalized))]
+                   [round(i, 2) for i in list(self.time_distances(normalized))] + \
+                   [round(i, 2) for i in list(self.closests(normalized))]
 
     def __repr__(self):
-        return "res: {}\ndis: {}\n".format(self.aoi_idleness_ratio(), self.time_distances()) #self.is_flying(False), self.objective(False))
+        return "res: {}\ndis: {}\nclo: {}\n".format(self.aoi_idleness_ratio(), self.time_distances(), self.closests()) #self.is_flying(False), self.objective(False))
 
     @staticmethod
     def round_feature_vector(feature, rounding_digit):
@@ -63,7 +68,7 @@ class RLModule:
         self.previous_loss = None
 
         self.N_ACTIONS = len(self.environment.targets)
-        self.N_FEATURES = 2 * len(self.environment.targets)
+        self.N_FEATURES = 3 * len(self.environment.targets)
         self.TARGET_VIOLATION_FACTOR = config.TARGET_VIOLATION_FACTOR  # above this we are not interested on how much the
 
         self.DQN = PatrollingDQN(n_actions=self.N_ACTIONS,
@@ -102,12 +107,25 @@ class RLModule:
         """ TIME of TRANSIT """
         return [euclidean_distance(drone.coords, target.coords)/drone.speed for target in drone.simulator.environment.targets]
 
+    def get_targets_closest_drone(self, drone):
+        """ The shortest distance drone <> target for every target.  """
+        min_distances = []
+        for tar in self.environment.targets:
+            clo_time = np.inf
+            for dr in self.environment.drones:
+                dis = euclidean_distance(dr.coords, tar.coords)
+                tem = dis / drone.speed
+                clo_time = tem if tem < clo_time else clo_time
+            min_distances.append(clo_time)
+        return min_distances
+
     def evaluate_state(self, drone):
         # - - # - - # - - # - - # - - # - - # - - # - - # - - #
         distances = self.get_current_time_distances(drone)
         residuals = self.get_current_aoi_idleness_ratio(drone)
+        closests = self.get_targets_closest_drone(drone)
 
-        state = State(residuals, distances, None, self.AOI_NORM, self.TIME_NORM, None, False, None, None)
+        state = State(residuals, distances, None, self.AOI_NORM, self.TIME_NORM, None, False, None, None, closests)
         return state
 
     def __rew_on_flight(self, s, a, s_prime):

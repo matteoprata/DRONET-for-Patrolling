@@ -93,8 +93,10 @@ class RLModule:
     def get_current_aoi_idleness_ratio(self, next=0):
         res = []
         for target in self.simulator.environment.targets:
-            # set target need to 0 if this target is not necessary or is locked
-            is_ignore_target = target.lock is not None or not target.active
+            # set target need to 0 if this target is not necessary or is locked (OR)
+            # -- target is locked from another drone (not this drone)
+            # -- is inactive
+            is_ignore_target = (target.lock is not None and target.lock != self.drone) or not target.active
             res_val = 0 if is_ignore_target else min(target.aoi_idleness_ratio(next), self.TARGET_VIOLATION_FACTOR)
             res.append(res_val)
         return res

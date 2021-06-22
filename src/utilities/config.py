@@ -19,7 +19,7 @@ ENV_HEIGHT = 1500     # float: meters, height of environment
 
 N_DRONES = 1         # int: number of drones.
 N_OBSTACLES = 0      # number of random obstacles in the map
-N_GRID_CELLS = 5    # number of cless in the grid
+N_GRID_CELLS = 5     # number of cless in the grid
 
 # base station
 N_BASE_STATIONS = 1
@@ -48,7 +48,7 @@ DEMO_PATH = False                      # bool: whether to use handcrafted tours 
 
 PLOT_SIM = False  # bool: whether to plot or not the simulation (set to false for faster experiments)
 WAIT_SIM_STEP = 0     # float >= 0: seconds, pauses the rendering for x seconds
-SKIP_SIM_STEP = 20     # int > 0 : steps, plot the simulation every x steps
+SKIP_SIM_STEP = 5     # int > 0 : steps, plot the simulation every x steps
 DRAW_SIZE = 700       # int: size of the drawing window
 
 SAVE_PLOT = False              # bool: whether to save the plots of the simulation or not

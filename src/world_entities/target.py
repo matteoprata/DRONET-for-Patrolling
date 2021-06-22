@@ -15,6 +15,7 @@ class Target(SimulatedEntity):
         self.closest_target = None
 
         self.lock = None  # drone id
+        self.active = True  # if False means that his target should not be considered
 
     # ------ AGE OF INFORMATION -- RESIDUAL OF INFORMATION
 

@@ -5,14 +5,6 @@ from src.utilities import config
 import numpy as np
 import time
 
-# class Feature:
-#     def __init__(self, name, values, normalization_factor, maxi, mini=0):
-#         self.name = name
-#         self.values = values
-#         self.normalization_factor = normalization_factor
-#         self.mini = mini
-#         self.maxi = maxi
-
 
 class State:
     def __init__(self, aoi_idleness_ratio, time_distances, position, aoi_norm, time_norm,
@@ -99,7 +91,13 @@ class RLModule:
         # self.ACTION_NORM = self.N_ACTIONS
 
     def get_current_aoi_idleness_ratio(self, next=0):
-        return [min(target.aoi_idleness_ratio(next), self.TARGET_VIOLATION_FACTOR) for target in self.simulator.environment.targets]
+        res = []
+        for target in self.simulator.environment.targets:
+            # set target need to 0 if this target is not necessary or is locked
+            is_ignore_target = target.lock is not None or not target.active
+            res_val = 0 if is_ignore_target else min(target.aoi_idleness_ratio(next), self.TARGET_VIOLATION_FACTOR)
+            res.append(res_val)
+        return res
 
     def get_current_time_distances(self):
         """ TIME of TRANSIT """
@@ -219,6 +217,8 @@ class RLModule:
         self.previous_state = state
         self.previous_action = action_index
 
+        # set the lock for the other not to pick this action
+        self.simulator.environment.targets[action_index].lock = self.drone
         return action_index, q[0]
 
     def reset_MDP(self):

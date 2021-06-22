@@ -94,7 +94,7 @@ class PatrollingDQN:
 
         if is_explore and self.is_explore_probability():
             action_index = self.simulator.rnd_explore.randint(0, self.n_actions)
-            if state[action_index] == 0:  # loop
+            if state[action_index] == 0 and not config.IS_ALLOW_SELF_LOOP:  # loop
                 actions_available = list(range(self.n_actions))
                 actions_available.pop(action_index)
                 action_sub_index = self.simulator.rnd_explore.randint(0, self.n_actions-1)
@@ -103,7 +103,7 @@ class PatrollingDQN:
             action_index = np.argmax(q_values)
             action_index = int(action_index)
 
-            if state[action_index] == 0:  # loop
+            if state[action_index] == 0 and not config.IS_ALLOW_SELF_LOOP:  # loop
                 q_values[action_index] = - np.inf
 
             action_index = np.argmax(q_values)

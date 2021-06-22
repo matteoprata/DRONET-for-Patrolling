@@ -236,6 +236,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
             self.was_final = False
 
             if self.will_reach_target():
+                self.simulator.environment.targets[self.prev_target.identifier].lock = None
                 self.coords = self.next_target()
             # t
             reward, epsilon, loss, is_end, s, s_prime = self.state_manager.invoke_train()

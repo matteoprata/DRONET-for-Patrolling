@@ -302,8 +302,8 @@ class PatrollingSimulator:
         SAVE_EPOCH_EVERY = 25
 
         if epoch % SAVE_EPOCH_EVERY == 0 or is_last_epoch:
-            model_file_name = "/model-epoch{}.h5".format(epoch)
-            path = config.RL_DATA + self.name() + model_file_name if self.wandb is None else os.path.join(self.wandb.dir, model_file_name)
+            model_file_name = "model-epoch{}.h5".format(epoch)
+            path = config.RL_DATA + self.name() + "/" + model_file_name if self.wandb is None else os.path.join(self.wandb.dir, model_file_name)
             self.environment.drones[0].state_manager.DQN.save_model(path)
 
     # def close(self):

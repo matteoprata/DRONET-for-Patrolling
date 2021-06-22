@@ -72,7 +72,8 @@ class Environment:
         # Creates a dataset of targets to iterate over to
 
         # loading targets list
-        path_exists = os.path.exists(config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec))
+        targets_fname = config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec)
+        path_exists = os.path.exists(targets_fname)
         MAX_N_EPISODES = 2000
         MAX_N_TARGETS = self.simulator.n_targets
 
@@ -87,7 +88,10 @@ class Environment:
                     coordinates.append(point_coords)
                 tsp_path_time = self.tsp_path_time(coordinates)
 
-                for i in range(MAX_N_TARGETS):
+                for i in range(MAX_N_TARGETS):  # set the threshold for the targets
+                    # if i == 2:
+                    #     idleness = self.simulator.duration_seconds()
+                    # else:
                     rtt = 2 * (euclidean_distance(coordinates[i], self.base_stations[0].coords) / self.simulator.drone_speed_meters_sec)
                     LOW = int(tsp_path_time)  # int(rtt)
                     UP  = int(tsp_path_time) * 2 # int(rtt)+1 if int(rtt) >= int(tsp_path_time) else int(tsp_path_time)

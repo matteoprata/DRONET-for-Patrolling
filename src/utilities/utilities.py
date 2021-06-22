@@ -34,7 +34,9 @@ def euclidean_distance(p1, p2):
 def min_max_normalizer(value, startLB, startUB, endLB=0, endUB=1, active=True):
     # Figure out how 'wide' each range is
     value = np.asarray(value)
-    assert((value <= startUB).all() and (value >= startLB).all())
+    if not (value <= startUB).all() and (value >= startLB).all():
+        print("ERROR", value, startLB, startUB)
+        assert False
 
     leftSpan = startUB - startLB
     rightSpan = endUB - endLB

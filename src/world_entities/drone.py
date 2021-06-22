@@ -37,7 +37,6 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         self.bs = bs
 
         # parameters
-        self.state_manager = RLModule(self)
         self.previous_ts_coordinate = None
         self.buffer = list()
         self.was_final = False
@@ -47,6 +46,10 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         self.prev_target = self.simulator.environment.targets[0]
         self.cum_rew = 0
         self.prev_step_at_decision = 0
+
+        self.previous_action = None
+        self.previous_state = None
+        self.previous_learning_tuple = None
 
     # MOVEMENT ROUTINES
 
@@ -128,7 +131,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
     def reset_environment_info(self):
         self.simulator.environment.reset_drones_targets()
-        self.state_manager.reset_MDP()
+        self.simulator.environment.state_manager.reset_MDP(self)
         self.prev_target = self.simulator.environment.targets[0]
         self.path.append(self.prev_target.coords)
         self.increase_waypoint_counter()
@@ -238,9 +241,9 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
             if self.will_reach_target():
                 self.simulator.environment.targets[self.prev_target.identifier].lock = None
                 self.coords = self.next_target()
-            # t
-            reward, epsilon, loss, is_end, s, s_prime = self.state_manager.invoke_train()
-            action, q = (0, None) if is_end else self.state_manager.invoke_predict(s_prime)
+
+            reward, epsilon, loss, is_end, s, s_prime = self.simulator.environment.state_manager.invoke_train(self)
+            action, q = (0, None) if is_end else self.simulator.environment.state_manager.invoke_predict(s_prime, self)
 
             # it takes one step to realize it was an end None state
             if not self.is_flying():

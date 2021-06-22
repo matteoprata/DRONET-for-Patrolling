@@ -17,7 +17,7 @@ SIM_TS_DURATION = 0.150     # float: seconds duration of a step in seconds.
 ENV_WIDTH = 1500      # float: meters, width of environment
 ENV_HEIGHT = 1500     # float: meters, height of environment
 
-N_DRONES = 1         # int: number of drones.
+N_DRONES = 2         # int: number of drones.
 N_OBSTACLES = 0      # number of random obstacles in the map
 N_GRID_CELLS = 5     # number of cless in the grid
 

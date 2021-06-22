@@ -212,10 +212,11 @@ class PatrollingSimulator:
 
         self.selected_drone = drones[0]
         self.environment.add_drones(drones)
+        self.environment.end_init()
 
         self.metrics = Metrics(self)
-        self.metrics.N_ACTIONS = drones[0].state_manager.N_ACTIONS
-        self.metrics.N_FEATURES = drones[0].state_manager.N_FEATURES
+        self.metrics.N_ACTIONS = self.environment.state_manager.N_ACTIONS
+        self.metrics.N_FEATURES = self.environment.state_manager.N_FEATURES
 
     def __plot(self, cur_step, max_steps):
         """ Plot the simulation """
@@ -304,7 +305,7 @@ class PatrollingSimulator:
         if epoch % SAVE_EPOCH_EVERY == 0 or is_last_epoch:
             model_file_name = "model-epoch{}.h5".format(epoch)
             path = config.RL_DATA + self.name() + "/" + model_file_name if self.wandb is None else os.path.join(self.wandb.dir, model_file_name)
-            self.environment.drones[0].state_manager.DQN.save_model(path)
+            self.environment.state_manager.DQN.save_model(path)
 
     # def close(self):
     #     self.checkout(True)

@@ -55,18 +55,15 @@ class State:
 
 
 class RLModule:
-    def __init__(self, drone):
-        self.drone = drone
-        self.simulator = self.drone.simulator
+    def __init__(self, environment):
+        self.environment = environment
+        self.simulator = self.environment.simulator
 
-        self.previous_state = None
-        self.previous_action = None
         self.previous_epsilon = 1
         self.previous_loss = None
-        self.previous_learning_tuple = None
-        
-        self.N_ACTIONS = len(self.simulator.environment.targets)
-        self.N_FEATURES = 2 * len(self.simulator.environment.targets)
+
+        self.N_ACTIONS = len(self.environment.targets)
+        self.N_FEATURES = 2 * len(self.environment.targets)
         self.TARGET_VIOLATION_FACTOR = config.TARGET_VIOLATION_FACTOR  # above this we are not interested on how much the
 
         self.DQN = PatrollingDQN(n_actions=self.N_ACTIONS,
@@ -90,29 +87,25 @@ class RLModule:
         # self.AOI_FUTURE_NORM = 1  # self.simulator.duration_seconds() / min_threshold
         # self.ACTION_NORM = self.N_ACTIONS
 
-    def get_current_aoi_idleness_ratio(self, next=0):
+    def get_current_aoi_idleness_ratio(self, drone, next=0):
         res = []
         for target in self.simulator.environment.targets:
             # set target need to 0 if this target is not necessary or is locked (OR)
             # -- target is locked from another drone (not this drone)
             # -- is inactive
-            is_ignore_target = (target.lock is not None and target.lock != self.drone) or not target.active
-            res_val = 0 if is_ignore_target else min(target.aoi_idleness_ratio(next), self.TARGET_VIOLATION_FACTOR)
+            # is_ignore_target = (target.lock is not None and target.lock != drone) or not target.active
+            res_val = min(target.aoi_idleness_ratio(next), self.TARGET_VIOLATION_FACTOR)
             res.append(res_val)
         return res
 
-    def get_current_time_distances(self):
+    def get_current_time_distances(self, drone):
         """ TIME of TRANSIT """
-        return [euclidean_distance(self.drone.coords, target.coords)/self.drone.speed for target in self.drone.simulator.environment.targets]
+        return [euclidean_distance(drone.coords, target.coords)/drone.speed for target in drone.simulator.environment.targets]
 
-    def evaluate_state(self):
-        # pa = self.previous_action if self.previous_action is not None else 0
-        # is_flying = self.drone.is_flying()
-        # objective = self.previous_action if self.drone.is_flying() else self.N_ACTIONS + 1
-
+    def evaluate_state(self, drone):
         # - - # - - # - - # - - # - - # - - # - - # - - # - - #
-        distances = self.get_current_time_distances()
-        residuals = self.get_current_aoi_idleness_ratio()
+        distances = self.get_current_time_distances(drone)
+        residuals = self.get_current_aoi_idleness_ratio(drone)
 
         state = State(residuals, distances, None, self.AOI_NORM, self.TIME_NORM, None, False, None, None)
         return state
@@ -170,25 +163,25 @@ class RLModule:
         """ The residual of the base station is >= 1, i.e. it is expired. """
         return s_prime.aoi_idleness_ratio(False)[0] >= 1  # or s.position() == s_prime.position()
 
-    def invoke_train(self):
-        if self.previous_state is None or self.previous_action is None:
+    def invoke_train(self, drone):
+        if drone.previous_state is None or drone.previous_action is None:
             return 0, self.previous_epsilon, self.previous_loss, False, None, None
 
         self.DQN.n_decision_step += 1
 
-        s = self.previous_state
-        a = self.previous_action
-        s_prime = self.evaluate_state()
+        s = drone.previous_state
+        a = drone.previous_action
+        s_prime = self.evaluate_state(drone)
         s_prime.is_final = self.evaluate_is_final_state(s, a, s_prime)
         r = self.evaluate_reward(s, a, s_prime)
 
-        if not self.drone.is_flying():
+        if not drone.is_flying():
             s_prime._aoi_idleness_ratio[a] = 0  # set to 0 the residual of the just visited target (it will be reset later from drone.py)
 
-        self.previous_learning_tuple = s.vector(False, True), a, s_prime.vector(False, True), r
+        drone.previous_learning_tuple = s.vector(False, True), a, s_prime.vector(False, True), r
 
         if self.simulator.log_state >= 0:
-            self.log_transition(s, s_prime, a, r, every=self.simulator.log_state)
+            self.log_transition(s, s_prime, a, r, every=self.simulator.log_state, drone=drone)
 
         # print(s.position(False), a, s_prime.position(False), r)
         self.previous_epsilon = self.DQN.decay()
@@ -203,31 +196,32 @@ class RLModule:
 
         if s_prime.is_final:
             self.simulator.environment.reset_drones_targets(False)
-            self.reset_MDP()
+            self.reset_MDP(drone)
 
         return r, self.previous_epsilon, self.DQN.current_loss, s_prime.is_final, s, s_prime
 
-    def invoke_predict(self, state):
+    def invoke_predict(self, state, drone):
         if state is None:
-            state = self.evaluate_state()
+            state = self.evaluate_state(drone)
 
         action_index, q = self.DQN.predict(state.vector())
 
-        if self.drone.is_flying() and self.previous_action is not None:
-            action_index = self.previous_action
+        if drone.is_flying() and drone.previous_action is not None:
+            action_index = drone.previous_action
 
-        self.previous_state = state
-        self.previous_action = action_index
+        drone.previous_state = state
+        drone.previous_action = action_index
 
         # set the lock for the other not to pick this action
-        self.simulator.environment.targets[action_index].lock = self.drone
+        self.simulator.environment.targets[action_index].lock = drone
         return action_index, q[0]
 
-    def reset_MDP(self):
-        self.previous_state = None
-        self.previous_action = None
+    def reset_MDP(self, drone):
+        drone.previous_state = None
+        drone.previous_action = None
 
-    def log_transition(self, s, s_prime, a, r, every=1):
+    def log_transition(self, s, s_prime, a, r, every=1, drone=None):
+        print("From drone n", drone.identifier)
         print(s.vector(False, True))
         print(s_prime.vector(False, True))
         print(a, r)

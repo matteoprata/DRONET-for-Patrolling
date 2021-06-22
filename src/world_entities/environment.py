@@ -1,6 +1,8 @@
 
 from src.utilities.utilities import log, is_segments_intersect, distance_point_segment, TraversedCells, euclidean_distance
 from src.world_entities.target import Target
+from src.patrolling.patrolling_MDP import RLModule
+
 from src.utilities.utilities import config
 from tqdm import tqdm
 from src.utilities import tsp
@@ -9,6 +11,7 @@ import numpy as np
 from src.utilities import utilities as util
 from collections import defaultdict
 import os
+
 
 class Environment:
     """ The environment is an entity that represents the area of interest."""
@@ -29,6 +32,10 @@ class Environment:
         self.closest_target = []
         self.furthest_target = []
         self.targets_dataset = []
+        self.state_manager = None  # to set
+
+    def end_init(self):
+        self.state_manager = RLModule(self)
 
     def add_drones(self, drones: list):
         """ add a list of drones in the env """

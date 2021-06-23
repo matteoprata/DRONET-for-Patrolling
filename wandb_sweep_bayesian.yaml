@@ -25,7 +25,7 @@ parameters:
   battery:
     value: 900
   is_allow_self_loop:
-    values: 1
+    value: 1
 
 command:
   - ${env}

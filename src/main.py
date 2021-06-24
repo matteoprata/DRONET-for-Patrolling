@@ -6,7 +6,7 @@ import wandb
 
 parser = argparse.ArgumentParser(description='Run experiments of patrolling.')
 
-parser.add_argument('-sweep', '--is_sweep', type=int, default=0)
+parser.add_argument('-sweep', '--is_sweep', type=int, default=1)
 parser.add_argument('-de', '--description', type=str, default=config.SIM_DESCRIPTION)
 
 # -- learning params, n_hidden_naurons

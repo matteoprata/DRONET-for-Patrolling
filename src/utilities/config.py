@@ -81,11 +81,13 @@ LEARNING_PARAMETERS = {
     "replay_memory_depth": 100000,
     "epsilon_decay": None,
 
-    "learning_rate": 0.0001,
-    "discount_factor": 0.98,
+    "learning_rate":  0.001,
+    "discount_factor": 1,
     "batch_size": 32,
-    "swap_models_every_decision": 500,
-    "n_hidden_neurons": 8,
+    "swap_models_every_decision": 5000,
+    "n_hidden_neurons_lv1": 50,
+    "n_hidden_neurons_lv2": 45,
+    "n_hidden_neurons_lv3": 30,
     "optimizer": "sgd",
     "loss": "mse"
 }
@@ -117,4 +119,4 @@ EPISODE_DURATION = 3 * Time.HOUR.value
 TARGET_VIOLATION_FACTOR = 2
 IS_DECIDED_ON_TARGET = False
 IS_RESIDUAL_REWARD = False  # - residual
-IS_ALLOW_SELF_LOOP = False
+IS_ALLOW_SELF_LOOP = True

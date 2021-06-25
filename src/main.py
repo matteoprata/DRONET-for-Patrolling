@@ -4,6 +4,10 @@ import src.utilities.config as config
 import argparse
 import wandb
 
+"""
+WARNING: when running sweeps, params are in the YAML otherwise be careful and look in config and main
+"""
+
 parser = argparse.ArgumentParser(description='Run experiments of patrolling.')
 
 parser.add_argument('-sweep', '--is_sweep', type=int, default=1)

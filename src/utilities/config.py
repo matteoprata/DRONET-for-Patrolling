@@ -85,9 +85,9 @@ LEARNING_PARAMETERS = {
     "discount_factor": 1,
     "batch_size": 32,
     "swap_models_every_decision": 5000,
-    "n_hidden_neurons_lv1": 50,
-    "n_hidden_neurons_lv2": 45,
-    "n_hidden_neurons_lv3": 30,
+    "n_hidden_neurons_lv1": 1,
+    "n_hidden_neurons_lv2": 1,
+    "n_hidden_neurons_lv3": 1,
     "optimizer": "sgd",
     "loss": "mse"
 }
@@ -107,7 +107,7 @@ DELTA_DEC = 5       # seconds
 # variables from here
 DRONE_MAX_ENERGY = 5 * Time.MIN.value       # int: max energy of a drone sec
 DRONE_SPEED = 15                            # float: m/s, drone speed.
-N_TARGETS = 20                              # number of random targets in the map
+N_TARGETS = 10                              # number of random targets in the map
 
 LOG_STATE = False  # print rhe state or not
 PENALTY_ON_BS_EXPIRATION = - N_TARGETS - 1

@@ -9,7 +9,7 @@ metric:
 
 parameters:
   n_epochs:
-    value: 500
+    value: 100
   n_episodes:
     value: 20
   episode_duration:

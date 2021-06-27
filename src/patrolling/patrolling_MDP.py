@@ -121,7 +121,7 @@ class RLModule:
 
     def __rew_on_flight(self, s, a, s_prime):
         if config.IS_RESIDUAL_REWARD:
-            rew = self.simulator.petnalty_on_bs_expiration if s_prime.is_final else 0
+            rew = self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
             pos = 0
             neg = rew
             for tar_i in s_prime.aoi_idleness_ratio(False):

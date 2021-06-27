@@ -116,7 +116,8 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
             self.__movement(self.angle)
 
     def save_metrics(self):
-        if not self.simulator.learning["is_pretrained"]:
+        # log only if not pre-trained or identifier is of the last drone
+        if not self.simulator.learning["is_pretrained"] or self.identifier == self.simulator.n_drones - 1:
             # self.simulator.metrics.append_statistics_on_target_reached_light(self.learning_tuple)
             if self.simulator.wandb is not None:
                 reward, epsilon, loss, _, _, _, _ = self.learning_tuple

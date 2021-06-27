@@ -73,7 +73,9 @@ class RLModule:
 
         self.DQN = PatrollingDQN(n_actions=self.N_ACTIONS,
                                  n_features=self.N_FEATURES,
-                                 n_hidden_neurons= self.simulator.learning["n_hidden_neurons"],
+                                 n_hidden_neurons_lv1=self.simulator.learning["n_hidden_neurons_lv1"],
+                                 n_hidden_neurons_lv2=self.simulator.learning["n_hidden_neurons_lv2"],
+                                 n_hidden_neurons_lv3=self.simulator.learning["n_hidden_neurons_lv3"],
                                  simulator=self.simulator,
                                  metrics=self.simulator.metrics,
                                  lr =                       self.simulator.learning["learning_rate"],
@@ -143,26 +145,28 @@ class RLModule:
         return rew
 
     def __rew_on_target(self, s, a, s_prime):
-        rew = 0
+        pass  # old
 
-        time_dist_to_a = s.time_distances(False)[a]
-        n_steps = max(int(time_dist_to_a/config.DELTA_DEC), 1)
-
-        for step in range(n_steps):
-            TIME = self.simulator.current_second() - (config.DELTA_DEC * step)
-
-            for target in self.simulator.environment.targets:
-                LAST_VISIT = target.last_visit_ts * self.simulator.ts_duration_sec
-                if config.IS_RESIDUAL_REWARD:
-                    residual = 1 - (TIME - LAST_VISIT) / target.maximum_tolerated_idleness
-                    residual = max(residual, -self.TARGET_VIOLATION_FACTOR)  # 10
-                    rew += residual
-                else:
-                    residual = (TIME - LAST_VISIT) / target.maximum_tolerated_idleness
-                    residual = max(residual, self.TARGET_VIOLATION_FACTOR)  # 10
-                    rew += - residual
-
-        rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
+        # rew = 0
+        #
+        # time_dist_to_a = s.time_distances(False)[a]
+        # n_steps = max(int(time_dist_to_a/config.DELTA_DEC), 1)
+        #
+        # for step in range(n_steps):
+        #     TIME = self.simulator.current_second() - (config.DELTA_DEC * step)
+        #
+        #     for target in self.simulator.environment.targets:
+        #         LAST_VISIT = target.last_visit_ts * self.simulator.ts_duration_sec
+        #         if config.IS_RESIDUAL_REWARD:
+        #             residual = 1 - (TIME - LAST_VISIT) / target.maximum_tolerated_idleness
+        #             residual = max(residual, -self.TARGET_VIOLATION_FACTOR)  # 10
+        #             rew += residual
+        #         else:
+        #             residual = (TIME - LAST_VISIT) / target.maximum_tolerated_idleness
+        #             residual = min(residual, self.TARGET_VIOLATION_FACTOR)  # 10
+        #             rew += - residual
+        #
+        # rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
         # rew = -100 if s.vector()[a] == 0 else rew
 
         # n_steps = int(self.simulator.max_travel_time() / config.DELTA_DEC)
@@ -172,7 +176,7 @@ class RLModule:
         #                          endLB=-1,
         #                          endUB=1,
         #                          active=False)
-        return rew
+        # return rew
 
     def evaluate_reward(self, s, a, s_prime):
         return self.__rew_on_target(s, a, s_prime) if config.IS_DECIDED_ON_TARGET else self.__rew_on_flight(s, a, s_prime)
@@ -204,13 +208,15 @@ class RLModule:
         # print(s.position(False), a, s_prime.position(False), r)
         self.previous_epsilon = self.DQN.decay()
 
+        IS_TRAIN = drone.identifier == self.simulator.n_drones - 1 # ony the last drone actually trains the NN
         # Continuous Tasks: Reinforcement Learning tasks which are not made of episodes, but rather last forever.
         # This tasks have no terminal states. For simplicity, they are usually assumed to be made of one never-ending episode.
         self.previous_loss = self.DQN.train(previous_state=s.vector(),
                                             current_state=s_prime.vector(),
                                             action=a,
                                             reward=r,
-                                            is_final=s_prime.is_final)
+                                            is_final=s_prime.is_final,
+                                            do=IS_TRAIN)
 
         if s_prime.is_final:
             self.simulator.environment.reset_drones_targets(False)

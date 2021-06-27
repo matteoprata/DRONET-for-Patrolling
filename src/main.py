@@ -16,7 +16,6 @@ parser.add_argument('-lr', '--learning_rate', type=float, default=config.LEARNIN
 parser.add_argument('-df', '--discount_factor', type=float, default=config.LEARNING_PARAMETERS['discount_factor'])
 parser.add_argument('-rm', '--replay_memory_depth', type=int, default=config.LEARNING_PARAMETERS['replay_memory_depth'])
 parser.add_argument('-sw', '--swap_models_every_decision', type=int, default=config.LEARNING_PARAMETERS['swap_models_every_decision'])
-parser.add_argument('-hn', '--n_hidden_neurons', type=int, default=config.LEARNING_PARAMETERS['n_hidden_neurons'])
 parser.add_argument('-sl', '--is_allow_self_loop', type=int, default=config.IS_ALLOW_SELF_LOOP)
 
 # -- logging
@@ -34,6 +33,11 @@ parser.add_argument('-seed', '--seed', type=int, default=config.SIM_SEED)
 parser.add_argument('-epo', '--n_epochs', type=int, default=config.N_EPOCHS)
 parser.add_argument('-epi', '--n_episodes', type=int, default=config.N_EPISODES)
 parser.add_argument('-edu', '--episode_duration', type=int, default=config.EPISODE_DURATION)
+
+# network
+parser.add_argument('-hn1', '--n_hidden_neurons_lv1', type=int, default=config.LEARNING_PARAMETERS['n_hidden_neurons_lv1'])
+parser.add_argument('-hn2', '--n_hidden_neurons_lv2', type=int, default=config.LEARNING_PARAMETERS['n_hidden_neurons_lv2'])
+parser.add_argument('-hn3', '--n_hidden_neurons_lv3', type=int, default=config.LEARNING_PARAMETERS['n_hidden_neurons_lv3'])
 
 # END PARAMETERS DEFINITION
 
@@ -54,7 +58,11 @@ def main():
             learning["learning_rate"] = wandb_config["learning_rate"]
             learning["discount_factor"] = wandb_config["discount_factor"]
             learning["swap_models_every_decision"] = wandb_config["swap_models_every_decision"]
-            learning["n_hidden_neurons"] = wandb_config["n_hidden_neurons"]
+
+            learning["n_hidden_neurons_lv1"] = wandb_config["n_hidden_neurons_lv1"]
+            learning["n_hidden_neurons_lv2"] = wandb_config["n_hidden_neurons_lv2"]
+            learning["n_hidden_neurons_lv3"] = wandb_config["n_hidden_neurons_lv3"]
+
             config.IS_ALLOW_SELF_LOOP = wandb_config["is_allow_self_loop"]
 
             sim = PatrollingSimulator(learning=learning,
@@ -86,7 +94,6 @@ def main():
                                   penalty_on_bs_expiration=args.penalty,
                                   sim_seed=args.seed)
         sim.run()
-
 
 
 if __name__ == "__main__":

@@ -11,7 +11,9 @@ class PatrollingDQN:
                  pretrained_model_path,
                  n_actions,
                  n_features,
-                 n_hidden_neurons,
+                 n_hidden_neurons_lv1,
+                 n_hidden_neurons_lv2,
+                 n_hidden_neurons_lv3,
                  simulator,
                  metrics,
                  batch_size=32,
@@ -31,7 +33,9 @@ class PatrollingDQN:
         # number of actions, actions, number of states
         self.n_actions = n_actions
         self.n_features = n_features
-        self.n_hidden_neurons = n_hidden_neurons
+        self.n_hidden_neurons_lv1 = n_hidden_neurons_lv1
+        self.n_hidden_neurons_lv2 = n_hidden_neurons_lv2
+        self.n_hidden_neurons_lv3 = n_hidden_neurons_lv3
         self.n_decision_step = 0
 
         # learning parameters
@@ -48,9 +52,18 @@ class PatrollingDQN:
 
         # build neural models
         if not self.is_load_model:
-            n_hidden_neurons = self.n_hidden_neurons  # int(np.sqrt(self.n_features * self.n_actions))
-            self.model = DQN(self.n_features, n_hidden_neurons, self.n_actions)      # MODEL 1
-            self.model_hat = DQN(self.n_features, n_hidden_neurons, self.n_actions)  # MODEL 2
+            self.model = DQN(self.n_features,
+                             self.n_hidden_neurons_lv1,
+                             self.n_hidden_neurons_lv2,
+                             self.n_hidden_neurons_lv3,
+                             self.n_actions)  # MODEL 1
+
+            self.model_hat = DQN(self.n_features,
+                                 self.n_hidden_neurons_lv1,
+                                 self.n_hidden_neurons_lv2,
+                                 self.n_hidden_neurons_lv3,
+                                 self.n_actions)  # MODEL 2
+
             self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         else:
             self.model = torch.load(pretrained_model_path)
@@ -111,7 +124,7 @@ class PatrollingDQN:
 
         return action_index, q_values
 
-    def train(self, previous_state=None, current_state=None, action=None, reward=None, is_final=None):
+    def train(self, previous_state=None, current_state=None, action=None, reward=None, is_final=None, do=True):
         """ train the NN accumulate the experience and each X data the method actually train the network. """
         if self.is_load_model:
             return
@@ -119,6 +132,9 @@ class PatrollingDQN:
         if not (previous_state is None and current_state is None and action is None and reward is None and is_final is None):
             experience = [previous_state, current_state, action, reward, is_final]
             self.replay_memory.append(experience)
+
+        if not do:  # do not actually train if the drone is not the last
+            return
 
         if self.time_to_batch_training():
             # print("Train", self.n_epochs, self.n_decision_step)
@@ -180,16 +196,36 @@ class PatrollingDQN:
 
 
 class DQN(LightningModule):
-    def __init__(self, in_shape, hidden_shape, out_shape):
+    def __init__(self, in_shape, hidden_shape1, hidden_shape2, hidden_shape3, out_shape):
         super(DQN, self).__init__()
 
-        # TODO TRY 1D CONVOLUTION
-
-        self.fc = torch.nn.Sequential(
-            torch.nn.Linear(in_shape, hidden_shape),
-            torch.nn.ReLU(),
-            torch.nn.Linear(hidden_shape, out_shape)
-        )
+        if hidden_shape2 == 0 and hidden_shape3 == 0:
+            self.fc = torch.nn.Sequential(
+                torch.nn.Linear(in_shape, hidden_shape1),
+                torch.nn.ReLU(),
+                torch.nn.Linear(hidden_shape1, out_shape),
+            )
+        elif hidden_shape2 != 0 and hidden_shape3 == 0:
+            self.fc = torch.nn.Sequential(
+                torch.nn.Linear(in_shape, hidden_shape1),
+                torch.nn.ReLU(),
+                torch.nn.Linear(hidden_shape1, hidden_shape2),
+                torch.nn.ReLU(),
+                torch.nn.Linear(hidden_shape2, out_shape),
+            )
+        elif hidden_shape2 != 0 and hidden_shape3 != 0:
+            self.fc = torch.nn.Sequential(
+                torch.nn.Linear(in_shape, hidden_shape1),
+                torch.nn.ReLU(),
+                torch.nn.Linear(hidden_shape1, hidden_shape2),
+                torch.nn.ReLU(),
+                torch.nn.Linear(hidden_shape2, hidden_shape3),
+                torch.nn.ReLU(),
+                torch.nn.Linear(hidden_shape3, out_shape),
+            )
+        else:
+            print("NN Layers setup is unexpected.")
+            exit()
 
     def forward(self, x):
         return self.fc(x)

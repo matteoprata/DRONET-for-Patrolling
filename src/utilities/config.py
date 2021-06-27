@@ -81,6 +81,10 @@ LEARNING_PARAMETERS = {
     "replay_memory_depth": 100000,
     "epsilon_decay": None,
 
+    "n_hidden_neurons_lv1": 1,
+    "n_hidden_neurons_lv2": 1,
+    "n_hidden_neurons_lv3": 1,
+
     "learning_rate": 0.0001,
     "discount_factor": 0.98,
     "batch_size": 32,

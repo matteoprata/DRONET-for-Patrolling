@@ -9,7 +9,7 @@ metric:
 
 parameters:
   n_epochs:
-    value: 200
+    value: 500
   n_episodes:
     value: 20
   episode_duration:
@@ -19,13 +19,13 @@ parameters:
   discount_factor:
     value: 1
   n_hidden_neurons_lv1:
-    values: [25, 30]
+    value: 20
   n_hidden_neurons_lv2:
-    values: [0, 20]
+    value: 0
   n_hidden_neurons_lv3:
-    values: [0, 15]
+    value: 0
   swap_models_every_decision:
-    value: 3000
+    value: 5000
   battery:
     value: 900
   is_allow_self_loop:

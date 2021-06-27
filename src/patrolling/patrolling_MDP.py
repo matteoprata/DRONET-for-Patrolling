@@ -145,24 +145,22 @@ class RLModule:
             for target in self.simulator.environment.targets:
                 LAST_VISIT = target.last_visit_ts * self.simulator.ts_duration_sec
                 if config.IS_RESIDUAL_REWARD:
-                    residual = 1 - (TIME - LAST_VISIT) / target.maximum_tolerated_idleness
-                    residual = max(residual, -self.TARGET_VIOLATION_FACTOR)  # 10
-                    rew += residual
+                    pass  # check again
+                    # residual = 1 - (TIME - LAST_VISIT) / target.maximum_tolerated_idleness
+                    # residual = max(residual, -self.TARGET_VIOLATION_FACTOR) if residual >= 1 else 0 # 10
+                    # rew += residual
                 else:
                     residual = (TIME - LAST_VISIT) / target.maximum_tolerated_idleness
-                    residual = max(residual, self.TARGET_VIOLATION_FACTOR)  # 10
+                    residual = min(residual, self.TARGET_VIOLATION_FACTOR) if residual >= 1 else 0  # 10
                     rew += - residual
 
         rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
-        # rew = -100 if s.vector()[a] == 0 else rew
-
-        # n_steps = int(self.simulator.max_travel_time() / config.DELTA_DEC)
-        # rew = min_max_normalizer(rew,
-        #                          startLB=(-(self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS)) * n_steps - self.simulator.penalty_on_bs_expiration,
-        #                          startUB=(self.N_ACTIONS)*n_steps,
-        #                          endLB=-1,
-        #                          endUB=1,
-        #                          active=False)
+        rew = min_max_normalizer(rew,
+                                 startLB=(-(self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS))
+                                         * n_steps - self.simulator.penalty_on_bs_expiration,
+                                 startUB=0,
+                                 endLB=-1,
+                                 endUB=0)
         return rew
 
     def evaluate_reward(self, s, a, s_prime):

@@ -34,6 +34,10 @@ class Environment:
         self.targets_dataset = []
         self.state_manager = None  # to set
 
+        self.read_previous_actions_drones = [None]*self.simulator.n_drones
+        self.write_previous_actions_drones = [None]*self.simulator.n_drones
+
+
     def end_init(self):
         self.state_manager = RLModule(self)
 

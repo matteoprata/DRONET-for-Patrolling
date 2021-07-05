@@ -53,7 +53,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
     # MOVEMENT ROUTINES
 
-    def move(self):
+    def set_next_target(self):
         """ Called at every time step. """
         if self.mobility == config.Mobility.PLANNED:
             if self.will_reach_target():
@@ -111,24 +111,36 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
             if self.will_reach_target():
                 self.update_target_reached()
 
+    def move(self):
+        # moved here from move because position should not change for state estimation
+        if self.mobility == config.Mobility.DECIDED and self.will_reach_target():
+            self.simulator.environment.targets[self.prev_target.identifier].lock = None
+            self.coords = self.next_target()
+
         if self.is_flying():
             self.set_next_target_angle()
             self.__movement(self.angle)
 
     def save_metrics(self):
         # log only if not pre-trained or identifier is of the last drone
+        # if self.identifier == self.simulator.n_drones - 1:
+        #     print("sono il drone in metriche :) ", self.identifier)
+
         if not self.simulator.learning["is_pretrained"] or self.identifier == self.simulator.n_drones - 1:
             # self.simulator.metrics.append_statistics_on_target_reached_light(self.learning_tuple)
             if self.simulator.wandb is not None:
                 reward, epsilon, loss, _, _, _, _ = self.learning_tuple
                 self.cum_rew += reward
 
-                metrics = {"cumulative_reward": self.cum_rew,
+                metrics = {
+                           "cumulative_reward": self.cum_rew,
                            "experience": epsilon,
-                           "loss": 0 if loss is None else loss}
+                           "loss": 0 if loss is None else loss
+                }
+
                 self.simulator.wandb.log(metrics)  # , commit=self.is_new_episode())
-        else:
-            self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
+        # else:
+        #     self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
 
     def reset_environment_info(self):
         self.simulator.environment.reset_drones_targets()
@@ -239,10 +251,6 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
             # print(self.was_final, self.is_decision_step())
             self.was_final = False
 
-            if self.will_reach_target():
-                self.simulator.environment.targets[self.prev_target.identifier].lock = None
-                self.coords = self.next_target()
-
             reward, epsilon, loss, is_end, s, s_prime = self.simulator.environment.state_manager.invoke_train(self)
             action, q = (0, None) if is_end else self.simulator.environment.state_manager.invoke_predict(s_prime, self)
 
@@ -260,6 +268,12 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
             self.was_final_epoch = False
 
             self.prev_step_at_decision = self.simulator.cur_step
+
+            # swap vector of prev actions
+            if self.identifier == self.simulator.n_drones - 1:
+                # print("I'm drone", self.identifier, "and now I sawp", self.simulator.environment.read_previous_actions_drones, "with",
+                #       self.simulator.environment.write_previous_actions_drones)
+                self.simulator.environment.read_previous_actions_drones = self.simulator.environment.write_previous_actions_drones[:]
 
     def decided_on_flight(self, eval_trigger):
         self.decided_on_target(eval_trigger)

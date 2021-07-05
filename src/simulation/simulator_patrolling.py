@@ -269,7 +269,8 @@ class PatrollingSimulator:
                     self.cur_step = cur_step
 
                     for drone in self.environment.drones:
-                        # self.environment.detect_collision(drone)
+                        drone.set_next_target()
+                    for drone in self.environment.drones:
                         drone.move()
 
                     if config.SAVE_PLOT or self.is_plot:
@@ -300,12 +301,10 @@ class PatrollingSimulator:
             except:
                 print("Couldn't plot from step", self.cur_step_total)
 
-        SAVE_EPOCH_EVERY = 25
+        SAVE_EPOCH_EVERY = 50
 
         if epoch % SAVE_EPOCH_EVERY == 0 or is_last_epoch:
             model_file_name = "model-epoch{}.h5".format(epoch)
             path = config.RL_DATA + self.name() + "/" + model_file_name if self.wandb is None else os.path.join(self.wandb.dir, model_file_name)
             self.environment.state_manager.DQN.save_model(path)
 
-    # def close(self):
-    #     self.checkout(True)

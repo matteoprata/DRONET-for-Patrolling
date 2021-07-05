@@ -100,8 +100,8 @@ class RLModule:
             # set target need to 0 if this target is not necessary or is locked (OR)
             # -- target is locked from another drone (not this drone)
             # -- is inactive
-            # is_ignore_target = (target.lock is not None and target.lock != drone) or not target.active
-            res_val = min(target.aoi_idleness_ratio(next), self.TARGET_VIOLATION_FACTOR)
+            is_ignore_target = self.simulator.learning["is_pretrained"] and ((target.lock is not None and target.lock != drone) or not target.active)
+            res_val = 0 if is_ignore_target else min(target.aoi_idleness_ratio(next), self.TARGET_VIOLATION_FACTOR)
             res.append(res_val)
         return res
 

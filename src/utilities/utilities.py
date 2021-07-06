@@ -36,7 +36,7 @@ def min_max_normalizer(value, startLB, startUB, endLB=0, endUB=1, active=True):
     value = np.asarray(value)
     if not (value <= startUB).all() and (value >= startLB).all():
         print("ERROR", value, startLB, startUB)
-        assert False
+        exit()
 
     leftSpan = startUB - startLB
     rightSpan = endUB - endLB

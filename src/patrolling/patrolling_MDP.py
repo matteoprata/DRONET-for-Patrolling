@@ -104,6 +104,7 @@ class RLModule:
             # -- is inactive
             is_ignore_target = self.simulator.learning["is_pretrained"] and ((target.lock is not None and target.lock != drone) or not target.active)
             res_val = 0 if is_ignore_target else min(target.aoi_idleness_ratio(next), self.TARGET_VIOLATION_FACTOR)
+            res_val = max(0, res_val)
             res.append(res_val)
         return res
 
@@ -148,25 +149,24 @@ class RLModule:
         #                              startUB=0,
         #                              endLB=-1,
         #                              endUB=0)
-        # # REWARD TEST ATP01
-        # rew = - max([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
+        # REWARD TEST ATP01
+        rew = - max([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
+        rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
+        rew = min_max_normalizer(rew,
+                                 startUB=0,
+                                 startLB=(-(self.TARGET_VIOLATION_FACTOR - self.simulator.penalty_on_bs_expiration)),
+                                 endUB=0,
+                                 endLB=-1)
+
+        # # # REWARD TEST ATP02
+        # rew = - sum([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
         # rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
         #
         # rew = min_max_normalizer(rew,
         #                          startUB=0,
-        #                          startLB=(-(self.TARGET_VIOLATION_FACTOR - self.simulator.penalty_on_bs_expiration)),
+        #                          startLB=(-(self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS - self.simulator.penalty_on_bs_expiration)),
         #                          endUB=0,
         #                          endLB=-1)
-
-        # # REWARD TEST ATP02
-        rew = - sum([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
-        rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
-
-        rew = min_max_normalizer(rew,
-                                 startUB=0,
-                                 startLB=(-(self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS - self.simulator.penalty_on_bs_expiration)),
-                                 endUB=0,
-                                 endLB=-1)
         return rew
 
 

@@ -120,40 +120,50 @@ class RLModule:
         return state
 
     def __rew_on_flight(self, s, a, s_prime):
-        if config.IS_RESIDUAL_REWARD:
-            rew = self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
-            pos = 0
-            neg = rew
-            for tar_i in s_prime.aoi_idleness_ratio(False):
-                val = max(1-tar_i, -self.TARGET_VIOLATION_FACTOR)
-                if val < 0:
-                    neg += val
-                else:
-                    pos += val
+        # if config.IS_RESIDUAL_REWARD:
+        #     rew = self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
+        #     pos = 0
+        #     neg = rew
+        #     for tar_i in s_prime.aoi_idleness_ratio(False):
+        #         val = max(1-tar_i, -self.TARGET_VIOLATION_FACTOR)
+        #         if val < 0:
+        #             neg += val
+        #         else:
+        #             pos += val
+        #
+        #     # normalize negative rewards
+        #     rew = min_max_normalizer(neg,
+        #                              startLB=(-(self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS)
+        #                                       + self.simulator.penalty_on_bs_expiration),
+        #                              startUB=0,
+        #                              endLB=-1,
+        #                              endUB=0)
+        #
+        #     # normalize positive rewards then sum
+        #     rew += min_max_normalizer(pos,
+        #                              startUB=self.N_ACTIONS,
+        #                              startLB=0,
+        #                              endLB=0,
+        #                              endUB=1/self.TARGET_VIOLATION_FACTOR)  # my guess
+        #
+        # else:
+        #     sum_exp_res = - sum([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False) if i >= 1])
+        #     rew = sum_exp_res + (self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0)
+        #     rew = min_max_normalizer(rew,
+        #                              startLB=(- (self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS) + self.simulator.penalty_on_bs_expiration),
+        #                              startUB=0,
+        #                              endLB=-1,
+        #                              endUB=0
+        FRAC_MOV = - 0.01
+        rew = - max([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
+        rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
+        rew += FRAC_MOV
 
-            # normalize negative rewards
-            rew = min_max_normalizer(neg,
-                                     startLB=(-(self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS)
-                                              + self.simulator.penalty_on_bs_expiration),
-                                     startUB=0,
-                                     endLB=-1,
-                                     endUB=0)
-
-            # normalize positive rewards then sum
-            rew += min_max_normalizer(pos,
-                                     startUB=self.N_ACTIONS,
-                                     startLB=0,
-                                     endLB=0,
-                                     endUB=1/self.TARGET_VIOLATION_FACTOR)  # my guess
-
-        else:
-            sum_exp_res = - sum([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False) if i >= 1])
-            rew = sum_exp_res + (self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0)
-            rew = min_max_normalizer(rew,
-                                     startLB=(- (self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS) + self.simulator.penalty_on_bs_expiration),
-                                     startUB=0,
-                                     endLB=-1,
-                                     endUB=0)
+        rew = min_max_normalizer(rew,
+                                 startUB=0,
+                                 startLB=-(self.TARGET_VIOLATION_FACTOR + FRAC_MOV + self.simulator.penalty_on_bs_expiration),
+                                 endUB=0,
+                                 endLB=-1)
         return rew
 
     def __rew_on_target(self, s, a, s_prime):

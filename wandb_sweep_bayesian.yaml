@@ -9,7 +9,7 @@ metric:
 
 parameters:
   n_epochs:
-    value: 100
+    value: 200
   n_episodes:
     value: 20
   episode_duration:
@@ -19,7 +19,7 @@ parameters:
   discount_factor:
     value: 1
   n_hidden_neurons_lv1:
-    value: 20
+    value: 18
   n_hidden_neurons_lv2:
     value: 0
   n_hidden_neurons_lv3:

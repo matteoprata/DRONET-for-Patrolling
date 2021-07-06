@@ -265,8 +265,8 @@ class RLModule:
 
     def log_transition(self, s, s_prime, a, r, every=1, drone=None):
         print("From drone n", drone.identifier)
-        print(s.vector(True, True))
-        print(s_prime.vector(True, True))
+        # print(s.vector(True, True))
+        # print(s_prime.vector(True, True))
 
         print(s_prime.aoi_idleness_ratio(False))
         print(s_prime.time_distances(False))

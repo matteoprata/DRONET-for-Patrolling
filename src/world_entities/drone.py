@@ -9,7 +9,7 @@ from src.utilities.utilities import euclidean_distance, log, angle_between_three
 import numpy as np
 from src.utilities import config
 from src.patrolling.patrolling_MDP import RLModule
-
+import matplotlib.pyplot as plt
 
 class Drone(SimulatedEntity, AntennaEquippedDevice):
 
@@ -126,19 +126,19 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         # if self.identifier == self.simulator.n_drones - 1:
         #     print("sono il drone in metriche :) ", self.identifier)
 
-        if not self.simulator.learning["is_pretrained"] or self.identifier == self.simulator.n_drones - 1:
+        if not self.simulator.learning["is_pretrained"] \
+                and self.identifier == self.simulator.n_drones - 1 \
+                and self.simulator.wandb is not None:
+
             # self.simulator.metrics.append_statistics_on_target_reached_light(self.learning_tuple)
-            if self.simulator.wandb is not None:
-                reward, epsilon, loss, _, _, _, _ = self.learning_tuple
-                self.cum_rew += reward
+            reward, epsilon, loss, _, _, _, _ = self.learning_tuple
+            self.cum_rew += reward
 
-                metrics = {
-                           "cumulative_reward": self.cum_rew,
-                           "experience": epsilon,
-                           "loss": 0 if loss is None else loss
-                }
+            metrics = {"cumulative_reward": self.cum_rew,
+                       "experience": epsilon,
+                       "loss": 0 if loss is None else loss}
 
-                self.simulator.wandb.log(metrics)  # , commit=self.is_new_episode())
+            self.simulator.wandb.log(metrics)  # , commit=self.is_new_episode())
         # else:
         #     self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
 

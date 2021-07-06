@@ -19,7 +19,7 @@ parameters:
   discount_factor:
     value: 1
   n_hidden_neurons_lv1:
-    value: [15, 20]
+    values: [15, 20]
   n_hidden_neurons_lv2:
     value: 0
   n_hidden_neurons_lv3:

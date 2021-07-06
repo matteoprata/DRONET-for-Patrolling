@@ -17,7 +17,7 @@ parameters:
   learning_rate:
     value: 0.001
   discount_factor:
-    values: 1
+    value: 1
   n_hidden_neurons_lv1:
     values: [25, 30]
   n_hidden_neurons_lv2:

@@ -112,7 +112,6 @@ DRONE_SPEED = 15                            # float: m/s, drone speed.
 N_TARGETS = 6                               # number of random targets in the map
 
 LOG_STATE = False  # print rhe state or not
-PENALTY_ON_BS_EXPIRATION = - N_TARGETS - 1
 
 N_EPOCHS = 100      # 44
 N_EPISODES = 20     # 50
@@ -122,3 +121,5 @@ TARGET_VIOLATION_FACTOR = 2
 IS_DECIDED_ON_TARGET = False
 IS_RESIDUAL_REWARD = None #False  # - residual
 IS_ALLOW_SELF_LOOP = False
+
+PENALTY_ON_BS_EXPIRATION = - 2 * TARGET_VIOLATION_FACTOR

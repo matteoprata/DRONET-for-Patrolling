@@ -148,17 +148,15 @@ class RLModule:
         #                              startUB=0,
         #                              endLB=-1,
         #                              endUB=0)
-        FRAC_MOV = - 0.01
+        # REWARD TEST ATP01
         rew = - max([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
         rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
-        rew += FRAC_MOV
 
         rew = min_max_normalizer(rew,
                                  startUB=0,
-                                 startLB=-(self.TARGET_VIOLATION_FACTOR + FRAC_MOV + self.N_ACTIONS),
+                                 startLB=(-(self.TARGET_VIOLATION_FACTOR - self.simulator.penalty_on_bs_expiration)),
                                  endUB=0,
                                  endLB=-1)
-
         return rew
 
 

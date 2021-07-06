@@ -15,17 +15,17 @@ parameters:
   episode_duration:
     value: 24000
   learning_rate:
-    value: 0.0001
+    value: 0.001
   discount_factor:
-    value: 1
+    values: 1
   n_hidden_neurons_lv1:
-    value: 28
+    values: [25, 30]
   n_hidden_neurons_lv2:
-    value: 15
+    values: [0, 20]
   n_hidden_neurons_lv3:
-    values: [0, 10]
+    value: 0
   swap_models_every_decision:
-    value: 3000
+    value: 5000
   battery:
     value: 600
   is_allow_self_loop:
@@ -36,5 +36,6 @@ command:
   - python3.7
   - ${program}
   - ${args}
+
 
 

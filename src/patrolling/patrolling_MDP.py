@@ -251,11 +251,18 @@ class RLModule:
         return r, self.previous_epsilon, self.DQN.current_loss, s_prime.is_final, s, s_prime
 
     def invoke_predict(self, state, drone):
+        assert(len(self.environment.drones) <= len(self.environment.targets))
+        state_attempt = state
         if state is None:
-            state = self.evaluate_state(drone)
+            state_attempt = self.evaluate_state(drone)
 
-        action_index, q = self.DQN.predict(state.vector())
+        # to avoid all of them heading to the same target
+        if state is None and self.simulator.learning["is_pretrained"]:
+            action_index, q = drone.identifier, [[]]
+        else:
+            action_index, q = self.DQN.predict(state_attempt.vector())
 
+        state = state_attempt
         if drone.is_flying() and drone.previous_action is not None:
             action_index = drone.previous_action
 

@@ -15,13 +15,13 @@ parameters:
   episode_duration:
     value: 24000
   learning_rate:
-    value: 0.001
+    values: [0.1, 0.01, 0.001]
   discount_factor:
     value: 1
   n_hidden_neurons_lv1:
-    values: [25, 30]
+    value: 60        # input is 53
   n_hidden_neurons_lv2:
-    values: [0, 20]
+    values: [0, 40]  # output is 26
   n_hidden_neurons_lv3:
     value: 0
   swap_models_every_decision:

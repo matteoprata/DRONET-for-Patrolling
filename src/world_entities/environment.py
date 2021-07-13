@@ -80,7 +80,7 @@ class Environment:
         for drone in self.drones:
             drone.coords = drone.bs.coords
 
-    def generate_target_combinations(self, seed, force_recompute=True):
+    def generate_target_combinations(self, seed, force_recompute=False):
         """
         Assumption, file stores for each seed, up to 100 targets, up to 500 episodes
         :param seed:

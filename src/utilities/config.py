@@ -17,7 +17,6 @@ SIM_TS_DURATION = 0.150     # float: seconds duration of a step in seconds.
 ENV_WIDTH = 1500      # float: meters, width of environment
 ENV_HEIGHT = 1500     # float: meters, height of environment
 
-N_DRONES = 2         # int: number of drones.
 N_OBSTACLES = 0      # number of random obstacles in the map
 N_GRID_CELLS = 5     # number of cless in the grid
 
@@ -107,9 +106,10 @@ DRONE_MOBILITY = Mobility.DECIDED
 DELTA_DEC = 5       # seconds
 
 # variables from here
-DRONE_MAX_ENERGY = 5 * Time.MIN.value       # int: max energy of a drone sec
+DRONE_MAX_ENERGY = 3 * Time.MIN.value       # int: max energy of a drone sec
 DRONE_SPEED = 15                            # float: m/s, drone speed.
-N_TARGETS = 6                               # number of random targets in the map
+N_TARGETS = 25                               # number of random targets in the map
+N_DRONES = 5                                # int: number of drones.
 
 LOG_STATE = False  # print rhe state or not
 
@@ -119,7 +119,7 @@ EPISODE_DURATION = 3 * Time.HOUR.value
 
 TARGET_VIOLATION_FACTOR = 2
 IS_DECIDED_ON_TARGET = False
-IS_RESIDUAL_REWARD = None #False  # - residual
-IS_ALLOW_SELF_LOOP = False
+IS_RESIDUAL_REWARD = None  # False  # - residual
+IS_ALLOW_SELF_LOOP = True
 
 PENALTY_ON_BS_EXPIRATION = - TARGET_VIOLATION_FACTOR * N_TARGETS  # - 2 * TARGET_VIOLATION_FACTOR  #

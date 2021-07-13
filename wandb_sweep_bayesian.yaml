@@ -27,7 +27,7 @@ parameters:
   swap_models_every_decision:
     value: 5000
   battery:
-    value: 600
+    value: 1000
   is_allow_self_loop:
     value: 1
 

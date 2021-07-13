@@ -31,6 +31,7 @@ class Metrics:
             for t in self.simulator.environment.targets:
                 if rep == -1:
                     if t.identifier == action:
+                        # TODO FIX
                         self.target_aoi[t.identifier].append(t.age_of_information(rep))
                     else:
                         self.target_aoi[t.identifier].append(None)
@@ -38,6 +39,7 @@ class Metrics:
                     if t.identifier == action:
                         self.target_aoi[t.identifier].append(0)
                     else:
+                        # TODO FIX
                         self.target_aoi[t.identifier].append(t.age_of_information())
 
         if learning_tuple is not None:

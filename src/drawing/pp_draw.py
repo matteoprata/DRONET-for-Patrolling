@@ -84,18 +84,21 @@ class PathPlanningDrawer:
         for i in range(len(self.simulator.environment.targets)):
             # generation is done only at the beginning
             target = self.simulator.environment.targets[i]
-            aoi = int(target.age_of_information())
             max_tol = int(target.maximum_tolerated_idleness)
 
-            if aoi > max_tol:
+            if target.is_depot:
+                aoi = [int(target.age_of_information(drone_id=drone.identifier)) for drone in self.simulator.environment.drones]
+            else:
+                aoi = [int(target.age_of_information(drone_id=0))]
+
+            if any(np.asarray(aoi) > max_tol):
                 stddraw.setPenColor(c=stddraw.RED)
             else:
                 stddraw.setPenColor(c=stddraw.BLACK)
-
             startx, starty = tuple(target.coords)
 
             stddraw.filledSquare(startx, starty, 10)
-            stddraw.text(startx, starty+25, "[{}]: {}/{}".format(target.identifier, aoi, max_tol))
+            stddraw.text(startx, starty + 25, "[{}]: {}/{}".format(target.identifier, aoi, max_tol))
 
         self.__reset_pen()
 

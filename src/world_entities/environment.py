@@ -5,12 +5,14 @@ from src.patrolling.patrolling_MDP import RLModule
 
 from src.utilities.utilities import config
 from tqdm import tqdm
-from src.utilities import tsp
+from src.utilities import tsp, tsp_multidrone
 from scipy.stats import truncnorm
 import numpy as np
 from src.utilities import utilities as util
 from collections import defaultdict
 import os
+import networkx as nx
+
 
 
 class Environment:
@@ -66,15 +68,19 @@ class Environment:
         return cell_index
 
     def reset_drones_targets(self, is_end_epoch=True):
-        """ Reset the scenario. """
+        """ Reset the scenario. For end epoch and end episode. """
 
         for target in self.targets:
-            target.last_visit_ts = 0 if is_end_epoch else self.simulator.cur_step + 1
+            if not target.is_depot:
+                target.set_last_visit_ts(0 if is_end_epoch else self.simulator.cur_step + 1)
+            else:
+                for drone in self.drones:
+                    target.set_last_visit_ts(0 if is_end_epoch else self.simulator.cur_step + 1, drone.identifier)
 
         for drone in self.drones:
             drone.coords = drone.bs.coords
 
-    def generate_target_combinations(self, seed):
+    def generate_target_combinations(self, seed, force_recompute=True):
         """
         Assumption, file stores for each seed, up to 100 targets, up to 500 episodes
         :param seed:
@@ -85,10 +91,10 @@ class Environment:
         # loading targets list
         targets_fname = config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec)
         path_exists = os.path.exists(targets_fname)
-        MAX_N_EPISODES = 2000
+        MAX_N_EPISODES = 50
         MAX_N_TARGETS = self.simulator.n_targets
 
-        if not path_exists:
+        if not path_exists or force_recompute:
             to_json = defaultdict(list)
             print("START: generating random episodes")
 
@@ -97,16 +103,24 @@ class Environment:
                 for i in range(MAX_N_TARGETS):
                     point_coords = [self.simulator.rnd_env.randint(0, self.width), self.simulator.rnd_env.randint(0, self.height)]
                     coordinates.append(point_coords)
-                tsp_path_time = self.tsp_path_time(coordinates)
+
+                tsp_path_time = self.tsp_path_time(coordinates, self.simulator.n_drones)
 
                 for i in range(MAX_N_TARGETS):  # set the threshold for the targets
                     # if i == 2:
                     #     idleness = self.simulator.duration_seconds()
                     # else:
+                    # LOW = int(tsp_path_time)      # int(rtt)
+                    # UP  = int(tsp_path_time) * 2  # int(rtt)+1 if int(rtt) >= int(tsp_path_time) else int(tsp_path_time)
+                    # # idleness = self.simulator.rnd_env.randint(LOW, UP)
                     rtt = 2 * (euclidean_distance(coordinates[i], self.base_stations[0].coords) / self.simulator.drone_speed_meters_sec)
-                    LOW = int(tsp_path_time)      # int(rtt)
-                    UP  = int(tsp_path_time) * 2  # int(rtt)+1 if int(rtt) >= int(tsp_path_time) else int(tsp_path_time)
-                    idleness = self.simulator.rnd_env.randint(LOW, UP)
+                    rtt += config.DELTA_DEC
+
+                    MEAN = tsp_path_time
+                    MEAN += config.DELTA_DEC * 0.5 * (self.simulator.n_targets + 1)
+
+                    VARIANCE = MEAN * 1/3
+                    idleness = max(rtt, np.random.normal(loc=MEAN, scale=VARIANCE, size=1)[0])
                     to_json[ep].append((i, tuple(coordinates[i]), idleness))
 
             util.save_json(to_json, config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec))
@@ -123,7 +137,9 @@ class Environment:
                 t = Target(identifier=len(self.base_stations) + t_id,
                            coords=tuple(t_coord),
                            maximum_tolerated_idleness=t_idleness,
-                           simulator=self.simulator)
+                           simulator=self.simulator,
+                           is_depot=False,
+                           n_drones=self.simulator.n_drones)
 
                 epoch_targets.append(t)
             self.targets_dataset.append(epoch_targets)
@@ -138,7 +154,7 @@ class Environment:
 
         # The base station is a target
         for i in range(self.simulator.n_base_stations):
-            self.targets.append(Target(i, self.base_stations[i].coords, self.simulator.drone_max_battery, self.simulator))
+            self.targets.append(Target(i, self.base_stations[i].coords, self.simulator.drone_max_battery, self.simulator, is_depot=True, n_drones=self.simulator.n_drones))
 
         self.targets += targets
 
@@ -235,10 +251,17 @@ class Environment:
     #         time = euclidean_distance(a, a_prime) / self.drones[0].speed
     #
 
-    def tsp_path_time(self, coordinates):
+    def tsp_path_time(self, coordinates, sales_persons=1):
         coordinates_plus = [self.base_stations[0].coords] + coordinates
-        tsp_ob = tsp.TSP()
-        tsp_ob.read_data(coordinates_plus)
-        two_opt = tsp.TwoOpt_solver(initial_tour='NN', iter_num=100)
-        path, cost = tsp_ob.get_approx_solution(two_opt, star_node=0)
-        return cost / self.simulator.drone_speed_meters_sec
+
+        G = nx.Graph()
+        for i, j in enumerate(coordinates_plus):
+            G.add_node(i)
+
+        for i, u in enumerate(coordinates_plus):
+            for j, v in enumerate(coordinates_plus):
+                if i >= j:
+                    G.add_edge(i, j, weight=util.euclidean_distance(u, v))
+
+        cost = tsp_multidrone.multi_agent_tsp(sales_persons, G)
+        return cost / self.simulator.drone_speed_meters_sec  # get seconds

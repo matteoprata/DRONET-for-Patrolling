@@ -69,6 +69,8 @@ class RLModule:
         self.previous_epsilon = 1
         self.previous_loss = None
 
+        self.is_final_episode_for_some = False
+
         self.N_ACTIONS = len(self.environment.targets)
         self.N_FEATURES = 3 * len(self.environment.targets) + len(self.environment.drones)
         self.TARGET_VIOLATION_FACTOR = config.TARGET_VIOLATION_FACTOR  # above this we are not interested on how much the
@@ -103,7 +105,7 @@ class RLModule:
             # -- target is locked from another drone (not this drone)
             # -- is inactive
             is_ignore_target = self.simulator.learning["is_pretrained"] and ((target.lock is not None and target.lock != drone) or not target.active)
-            res_val = 0 if is_ignore_target else min(target.aoi_idleness_ratio(next), self.TARGET_VIOLATION_FACTOR)
+            res_val = 0 if is_ignore_target else min(target.aoi_idleness_ratio(next, drone.identifier), self.TARGET_VIOLATION_FACTOR)
             res_val = max(0, res_val)
             res.append(res_val)
         return res
@@ -149,11 +151,12 @@ class RLModule:
         #                              startUB=0,
         #                              endLB=-1,
         #                              endUB=0)
+
         # # REWARD TEST ATP01
         # rew = - max([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
         # rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
         # rew = min_max_normalizer(rew,
-        #                          startUB=0,
+        #                          startUB=0
         #                          startLB=(-(self.TARGET_VIOLATION_FACTOR - self.simulator.penalty_on_bs_expiration)),
         #                          endUB=0,
         #                          endLB=-1)
@@ -168,7 +171,6 @@ class RLModule:
                                  endUB=0,
                                  endLB=-1)
         return rew
-
 
     def __rew_on_target(self, s, a, s_prime):
         pass  # old
@@ -207,20 +209,22 @@ class RLModule:
     def evaluate_reward(self, s, a, s_prime, drone):
         return self.__rew_on_target(s, a, s_prime) if config.IS_DECIDED_ON_TARGET else self.__rew_on_flight(s, a, s_prime, drone)
 
-    def evaluate_is_final_state(self, s, a, s_prime):
-        """ The residual of the base station is >= 1, i.e. it is expired. """
+    def evaluate_is_final_state(self, s, a, s_prime, drone):
+        """ WARNING THIS IS TRUE FOR ALL DRONES AFTER THE """
+        # SETS THIS TO TRUE UNTIL ALL DRONES ARE FINISHED
+        self.is_final_episode_for_some = s_prime.aoi_idleness_ratio(False)[0] >= 1 or self.is_final_episode_for_some
+        # self.final_episode_for_drone = drone if self.is_final_episode_for_some else self.final_episode_for_drone
+
         return s_prime.aoi_idleness_ratio(False)[0] >= 1  # or s.position() == s_prime.position()
 
     def invoke_train(self, drone):
         if drone.previous_state is None or drone.previous_action is None:
             return 0, self.previous_epsilon, self.previous_loss, False, None, None
 
-        self.DQN.n_decision_step += 1
-
         s = drone.previous_state
         a = drone.previous_action
         s_prime = self.evaluate_state(drone)
-        s_prime.is_final = self.evaluate_is_final_state(s, a, s_prime)
+        s_prime.is_final = self.evaluate_is_final_state(s, a, s_prime, drone)
         r = self.evaluate_reward(s, a, s_prime, drone)
 
         if not drone.is_flying():
@@ -244,9 +248,9 @@ class RLModule:
                                             is_final=s_prime.is_final,
                                             do=IS_TRAIN)
 
-        if s_prime.is_final:
-            self.simulator.environment.reset_drones_targets(False)
-            self.reset_MDP(drone)
+        # if s_prime.is_final:
+        #     self.simulator.environment.reset_drones_targets(False)
+        #     self.reset_MDP(drone)
 
         return r, self.previous_epsilon, self.DQN.current_loss, s_prime.is_final, s, s_prime
 
@@ -275,18 +279,15 @@ class RLModule:
         return action_index, q[0]
 
     def reset_MDP(self, drone):
-        drone.previous_state = None
-        drone.previous_action = None
+        for d in self.environment.drones:
+            d.previous_state = None
+            d.previous_action = None
 
     def log_transition(self, s, s_prime, a, r, every=1, drone=None):
         print("From drone n", drone.identifier)
-        # print(s.vector(True, True))
-        # print(s_prime.vector(True, True))
 
+        print(s.aoi_idleness_ratio(False))
         print(s_prime.aoi_idleness_ratio(False))
-        print(s_prime.time_distances(False))
-        print(s_prime.closests(False))
-        print(s_prime.actions_past(True))
 
         print(a, r)
         print("---")

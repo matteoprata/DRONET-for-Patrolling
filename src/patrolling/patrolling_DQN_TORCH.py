@@ -147,6 +147,7 @@ class PatrollingDQN:
 
     def __train_model_batched(self, random_sample_batch):
         """ Given an input batch, it trains the model. """
+        self.n_decision_step += 1
 
         previous_states, current_states, actions, rewards, is_finals = random_sample_batch
 

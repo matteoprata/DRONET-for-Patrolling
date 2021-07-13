@@ -270,8 +270,16 @@ class PatrollingSimulator:
 
                     for drone in self.environment.drones:
                         drone.set_next_target()
+
+                        # if self.environment.state_manager.is_final_episode_for_some:
+                        #     self.environment.state_manager.is_final_episode_for_some = False
+                        #     print("breaking bad")
+                        #     break
+
                     for drone in self.environment.drones:
                         drone.move()
+
+
 
                     if config.SAVE_PLOT or self.is_plot:
                         self.__plot(self.cur_step, self.episode_duration)

@@ -6,44 +6,53 @@ import numpy as np
 
 class Target(SimulatedEntity):
 
-    def __init__(self, identifier, coords, maximum_tolerated_idleness, simulator):
+    def __init__(self, identifier, coords, maximum_tolerated_idleness, simulator, is_depot=False, n_drones=1):
         SimulatedEntity.__init__(self, identifier, coords, simulator)
         self.maximum_tolerated_idleness = maximum_tolerated_idleness
-        self.last_visit_ts = 0  # -maximum_tolerated_idleness / self.simulator.ts_duration_sec
+        self.last_visit_ts = [0] * n_drones if is_depot else [0]  # each drone ha its own view
 
         self.furthest_target = None
         self.closest_target = None
 
         self.lock = None  # drone id
         self.active = True  # if False means that his target should not be considered
+        self.is_depot = is_depot
 
     # ------ AGE OF INFORMATION -- RESIDUAL OF INFORMATION
 
-    def age_of_information(self, next=0):
-        return (self.simulator.cur_step - self.last_visit_ts)*self.simulator.ts_duration_sec + next * self.simulator.ts_duration_sec
+    def age_of_information(self, next=0, drone_id=None):
+        drone_id = 0 if not self.is_depot else drone_id
+        return (self.simulator.cur_step - self.last_visit_ts[drone_id])*self.simulator.ts_duration_sec + next * self.simulator.ts_duration_sec
 
-    def residual_of_information(self, next=0):
-        return 1 - self.age_of_information(next) / self.maximum_tolerated_idleness
+    def residual_of_information(self, next=0, drone_id=None):
+        return 1 - self.age_of_information(next, drone_id) / self.maximum_tolerated_idleness
 
-    def aoi_idleness_ratio(self, next=0):
-        return self.age_of_information(next) / self.maximum_tolerated_idleness
+    def aoi_idleness_ratio(self, next=0, drone_id=None):
+        return self.age_of_information(next, drone_id) / self.maximum_tolerated_idleness
 
     # ------ AGE OF INFORMATION -- RESIDUAL OF INFORMATION
+
+    def set_last_visit_ts(self, step, drone_id=0):
+        if self.is_depot:
+            self.last_visit_ts[drone_id] = step
+        else:
+            self.last_visit_ts[0] = step
 
     @staticmethod
-    def max_aoi(set_targets, cur_tar):
+    def max_aoi(set_targets, cur_tar, drone_id):
         """ Returns the the target with the oldest age. """
-        max_aoi = np.argmax([target.age_of_information() for target in set_targets])
+        max_aoi = np.argmax([target.age_of_information(drone_id=drone_id) for target in set_targets])
         return set_targets[max_aoi]
 
     @staticmethod
-    def min_residual(set_targets, cur_tar):
+    def min_residual(set_targets, cur_tar, drone_id):
         """ Returns the target with the lowest percentage residual. """
-        min_res = np.argmin([target.residual_of_information() for target in set_targets])
+        # TODO FIX
+        min_res = np.argmin([target.residual_of_information(drone_id=drone_id) for target in set_targets])
         return set_targets[min_res]
 
     @staticmethod
-    def min_sum_residual(set_targets, cur_tar, speed, cur_step, ts_duration_sec):
+    def min_sum_residual(set_targets, cur_tar, speed, cur_step, ts_duration_sec, drone_id):
         """ Returns the target leading to the maximum minimum residual upon having reached it. """
 
         max_min_res_list = [np.inf] * len(set_targets)
@@ -56,7 +65,8 @@ class Target(SimulatedEntity):
 
             min_res_list = []
             for target_2 in set_targets:
-                ls_visit = target_2.last_visit_ts * ts_duration_sec if target_1.identifier != target_2.identifier else sec_arrival
+                # TODO check if drone_id is really ok
+                ls_visit = target_2.last_visit_ts[drone_id] * ts_duration_sec if target_1.identifier != target_2.identifier else sec_arrival
                 RES = (sec_arrival - ls_visit) / target_2.maximum_tolerated_idleness
                 min_res_list.append(RES)
 

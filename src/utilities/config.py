@@ -108,8 +108,8 @@ DELTA_DEC = 5       # seconds
 # variables from here
 DRONE_MAX_ENERGY = 3 * Time.MIN.value       # int: max energy of a drone sec
 DRONE_SPEED = 15                            # float: m/s, drone speed.
-N_TARGETS = 25                               # number of random targets in the map
-N_DRONES = 5                                # int: number of drones.
+N_TARGETS = 6                               # number of random targets in the map
+N_DRONES = 2                                # int: number of drones.
 
 LOG_STATE = False  # print rhe state or not
 

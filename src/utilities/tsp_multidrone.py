@@ -1,10 +1,6 @@
-import tsplib95
-import matplotlib.pyplot as plt
-import networkx as nx
-import random
+
+
 from collections import defaultdict
-
-
 import itertools
 import bisect
 import random

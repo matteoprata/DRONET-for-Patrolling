@@ -46,11 +46,11 @@ class State:
     def vector(self, normalized=True, rounded=False):
         """ NN INPUT """
         if not rounded:
-            return list(self.aoi_idleness_ratio(normalized)) + list(self.time_distances(normalized)) #+ list(self.closests(normalized)) + list(self.actions_past(normalized))
+            return list(self.aoi_idleness_ratio(normalized)) + list(self.time_distances(normalized)) + list(self.closests(normalized)) #+ list(self.actions_past(normalized))
         else:
             return [round(i, 2) for i in list(self.aoi_idleness_ratio(normalized))] + \
-                   [round(i, 2) for i in list(self.time_distances(normalized))]
-                   #[round(i, 2) for i in list(self.closests(normalized))] + \
+                   [round(i, 2) for i in list(self.time_distances(normalized))] + \
+                   [round(i, 2) for i in list(self.closests(normalized))]
                    #[round(i, 2) for i in list(self.actions_past(normalized))]
 
     def __repr__(self):
@@ -72,7 +72,7 @@ class RLModule:
         self.is_final_episode_for_some = False
 
         self.N_ACTIONS = len(self.environment.targets)
-        self.N_FEATURES = 2 * len(self.environment.targets) #+ len(self.environment.drones)
+        self.N_FEATURES = 3 * len(self.environment.targets) #+ len(self.environment.drones)
         self.TARGET_VIOLATION_FACTOR = config.TARGET_VIOLATION_FACTOR  # above this we are not interested on how much the
 
         self.DQN = PatrollingDQN(n_actions=self.N_ACTIONS,
@@ -133,7 +133,7 @@ class RLModule:
         # - - # - - # - - # - - # - - # - - # - - # - - # - - #
         distances = self.get_current_time_distances(drone)
         residuals = self.get_current_aoi_idleness_ratio(drone)
-        closests = None # self.get_targets_closest_drone()
+        closests = self.get_targets_closest_drone()
         actions_past = None #self.prev_actions()
 
         state = State(residuals, distances, None, self.AOI_NORM, self.TIME_NORM, self.N_ACTIONS, False, None, None, closests, actions_past)
@@ -286,8 +286,8 @@ class RLModule:
     def log_transition(self, s, s_prime, a, r, every=1, drone=None):
         print("From drone n", drone.identifier)
 
-        print(s.aoi_idleness_ratio(False))
-        print(s_prime.aoi_idleness_ratio(False))
+        print(s_prime)
+        # print(s_prime.aoi_idleness_ratio(False))
 
         print(a, r)
         print("---")

@@ -64,7 +64,7 @@ class PatrollingDQN:
                                  self.n_hidden_neurons_lv3,
                                  self.n_actions)  # MODEL 2
 
-            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
+            self.optimizer = torch.optim.RMSprop(self.model.parameters(), lr=self.lr)
         else:
             self.model = torch.load(pretrained_model_path)
             self.model_hat = torch.load(pretrained_model_path)
@@ -103,7 +103,6 @@ class PatrollingDQN:
 
         state = np.asarray(state).astype(np.float32)
         state = torch.tensor(state).to(self.device)
-        q_values = self.model(state)
 
         if is_explore and self.is_explore_probability():
             action_index = self.simulator.rnd_explore.randint(0, self.n_actions)
@@ -113,16 +112,13 @@ class PatrollingDQN:
                 action_sub_index = self.simulator.rnd_explore.randint(0, self.n_actions-1)
                 action_index = actions_available[action_sub_index]
         else:
-            action_index = np.argmax(q_values)
-            action_index = int(action_index)
-
+            q_values = self.model(state)
+            action_index = int(np.argmax(q_values))
             if state[action_index] == 0 and not config.IS_ALLOW_SELF_LOOP:  # loop
                 q_values[action_index] = - np.inf
+            action_index = int(np.argmax(q_values))
 
-            action_index = np.argmax(q_values)
-            action_index = int(action_index)
-
-        return action_index, q_values
+        return action_index
 
     def train(self, previous_state=None, current_state=None, action=None, reward=None, is_final=None, do=True):
         """ train the NN accumulate the experience and each X data the method actually train the network. """

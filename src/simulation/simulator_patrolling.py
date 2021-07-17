@@ -91,7 +91,7 @@ class PatrollingSimulator:
         self.bs_com_range_meters = bs_com_range_meters
         self.bs_coords = bs_coords
         self.current_date = current_date()
-
+        self.ts = time.time()
         self.metrics = None  # init later
         # create the world entites
         self.__set_randomness()
@@ -122,7 +122,11 @@ class PatrollingSimulator:
         return self.max_distance() / self.drone_speed_meters_sec
 
     def name(self):
-        return "{}-seed{}-ndrones{}-mode{}".format(self.sim_peculiarity, self.sim_seed, self.n_drones, self.drone_mobility.value)
+        return "{}-seed{}-ndrones{}-mode{}-ts{}".format(self.sim_peculiarity,
+                                                        self.sim_seed,
+                                                        self.n_drones,
+                                                        self.drone_mobility.value,
+                                                        self.ts)
 
     def directory_simulation(self):
         return config.RL_DATA + self.name() + "/"
@@ -279,40 +283,28 @@ class PatrollingSimulator:
                     for drone in self.environment.drones:
                         drone.move()
 
-
-
                     if config.SAVE_PLOT or self.is_plot:
                         self.__plot(self.cur_step, self.episode_duration)
 
                     self.cur_step_total += 1
 
-                self.checkout(do=self.wandb is None, epoch=epoch, is_last_epoch=self.n_epochs-1 == epoch)
             for drone in self.environment.drones:
                 drone.was_final_epoch = True
 
-    def checkout(self, epoch, is_last_epoch, do=False):
+            if self.learning['is_pretrained']:
+                self.checkout()
+                return
+
+    def checkout(self):
         """ print metrics save stuff. """
-        if do:
-            try:
-                if self.learning["is_pretrained"]:
-                    self.metrics.save_dataframe()
-                else:
-                    self.metrics.save_dataframe_light()
-            except:
-                print("Couldn't save data from step", self.cur_step_total)
+        for target in self.environment.targets:
+            self.metrics.append_statistics_on_target_reached(self.cur_step, None, target)
 
-            try:
-                if self.learning["is_pretrained"]:
-                    self.plotting.plot_patrolling_performance()
-                else:
-                    self.plotting.plot_learning_performance()
-            except:
-                print("Couldn't plot from step", self.cur_step_total)
-
-        SAVE_EPOCH_EVERY = 50
-
-        if epoch % SAVE_EPOCH_EVERY == 0 or is_last_epoch:
-            model_file_name = "model-epoch{}.h5".format(epoch)
-            path = config.RL_DATA + self.name() + "/" + model_file_name if self.wandb is None else os.path.join(self.wandb.dir, model_file_name)
-            self.environment.state_manager.DQN.save_model(path)
+        self.metrics.save_dataframe()
+        # SAVE_EPOCH_EVERY = 50
+        #
+        # if epoch % SAVE_EPOCH_EVERY == 0 or is_last_epoch:
+        #     model_file_name = "model-epoch{}.h5".format(epoch)
+        #     path = config.RL_DATA + self.name() + "/" + model_file_name if self.wandb is None else os.path.join(self.wandb.dir, model_file_name)
+        #     self.environment.state_manager.DQN.save_model(path)
 

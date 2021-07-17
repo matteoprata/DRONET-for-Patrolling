@@ -87,9 +87,9 @@ class Environment:
         :return:
         """
         # Creates a dataset of targets to iterate over to
-
+        format_name = "targets_s{}_nt{}_nd{}_sp{}.json"
         # loading targets list
-        targets_fname = config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec)
+        targets_fname = config.TARGETS_FILE + format_name.format(seed, self.simulator.n_drones, self.simulator.n_targets, self.simulator.drone_speed_meters_sec)
         path_exists = os.path.exists(targets_fname)
         MAX_N_EPISODES = 50
         MAX_N_TARGETS = self.simulator.n_targets
@@ -123,10 +123,10 @@ class Environment:
                     idleness = max(rtt, np.random.normal(loc=MEAN, scale=VARIANCE, size=1)[0])
                     to_json[ep].append((i, tuple(coordinates[i]), idleness))
 
-            util.save_json(to_json, config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec))
+            util.save_json(to_json, config.TARGETS_FILE + format_name.format(seed, self.simulator.n_drones, self.simulator.n_targets, self.simulator.drone_speed_meters_sec))
             print("DONE: generating random episodes")
 
-        to_json = util.read_json(config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec))
+        to_json = util.read_json(config.TARGETS_FILE + format_name.format(seed, self.simulator.n_drones, self.simulator.n_targets, self.simulator.drone_speed_meters_sec))
 
         print("LOADING random episodes")
         assert(self.simulator.n_episodes <= MAX_N_EPISODES)
@@ -144,6 +144,12 @@ class Environment:
                 epoch_targets.append(t)
             self.targets_dataset.append(epoch_targets)
         return self.targets_dataset
+
+    def deactivate_targets(self):
+        """ Deactivates the first n_deactivate targets, excluded the base station. """
+        n_deactivate = self.simulator.n_targets - config.ACTUAL_TARGETS
+        for i in range(1, n_deactivate+1):
+            self.targets[i].active = False
 
     def spawn_targets(self, targets=None):
 
@@ -172,6 +178,8 @@ class Environment:
 
             tar1.furthest_target = self.targets[np.argmax(distances_max)]
             tar1.closest_target = self.targets[np.argmin(distances_min)]
+
+        self.deactivate_targets()
 
     def spawn_obstacles(self, orthogonal_obs=False):
         """ Appends obstacles in the environment """

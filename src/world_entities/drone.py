@@ -61,15 +61,12 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 self.increase_waypoint_counter()
 
         elif self.mobility == config.Mobility.DECIDED:
-            if config.IS_DECIDED_ON_TARGET:
-                self.decided_on_target(self.will_reach_target())
-            else:
-                self.decided_on_flight(self.is_decision_step())
+            self.decided_on_flight(self.is_decision_step())
 
         elif self.mobility == config.Mobility.RANDOM_MOVEMENT:
             if self.will_reach_target():
                 self.coords = self.next_target()
-                # self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
+                self.simulator.metrics.append_statistics_on_target_reached(self.simulator.cur_step, self, self.prev_target)
                 self.update_target_reached()
 
                 action = self.simulator.rnd_explore.randint(0, len(self.simulator.environment.targets))
@@ -79,7 +76,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         elif self.mobility == config.Mobility.GO_MAX_AOI:
             if self.will_reach_target():
                 self.coords = self.next_target()
-                # self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
+                self.simulator.metrics.append_statistics_on_target_reached(self.simulator.cur_step, self, self.prev_target)
                 self.update_target_reached()
 
                 target = Target.max_aoi(self.simulator.environment.targets, self.current_target(), self.identifier)
@@ -88,7 +85,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         elif self.mobility == config.Mobility.GO_MIN_RESIDUAL:
             if self.will_reach_target():
                 self.coords = self.next_target()
-                # self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
+                self.simulator.metrics.append_statistics_on_target_reached(self.simulator.cur_step, self, self.prev_target)
                 self.update_target_reached()
 
                 target = Target.min_residual(self.simulator.environment.targets, self.current_target(), drone_id=self.identifier)
@@ -97,7 +94,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         elif self.mobility == config.Mobility.GO_MIN_SUM_RESIDUAL:
             if self.will_reach_target():
                 self.coords = self.next_target()
-                # self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
+                self.simulator.metrics.append_statistics_on_target_reached(self.simulator.cur_step, self, self.prev_target)
                 self.update_target_reached()
 
                 target = Target.min_sum_residual(self.simulator.environment.targets,
@@ -246,31 +243,24 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
     def is_new_episode(self):
         return self.prev_step_at_decision >= self.simulator.cur_step
 
-    def decided_on_target(self, eval_trigger):
+    def decided_on_flight(self, eval_trigger):
         if eval_trigger or self.previous_state is None:
-            # print("drone", self.identifier, "step", self.simulator.cur_step_total, "action just executed", self.previous_action)
-
-            # if self.will_reach_target():
-            #     self.simulator.environment.targets[self.prev_target.identifier].lock = None
-            #     self.coords = self.next_target()
 
             reward, epsilon, loss, is_end, s, s_prime = self.simulator.environment.state_manager.invoke_train(self)
-            action, q = (0, None) if is_end else self.simulator.environment.state_manager.invoke_predict(s_prime, self)
+            action = 0 if is_end else self.simulator.environment.state_manager.invoke_predict(s_prime, self)
 
-            # print("action to execute", action)
-            # if self.drones_fence():
-            #     print()
-            #     time.sleep(10)
-
-            # it takes one step to realize it was an end None state
+            # UPDATE TARGET IDLENESS
             if not self.is_flying():
+                if self.simulator.learning['is_pretrained']:
+                    self.simulator.metrics.append_statistics_on_target_reached(self.simulator.cur_step, self, self.prev_target)
                 self.prev_target.set_last_visit_ts(self.simulator.cur_step + (1 if is_end else 0), self.identifier)
+                self.prev_target.lock = None
 
             self.prev_target = self.simulator.environment.targets[action]
             self.path.append(self.prev_target.coords)
             self.increase_waypoint_counter()
 
-            self.learning_tuple = reward, epsilon, loss, is_end, s, q, self.was_final_epoch
+            self.learning_tuple = reward, epsilon, loss, is_end, s, self.was_final_epoch
             self.save_metrics()
             self.was_final_epoch = False
 
@@ -278,8 +268,6 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
             # swap vector of prev actions
             if self.drones_fence():
-                # print("I'm drone", self.identifier, "and now I sawp", self.simulator.environment.read_previous_actions_drones, "with",
-                #       self.simulator.environment.write_previous_actions_drones)
                 self.simulator.environment.read_previous_actions_drones = self.simulator.environment.write_previous_actions_drones[:]
 
                 if self.simulator.environment.state_manager.is_final_episode_for_some:
@@ -287,13 +275,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                     self.simulator.environment.reset_drones_targets(False)
                     self.simulator.environment.state_manager.reset_MDP(self)
 
-            # if self.simulator.environment.state_manager.is_final_episode_for_some and \
-            #    self.drones_fence(conditioned=self.simulator.environment.state_manager.final_episode_for_drone.identifier):
-            #     self.simulator.environment.state_manager.is_final_episode_for_some = False
-
     def drones_fence(self):
         """ Returns true when the last drone is processed. """
         return self.identifier == self.simulator.n_drones - 1
 
-    def decided_on_flight(self, eval_trigger):
-        self.decided_on_target(eval_trigger)

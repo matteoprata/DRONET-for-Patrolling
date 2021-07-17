@@ -47,7 +47,7 @@ DEMO_PATH = False                      # bool: whether to use handcrafted tours 
 
 PLOT_SIM = False  # bool: whether to plot or not the simulation (set to false for faster experiments)
 WAIT_SIM_STEP = 0     # float >= 0: seconds, pauses the rendering for x seconds
-SKIP_SIM_STEP = 5     # int > 0 : steps, plot the simulation every x steps
+SKIP_SIM_STEP = 20     # int > 0 : steps, plot the simulation every x steps
 DRAW_SIZE = 700       # int: size of the drawing window
 
 SAVE_PLOT = False              # bool: whether to save the plots of the simulation or not
@@ -108,18 +108,18 @@ DELTA_DEC = 5       # seconds
 # variables from here
 DRONE_MAX_ENERGY = 3 * Time.MIN.value       # int: max energy of a drone sec
 DRONE_SPEED = 15                            # float: m/s, drone speed.
-N_TARGETS = 6                               # number of random targets in the map
-N_DRONES = 2                                # int: number of drones.
+
+N_TARGETS = 19                               # number of random targets in the map
+ACTUAL_TARGETS = N_TARGETS
+N_DRONES = 5                                # int: number of drones.
 
 LOG_STATE = False  # print rhe state or not
-
 N_EPOCHS = 100      # 44
 N_EPISODES = 20     # 50
 EPISODE_DURATION = 3 * Time.HOUR.value
 
 TARGET_VIOLATION_FACTOR = 2
-IS_DECIDED_ON_TARGET = False
-IS_RESIDUAL_REWARD = None  # False  # - residual
 IS_ALLOW_SELF_LOOP = True
+PLOT_STATES_INFO = False
 
 PENALTY_ON_BS_EXPIRATION = - TARGET_VIOLATION_FACTOR * N_TARGETS  # - 2 * TARGET_VIOLATION_FACTOR  #

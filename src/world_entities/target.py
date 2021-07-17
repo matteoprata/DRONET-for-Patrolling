@@ -38,6 +38,11 @@ class Target(SimulatedEntity):
         else:
             self.last_visit_ts[0] = step
 
+    def get_last_visit_ts(self, drone_id):
+        if self.is_depot:
+            return self.last_visit_ts[drone_id]
+        return self.last_visit_ts[0]
+
     @staticmethod
     def max_aoi(set_targets, cur_tar, drone_id):
         """ Returns the the target with the oldest age. """
@@ -54,10 +59,11 @@ class Target(SimulatedEntity):
     @staticmethod
     def min_sum_residual(set_targets, cur_tar, speed, cur_step, ts_duration_sec, drone_id):
         """ Returns the target leading to the maximum minimum residual upon having reached it. """
+        set_targets = list(target for target in set_targets if target.active)
 
         max_min_res_list = [np.inf] * len(set_targets)
         for ti, target_1 in enumerate(set_targets):
-            if cur_tar == target_1 or target_1.lock is not None:
+            if cur_tar == target_1 or target_1.lock is not None or not target_1.active:
                 continue
 
             rel_time_arrival = euclidean_distance(target_1.coords, cur_tar.coords) / speed
@@ -66,7 +72,7 @@ class Target(SimulatedEntity):
             min_res_list = []
             for target_2 in set_targets:
                 # TODO check if drone_id is really ok
-                ls_visit = target_2.last_visit_ts[drone_id] * ts_duration_sec if target_1.identifier != target_2.identifier else sec_arrival
+                ls_visit = target_2.get_last_visit_ts(drone_id) * ts_duration_sec if target_1.identifier != target_2.identifier else sec_arrival
                 RES = (sec_arrival - ls_visit) / target_2.maximum_tolerated_idleness
                 min_res_list.append(RES)
 

@@ -66,6 +66,9 @@ class RLModule:
         self.environment = environment
         self.simulator = self.environment.simulator
 
+        self.min_distances = []
+        self.time_eval = None
+
         self.previous_epsilon = 1
         self.previous_loss = None
 
@@ -114,100 +117,58 @@ class RLModule:
         """ TIME of TRANSIT """
         return [euclidean_distance(drone.coords, target.coords)/drone.speed for target in drone.simulator.environment.targets]
 
-    def get_targets_closest_drone(self):
+    def get_targets_closest_drone(self, drone):
         """ The shortest distance drone <> target for every target.  """
-        min_distances = []
-        for tar in self.environment.targets:
-            clo_time = np.inf
-            for dr in self.environment.drones:
-                dis = euclidean_distance(dr.coords, tar.coords)
-                tem = dis / dr.speed
-                clo_time = tem if tem < clo_time else clo_time
-            min_distances.append(clo_time)
-        return min_distances
+
+        if self.simulator.cur_step_total != self.time_eval:
+            self.min_distances = []
+            for tar in self.environment.targets:
+                clo_time = np.inf
+                for dr in self.environment.drones:
+                    dis = euclidean_distance(dr.coords, tar.coords)
+                    tem = dis / dr.speed
+                    clo_time = tem if tem < clo_time else clo_time
+                self.min_distances.append(clo_time)
+
+        self.time_eval = self.simulator.cur_step_total
+
+        return self.min_distances
 
     def prev_actions(self):
         return [0] * len(self.environment.drones) if self.environment.read_previous_actions_drones[0] is None else self.environment.read_previous_actions_drones
 
     def evaluate_state(self, drone):
         # - - # - - # - - # - - # - - # - - # - - # - - # - - #
-        distances = self.get_current_time_distances(drone)
-        residuals = self.get_current_aoi_idleness_ratio(drone)
-        closests = self.get_targets_closest_drone()
-        actions_past = self.prev_actions()
+        distances = self.get_current_time_distances(drone)      # N
+        residuals = self.get_current_aoi_idleness_ratio(drone)  # N
+        closests = self.get_targets_closest_drone(drone)        # N
+        actions_past = self.prev_actions()                      # U
 
         state = State(residuals, distances, None, self.AOI_NORM, self.TIME_NORM, self.N_ACTIONS, False, None, None, closests, actions_past)
         return state
 
-    def __rew_on_flight(self, s, a, s_prime, drone):
-        # if config.IS_RESIDUAL_REWARD:
-        #     sum_exp_res = sum([max(1-i, -self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
-        #     rew = sum_exp_res + (self.simulator.petnalty_on_bs_expiration if s_prime.is_final else 0)
-        # else:
-        #     sum_exp_res = - sum([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False) if i >= 1])
-        #     rew = sum_exp_res + (self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0)
-        #     rew = min_max_normalizer(rew,
-        #                              startLB=(- (self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS) + self.simulator.penalty_on_bs_expiration),
-        #                              startUB=0,
-        #                              endLB=-1,
-        #                              endUB=0)
+    def evaluate_reward(self, s, a, s_prime, drone):
 
-        # # REWARD TEST ATP01
-        # rew = - max([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
+        # REWARD TEST ATP01
+        rew = - max([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
+        rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
+        rew = min_max_normalizer(rew,
+                                 startUB=0,
+                                 startLB=(-(self.TARGET_VIOLATION_FACTOR - self.simulator.penalty_on_bs_expiration)),
+                                 endUB=0,
+                                 endLB=-1)
+
+        # # # REWARD TEST ATP02
+        # rew = - sum([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
         # rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
+        #
         # rew = min_max_normalizer(rew,
-        #                          startUB=0
-        #                          startLB=(-(self.TARGET_VIOLATION_FACTOR - self.simulator.penalty_on_bs_expiration)),
+        #                          startUB=0,
+        #                          startLB=(-(self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS - self.simulator.penalty_on_bs_expiration)),
         #                          endUB=0,
         #                          endLB=-1)
 
-        # # REWARD TEST ATP02
-        rew = - sum([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
-        rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
-
-        rew = min_max_normalizer(rew,
-                                 startUB=0,
-                                 startLB=(-(self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS - self.simulator.penalty_on_bs_expiration)),
-                                 endUB=0,
-                                 endLB=-1)
         return rew
-
-    def __rew_on_target(self, s, a, s_prime):
-        pass  # old
-
-        # rew = 0
-        #
-        # time_dist_to_a = s.time_distances(False)[a]
-        # n_steps = max(int(time_dist_to_a/config.DELTA_DEC), 1)
-        #
-        # for step in range(n_steps):
-        #     TIME = self.simulator.current_second() - (config.DELTA_DEC * step)
-        #
-        #     for target in self.simulator.environment.targets:
-        #         LAST_VISIT = target.last_visit_ts * self.simulator.ts_duration_sec
-        #         if config.IS_RESIDUAL_REWARD:
-        #             residual = 1 - (TIME - LAST_VISIT) / target.maximum_tolerated_idleness
-        #             residual = max(residual, -self.TARGET_VIOLATION_FACTOR)  # 10
-        #             rew += residual
-        #         else:
-        #             residual = (TIME - LAST_VISIT) / target.maximum_tolerated_idleness
-        #             residual = min(residual, self.TARGET_VIOLATION_FACTOR)  # 10
-        #             rew += - residual
-        #
-        # rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
-        # rew = -100 if s.vector()[a] == 0 else rew
-
-        # n_steps = int(self.simulator.max_travel_time() / config.DELTA_DEC)
-        # rew = min_max_normalizer(rew,
-        #                          startLB=(-(self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS)) * n_steps - self.simulator.penalty_on_bs_expiration,
-        #                          startUB=(self.N_ACTIONS)*n_steps,
-        #                          endLB=-1,
-        #                          endUB=1,
-        #                          active=False)
-        # return rew
-
-    def evaluate_reward(self, s, a, s_prime, drone):
-        return self.__rew_on_target(s, a, s_prime) if config.IS_DECIDED_ON_TARGET else self.__rew_on_flight(s, a, s_prime, drone)
 
     def evaluate_is_final_state(self, s, a, s_prime, drone):
         """ WARNING THIS IS TRUE FOR ALL DRONES AFTER THE """
@@ -262,9 +223,9 @@ class RLModule:
 
         # to avoid all of them heading to the same target
         if state is None and self.simulator.learning["is_pretrained"]:
-            action_index, q = drone.identifier, [[]]
+            action_index = drone.identifier
         else:
-            action_index, q = self.DQN.predict(state_attempt.vector())
+            action_index = self.DQN.predict(state_attempt.vector())
 
         state = state_attempt
         if drone.is_flying() and drone.previous_action is not None:
@@ -276,7 +237,7 @@ class RLModule:
 
         # set the lock for the other not to pick this action
         self.simulator.environment.targets[action_index].lock = drone
-        return action_index, q[0]
+        return action_index
 
     def reset_MDP(self, drone):
         for d in self.environment.drones:

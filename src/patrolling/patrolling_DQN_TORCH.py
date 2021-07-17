@@ -195,27 +195,19 @@ class PatrollingDQN:
 class DQN(LightningModule):
     def __init__(self, in_shape, hidden_shape1, hidden_shape2, hidden_shape3, out_shape):
         super(DQN, self).__init__()
-        assert(hidden_shape3 == 0) # to handle
-        if hidden_shape1 > 0 and hidden_shape2 > 0:
-            self.fc = torch.nn.Sequential(
-                torch.nn.Linear(in_shape, hidden_shape1),
-                torch.nn.ReLU(),
-                torch.nn.Linear(hidden_shape1, hidden_shape2),
-                torch.nn.ReLU(),
-                torch.nn.Linear(hidden_shape3, out_shape),
-            )
-        elif hidden_shape1 > 0 and hidden_shape2 == 0:
-            self.fc = torch.nn.Sequential(
-                torch.nn.Linear(in_shape, hidden_shape1),
-                torch.nn.ReLU(),
-                torch.nn.Linear(hidden_shape3, out_shape),
-            )
-        elif hidden_shape1 == 0 and hidden_shape2 > 0:
-            self.fc = torch.nn.Sequential(
-                torch.nn.Linear(in_shape, hidden_shape2),
-                torch.nn.ReLU(),
-                torch.nn.Linear(hidden_shape3, out_shape),
-            )
+
+        neurons = [in_shape, hidden_shape1, hidden_shape2, hidden_shape3, out_shape]
+        neurons = [neu for neu in neurons if neu > 0]
+
+        linear_layers = [torch.nn.Linear(neurons[i], neurons[i+1]) for i in range(len(neurons)-1)]
+        activations = [torch.nn.ReLU()] * (len(neurons)-2)
+
+        nn_layers = [None] * (len(linear_layers) + len(activations))
+        nn_layers[::2] = linear_layers
+        nn_layers[1::2] = activations
+
+        self.fc = torch.nn.Sequential(*nn_layers)
+        print("NN setup", nn_layers)
 
     def forward(self, x):
         return self.fc(x)

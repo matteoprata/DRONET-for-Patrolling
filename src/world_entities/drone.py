@@ -129,7 +129,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 and self.simulator.wandb is not None:
 
             # self.simulator.metrics.append_statistics_on_target_reached_light(self.learning_tuple)
-            reward, epsilon, loss, _, _, _, _ = self.learning_tuple
+            reward, epsilon, loss, _, _, _ = self.learning_tuple
             self.cum_rew += reward
 
             metrics = {"cumulative_reward": self.cum_rew,

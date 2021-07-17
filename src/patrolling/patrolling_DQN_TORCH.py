@@ -195,34 +195,27 @@ class PatrollingDQN:
 class DQN(LightningModule):
     def __init__(self, in_shape, hidden_shape1, hidden_shape2, hidden_shape3, out_shape):
         super(DQN, self).__init__()
-
-        if hidden_shape2 == 0 and hidden_shape3 == 0:
-            self.fc = torch.nn.Sequential(
-                torch.nn.Linear(in_shape, hidden_shape1),
-                torch.nn.ReLU(),
-                torch.nn.Linear(hidden_shape1, out_shape),
-            )
-        elif hidden_shape2 != 0 and hidden_shape3 == 0:
+        assert(hidden_shape3 == 0) # to handle
+        if hidden_shape1 > 0 and hidden_shape2 > 0:
             self.fc = torch.nn.Sequential(
                 torch.nn.Linear(in_shape, hidden_shape1),
                 torch.nn.ReLU(),
                 torch.nn.Linear(hidden_shape1, hidden_shape2),
-                torch.nn.ReLU(),
-                torch.nn.Linear(hidden_shape2, out_shape),
-            )
-        elif hidden_shape2 != 0 and hidden_shape3 != 0:
-            self.fc = torch.nn.Sequential(
-                torch.nn.Linear(in_shape, hidden_shape1),
-                torch.nn.ReLU(),
-                torch.nn.Linear(hidden_shape1, hidden_shape2),
-                torch.nn.ReLU(),
-                torch.nn.Linear(hidden_shape2, hidden_shape3),
                 torch.nn.ReLU(),
                 torch.nn.Linear(hidden_shape3, out_shape),
             )
-        else:
-            print("NN Layers setup is unexpected.")
-            exit()
+        elif hidden_shape1 > 0 and hidden_shape2 == 0:
+            self.fc = torch.nn.Sequential(
+                torch.nn.Linear(in_shape, hidden_shape1),
+                torch.nn.ReLU(),
+                torch.nn.Linear(hidden_shape3, out_shape),
+            )
+        elif hidden_shape1 == 0 and hidden_shape2 > 0:
+            self.fc = torch.nn.Sequential(
+                torch.nn.Linear(in_shape, hidden_shape2),
+                torch.nn.ReLU(),
+                torch.nn.Linear(hidden_shape3, out_shape),
+            )
 
     def forward(self, x):
         return self.fc(x)

@@ -96,7 +96,6 @@ LEARNING_PARAMETERS = {
 # paths
 RL_DATA = "data/rl/"
 TARGETS_FILE = "data/targets/"
-YAML_FILE = "wandb_sweep_bayesian.yaml"
 
 # how much exploration, careful to edit
 ZERO_TOLERANCE = 0.1     # 10% at 80% of the simulation

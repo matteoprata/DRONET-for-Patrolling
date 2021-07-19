@@ -12,6 +12,10 @@ parameters:
     value: 100
   n_episodes:
     value: 20
+  n_targets:
+    value: 9
+  n_drones:
+    value: 1
   episode_duration:
     value: 48000
   learning_rate:
@@ -19,18 +23,16 @@ parameters:
   discount_factor:
     value: 1
   n_hidden_neurons_lv1:
-    values: [30, 25, 15]  # 20 is the input
+    values: [30, 25]      # 20 is the input
   n_hidden_neurons_lv2:
-    values: [0, 15]            # output is 20
+    value: 0              # 20 is the output
   n_hidden_neurons_lv3:
     value: 0
   swap_models_every_decision:
     values: [5000, 7000]
   battery:
     value: 900
-  is_allow_self_loop:
-    value: 1
-  IS_EXPIRED_TARGET_CONDITION:
+  is_expired_target_condition:
     values: [0, 1]
 
 command:

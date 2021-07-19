@@ -25,7 +25,6 @@ parser.add_argument('-lo', '--log_state', type=float, default=-1)
 # -- battery, speed, number of targets
 parser.add_argument('-sp', '--drone_speed', type=int, default=config.DRONE_SPEED)
 parser.add_argument('-bat', '--battery', type=int, default=config.DRONE_MAX_ENERGY)
-parser.add_argument('-tar', '--n_targets', type=int, default=config.N_TARGETS)
 parser.add_argument('-pen', '--penalty', type=int, default=config.PENALTY_ON_BS_EXPIRATION)
 parser.add_argument('-seed', '--seed', type=int, default=config.SIM_SEED)
 
@@ -40,7 +39,9 @@ parser.add_argument('-hn2', '--n_hidden_neurons_lv2', type=int, default=config.L
 parser.add_argument('-hn3', '--n_hidden_neurons_lv3', type=int, default=config.LEARNING_PARAMETERS['n_hidden_neurons_lv3'])
 
 # reward and stuff
-parser.add_argument('-exp', '--IS_EXPIRED_TARGET_CONDITION', type=int, default=config.IS_EXPIRED_TARGET_CONDITION)
+parser.add_argument('-exp', '--is_expired_target_condition', type=int, default=config.IS_EXPIRED_TARGET_CONDITION)
+parser.add_argument('-nta', '--n_targets', type=int, default=config.N_TARGETS)
+parser.add_argument('-ndr', '--n_drones', type=int, default=config.N_DRONES)
 
 # END PARAMETERS DEFINITION
 
@@ -66,16 +67,11 @@ def main():
             learning["n_hidden_neurons_lv2"] = wandb_config["n_hidden_neurons_lv2"]
             learning["n_hidden_neurons_lv3"] = wandb_config["n_hidden_neurons_lv3"]
 
-            config.IS_ALLOW_SELF_LOOP = wandb_config["is_allow_self_loop"]
-            config.IS_EXPIRED_TARGET_CONDITION = wandb_config["IS_EXPIRED_TARGET_CONDITION"]
-
-            config.N_EPOCHS = wandb_config['n_epochs']
-            config.N_EPISODES = wandb_config['n_episodes']
-
             sim = PatrollingSimulator(learning=learning,
                                       sim_description=args.description,
-                                      n_targets=args.n_targets,
                                       drone_speed=args.drone_speed,
+                                      n_targets=wandb_config['n_targets'],
+                                      n_drones=wandb_config['n_drones'],
                                       drone_max_battery=wandb_config['battery'],
                                       log_state=args.log_state,
                                       is_plot=bool(args.plotting),
@@ -84,13 +80,14 @@ def main():
                                       episode_duration=wandb_config['episode_duration'],
                                       penalty_on_bs_expiration=args.penalty,
                                       sim_seed=args.seed,
-
+                                      is_expired_target_condition=wandb_config["is_expired_target_condition"],
                                       wandb=wandb_instance)
             sim.run()
     else:
         sim = PatrollingSimulator(learning=learning,
                                   sim_description=args.description,
                                   n_targets=args.n_targets,
+                                  n_drones=args.n_drones,
                                   drone_speed=args.drone_speed,
                                   drone_max_battery=args.battery,
                                   log_state=args.log_state,

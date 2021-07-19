@@ -8,7 +8,7 @@ import time
 
 class State:
     def __init__(self, aoi_idleness_ratio, time_distances, position, aoi_norm, time_norm,
-                 position_norm, is_final, is_flying, objective, closests, actions_past):
+                 position_norm, is_final, is_flying, objective, closests, actions_past, is_multi_drone):
 
         self._aoi_idleness_ratio: list = aoi_idleness_ratio
         self._time_distances: list = time_distances
@@ -24,9 +24,10 @@ class State:
         self._is_flying = is_flying
         self.position_norm = position_norm
         self._objective = objective
+        self.is_multi_drone = is_multi_drone
 
     def actions_past(self, normalized=True):
-        return self._actions_past if not normalized else min_max_normalizer(self._actions_past, 0, self.position_norm)
+        return self._actions_past # if not normalized else min_max_normalizer(self._actions_past, 0, self.position_norm)
 
     # def is_flying(self, normalized=True):
     #     return self._is_flying if not normalized else int(self._is_flying)
@@ -46,16 +47,27 @@ class State:
     def vector(self, normalized=True, rounded=False):
         """ NN INPUT """
         if not rounded:
-            return list(self.aoi_idleness_ratio(normalized)) + list(self.time_distances(normalized)) #+ list(self.closests(normalized)) + list(self.actions_past(normalized))
+            if not self.is_multi_drone:
+                return list(self.aoi_idleness_ratio(normalized)) + list(self.time_distances(normalized))
+            else:
+                return list(self.aoi_idleness_ratio(normalized)) + list(self.time_distances(normalized)) + list(self.closests(normalized)) + list(self.actions_past(normalized))
         else:
-            return [round(i, 2) for i in list(self.aoi_idleness_ratio(normalized))] + \
-                   [round(i, 2) for i in list(self.time_distances(normalized))] #+ \
-                   # [round(i, 2) for i in list(self.closests(normalized))] + \
-                   # [round(i, 2) for i in list(self.actions_past(normalized))]
+            if not self.is_multi_drone:
+                return [round(i, 2) for i in list(self.aoi_idleness_ratio(normalized))] + \
+                       [round(i, 2) for i in list(self.time_distances(normalized))]
+            else:
+                return [round(i, 2) for i in list(self.aoi_idleness_ratio(normalized))] + \
+                       [round(i, 2) for i in list(self.time_distances(normalized))] + \
+                       [round(i, 2) for i in list(self.closests(normalized))] + \
+                       [round(i, 2) for i in list(self.actions_past(normalized))]
 
     def __repr__(self):
-        str_state = "res: {}\ndis: {}\n" #clo: {}\nact: {}\n"
-        return str_state.format(self.aoi_idleness_ratio(), self.time_distances()) #, self.closests(), self.actions_past()) #self.is_flying(False), self.objective(False))
+        if not self.is_multi_drone:
+            str_state = "res: {}\ndis: {}\n"
+            return str_state.format(self.aoi_idleness_ratio(), self.time_distances())
+        else:
+            str_state = "res: {}\ndis: {}\nclo: {}\nact: {}\n"
+            return str_state.format(self.aoi_idleness_ratio(), self.time_distances(), self.closests(), self.actions_past())
 
     @staticmethod
     def round_feature_vector(feature, rounding_digit):
@@ -76,7 +88,7 @@ class RLModule:
         self.is_final_episode_for_some = False
 
         self.N_ACTIONS = len(self.environment.targets)
-        self.N_FEATURES = len(self.environment.targets) * 2 #+ len(self.environment.drones)
+        self.N_FEATURES = len(self.environment.targets) * (2 if self.simulator.n_drones <= 1 else 4)
         self.TARGET_VIOLATION_FACTOR = config.TARGET_VIOLATION_FACTOR  # above this we are not interested on how much the
 
         self.DQN = PatrollingDQN(n_actions=self.N_ACTIONS,
@@ -136,16 +148,22 @@ class RLModule:
         return self.min_distances
 
     def prev_actions(self):
-        return [0] * len(self.environment.drones) if self.environment.read_previous_actions_drones[0] is None else self.environment.read_previous_actions_drones
+        one_hot = []
+        for tar in self.environment.targets:
+            print(self.environment.read_previous_actions_drones)
+            is_visited = self.environment.read_previous_actions_drones[0] is not None and tar.identifier in self.environment.read_previous_actions_drones
+            one_hot.append(1 if is_visited else 0)
+        return one_hot
+        # return [0] * len(self.environment.drones) if self.environment.read_previous_actions_drones[0] is None else self.environment.read_previous_actions_drones
 
     def evaluate_state(self, drone):
         # - - # - - # - - # - - # - - # - - # - - # - - # - - #
         distances = self.get_current_time_distances(drone)      # N
         residuals = self.get_current_aoi_idleness_ratio(drone)  # N
-        closests = None #self.get_targets_closest_drone(drone)        # N
-        actions_past = None #self.prev_actions()                      # U
-
-        state = State(residuals, distances, None, self.AOI_NORM, self.TIME_NORM, self.N_ACTIONS, False, None, None, closests, actions_past)
+        closests = self.get_targets_closest_drone(drone) if self.simulator.n_drones > 1 else None  # N
+        actions_past = self.prev_actions() if self.simulator.n_drones > 1 else None                   # U
+        is_multi_drone = self.simulator.n_drones > 1
+        state = State(residuals, distances, None, self.AOI_NORM, self.TIME_NORM, self.N_ACTIONS, False, None, None, closests, actions_past, is_multi_drone)
         return state
 
     def evaluate_reward(self, s, a, s_prime, drone):
@@ -160,7 +178,7 @@ class RLModule:
         #                          endLB=-1)
 
         # # REWARD TEST ATP02
-        IS_EXPIRED_TARGET_CONDITION = config.IS_EXPIRED_TARGET_CONDITION
+        IS_EXPIRED_TARGET_CONDITION = self.simulator.is_expired_target_condition
         rew = - sum([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False) if i >= 1 or not IS_EXPIRED_TARGET_CONDITION])
         rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
 

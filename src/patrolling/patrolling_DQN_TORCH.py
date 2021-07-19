@@ -64,7 +64,7 @@ class PatrollingDQN:
                                  self.n_hidden_neurons_lv3,
                                  self.n_actions)  # MODEL 2
 
-            self.optimizer = torch.optim.RMSprop(self.model.parameters(), lr=self.lr)
+            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         else:
             self.model = torch.load(pretrained_model_path)
             self.model_hat = torch.load(pretrained_model_path)

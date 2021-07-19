@@ -13,23 +13,25 @@ parameters:
   n_episodes:
     value: 20
   episode_duration:
-    value: 72000
+    value: 48000
   learning_rate:
-    values: [0.1, 0.01]
+    values: [0.01, 0.001]
   discount_factor:
     value: 1
   n_hidden_neurons_lv1:
-    values: [35, 50]  # 65 is the input
+    values: [30, 25, 15]  # 20 is the input
   n_hidden_neurons_lv2:
-    value: 35            # output is 20
+    values: [0, 15]            # output is 20
   n_hidden_neurons_lv3:
     value: 0
   swap_models_every_decision:
-    values: [1000, 2500, 5000]
+    values: [5000, 7000]
   battery:
-    value: 1000
+    value: 900
   is_allow_self_loop:
     value: 1
+  IS_EXPIRED_TARGET_CONDITION:
+    values: [0, 1]
 
 command:
   - ${env}

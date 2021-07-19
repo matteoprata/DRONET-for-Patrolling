@@ -109,9 +109,9 @@ DELTA_DEC = 5       # seconds
 DRONE_MAX_ENERGY = 3 * Time.MIN.value       # int: max energy of a drone sec
 DRONE_SPEED = 15                            # float: m/s, drone speed.
 
-N_TARGETS = 19                               # number of random targets in the map
+N_TARGETS = 9                               # number of random targets in the map
 ACTUAL_TARGETS = N_TARGETS
-N_DRONES = 5                                # int: number of drones.
+N_DRONES = 1                                # int: number of drones.
 
 LOG_STATE = False  # print rhe state or not
 N_EPOCHS = 100      # 44
@@ -122,4 +122,7 @@ TARGET_VIOLATION_FACTOR = 2
 IS_ALLOW_SELF_LOOP = True
 PLOT_STATES_INFO = False
 
-PENALTY_ON_BS_EXPIRATION = - TARGET_VIOLATION_FACTOR * N_TARGETS  # - 2 * TARGET_VIOLATION_FACTOR  #
+PENALTY_ON_BS_EXPIRATION = - N_TARGETS  # TARGET_VIOLATION_FACTOR * N_TARGETS  # - 2 * TARGET_VIOLATION_FACTOR  #
+
+
+IS_EXPIRED_TARGET_CONDITION = True  # count only targets that are expired for the penalty, the rest is 0

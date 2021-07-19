@@ -256,11 +256,12 @@ class PatrollingSimulator:
     def run(self):
         """ The method starts the simulation. """
         self.print_sim_info()
-
+        cur_number_episodes = 0
         IS_PRO_BARS = self.is_plot
         for epoch in tqdm(range(self.n_epochs), desc='epoch', disable=IS_PRO_BARS):
             episodes_perm = self.rstate_sample_batch_training.permutation(self.n_episodes)
             for episode in tqdm(range(len(episodes_perm)), desc='episodes', leave=False, disable=IS_PRO_BARS):
+                cur_number_episodes += 1
                 ie = episodes_perm[episode]
                 for drone in self.environment.drones:
                     drone.reset_environment_info()
@@ -287,6 +288,7 @@ class PatrollingSimulator:
                         self.__plot(self.cur_step, self.episode_duration)
 
                     self.cur_step_total += 1
+                self.log_model(cur_number_episodes)
 
             for drone in self.environment.drones:
                 drone.was_final_epoch = True
@@ -301,10 +303,13 @@ class PatrollingSimulator:
             self.metrics.append_statistics_on_target_reached(self.cur_step, None, target)
 
         self.metrics.save_dataframe()
-        # SAVE_EPOCH_EVERY = 50
-        #
-        # if epoch % SAVE_EPOCH_EVERY == 0 or is_last_epoch:
-        #     model_file_name = "model-epoch{}.h5".format(epoch)
-        #     path = config.RL_DATA + self.name() + "/" + model_file_name if self.wandb is None else os.path.join(self.wandb.dir, model_file_name)
-        #     self.environment.state_manager.DQN.save_model(path)
 
+    def log_model(self, cur_number_episodes):
+        if not self.learning['is_pretrained']:
+            SAVE_EPOCH_EVERY = int(self.n_epochs * self.n_episodes * 0.1)
+            is_last_epoch = cur_number_episodes == self.n_epochs * self.n_episodes
+
+            if cur_number_episodes % SAVE_EPOCH_EVERY == 0 or is_last_epoch:
+                model_file_name = "model-episode{}.h5".format(cur_number_episodes)
+                path = config.RL_DATA + self.name() + "/" + model_file_name if self.wandb is None else os.path.join(self.wandb.dir, model_file_name)
+                self.environment.state_manager.DQN.save_model(path)

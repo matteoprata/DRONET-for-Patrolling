@@ -46,15 +46,16 @@ class State:
     def vector(self, normalized=True, rounded=False):
         """ NN INPUT """
         if not rounded:
-            return list(self.aoi_idleness_ratio(normalized)) + list(self.time_distances(normalized)) + list(self.closests(normalized)) + list(self.actions_past(normalized))
+            return list(self.aoi_idleness_ratio(normalized)) + list(self.time_distances(normalized)) #+ list(self.closests(normalized)) + list(self.actions_past(normalized))
         else:
             return [round(i, 2) for i in list(self.aoi_idleness_ratio(normalized))] + \
-                   [round(i, 2) for i in list(self.time_distances(normalized))] + \
-                   [round(i, 2) for i in list(self.closests(normalized))] + \
-                   [round(i, 2) for i in list(self.actions_past(normalized))]
+                   [round(i, 2) for i in list(self.time_distances(normalized))] #+ \
+                   # [round(i, 2) for i in list(self.closests(normalized))] + \
+                   # [round(i, 2) for i in list(self.actions_past(normalized))]
 
     def __repr__(self):
-        return "res: {}\ndis: {}\nclo: {}\nact: {}\n".format(self.aoi_idleness_ratio(), self.time_distances(), self.closests(), self.actions_past()) #self.is_flying(False), self.objective(False))
+        str_state = "res: {}\ndis: {}\n" #clo: {}\nact: {}\n"
+        return str_state.format(self.aoi_idleness_ratio(), self.time_distances()) #, self.closests(), self.actions_past()) #self.is_flying(False), self.objective(False))
 
     @staticmethod
     def round_feature_vector(feature, rounding_digit):
@@ -75,7 +76,7 @@ class RLModule:
         self.is_final_episode_for_some = False
 
         self.N_ACTIONS = len(self.environment.targets)
-        self.N_FEATURES = 3 * len(self.environment.targets) + len(self.environment.drones)
+        self.N_FEATURES = len(self.environment.targets) * 2 #+ len(self.environment.drones)
         self.TARGET_VIOLATION_FACTOR = config.TARGET_VIOLATION_FACTOR  # above this we are not interested on how much the
 
         self.DQN = PatrollingDQN(n_actions=self.N_ACTIONS,
@@ -141,8 +142,8 @@ class RLModule:
         # - - # - - # - - # - - # - - # - - # - - # - - # - - #
         distances = self.get_current_time_distances(drone)      # N
         residuals = self.get_current_aoi_idleness_ratio(drone)  # N
-        closests = self.get_targets_closest_drone(drone)        # N
-        actions_past = self.prev_actions()                      # U
+        closests = None #self.get_targets_closest_drone(drone)        # N
+        actions_past = None #self.prev_actions()                      # U
 
         state = State(residuals, distances, None, self.AOI_NORM, self.TIME_NORM, self.N_ACTIONS, False, None, None, closests, actions_past)
         return state
@@ -159,7 +160,8 @@ class RLModule:
         #                          endLB=-1)
 
         # # REWARD TEST ATP02
-        rew = - sum([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
+        IS_EXPIRED_TARGET_CONDITION = config.IS_EXPIRED_TARGET_CONDITION
+        rew = - sum([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False) if i >= 1 or not IS_EXPIRED_TARGET_CONDITION])
         rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
 
         rew = min_max_normalizer(rew,

@@ -39,6 +39,9 @@ parser.add_argument('-hn1', '--n_hidden_neurons_lv1', type=int, default=config.L
 parser.add_argument('-hn2', '--n_hidden_neurons_lv2', type=int, default=config.LEARNING_PARAMETERS['n_hidden_neurons_lv2'])
 parser.add_argument('-hn3', '--n_hidden_neurons_lv3', type=int, default=config.LEARNING_PARAMETERS['n_hidden_neurons_lv3'])
 
+# reward and stuff
+parser.add_argument('-exp', '--IS_EXPIRED_TARGET_CONDITION', type=int, default=config.IS_EXPIRED_TARGET_CONDITION)
+
 # END PARAMETERS DEFINITION
 
 args = parser.parse_args()
@@ -64,6 +67,10 @@ def main():
             learning["n_hidden_neurons_lv3"] = wandb_config["n_hidden_neurons_lv3"]
 
             config.IS_ALLOW_SELF_LOOP = wandb_config["is_allow_self_loop"]
+            config.IS_EXPIRED_TARGET_CONDITION = wandb_config["IS_EXPIRED_TARGET_CONDITION"]
+
+            config.N_EPOCHS = wandb_config['n_epochs']
+            config.N_EPISODES = wandb_config['n_episodes']
 
             sim = PatrollingSimulator(learning=learning,
                                       sim_description=args.description,

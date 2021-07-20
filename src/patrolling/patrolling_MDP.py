@@ -150,7 +150,6 @@ class RLModule:
     def prev_actions(self):
         one_hot = []
         for tar in self.environment.targets:
-            print(self.environment.read_previous_actions_drones)
             is_visited = self.environment.read_previous_actions_drones[0] is not None and tar.identifier in self.environment.read_previous_actions_drones
             one_hot.append(1 if is_visited else 0)
         return one_hot

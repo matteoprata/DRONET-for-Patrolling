@@ -19,7 +19,7 @@ parameters:
   episode_duration:
     value: 48000
   learning_rate:
-    values: [0.01, 0.001]
+    value: 0.001
   discount_factor:
     value: 1
   n_hidden_neurons_lv1:

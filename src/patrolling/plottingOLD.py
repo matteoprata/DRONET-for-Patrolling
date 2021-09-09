@@ -19,6 +19,7 @@ class Plotting:
                                      parse_dates=True)
 
 
+
         self.reindex_interpolate()
 
         self.compute_residuals()
@@ -153,5 +154,5 @@ class Plotting:
 
 
 if __name__ == '__main__':
-    Plotting("")
+    Plotting("matteo")
 

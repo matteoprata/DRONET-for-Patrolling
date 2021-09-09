@@ -19,7 +19,6 @@ import os
 class PatrollingSimulator:
 
     def __init__(self,
-                 sim_description=config.SIM_DESCRIPTION,
                  sim_seed=config.SIM_SEED,
                  ts_duration_sec=config.SIM_TS_DURATION,
                  sim_duration_ts=config.SIM_DURATION,
@@ -47,11 +46,10 @@ class PatrollingSimulator:
                  episode_duration=config.EPISODE_DURATION,
                  is_plot=config.PLOT_SIM,
 
-
                  n_epochs=config.N_EPOCHS,
                  n_episodes=config.N_EPISODES,
                  is_expired_target_condition=config.IS_EXPIRED_TARGET_CONDITION,
-
+                 name = None,
                  wandb=None
                  ):
 
@@ -62,12 +60,11 @@ class PatrollingSimulator:
         self.n_episodes=n_episodes
         self.episode_duration=episode_duration
         self.is_plot = is_plot
-
+        self.name = name
         # HYPER TUNING
         self.wandb = wandb
 
         self.learning = learning
-        self.sim_peculiarity = sim_description
 
         self.cur_step = 0
         self.cur_step_total = 0
@@ -106,7 +103,7 @@ class PatrollingSimulator:
         # create directory of the simulation
         make_path(self.directory_simulation() + "-")
 
-        self.plotting = Plotting(self.name())
+        self.plotting = Plotting(self.campaign_name())
 
     # ---- # BOUNDS and CONSTANTS # ---- #
 
@@ -126,15 +123,18 @@ class PatrollingSimulator:
         """ Time required to travel to maximum distance. """
         return self.max_distance() / self.drone_speed_meters_sec
 
-    def name(self):
-        return "{}-seed{}-ndrones{}-mode{}-ts{}".format(self.sim_peculiarity,
-                                                        self.sim_seed,
-                                                        self.n_drones,
-                                                        self.drone_mobility.value,
-                                                        self.ts)
+    def campaign_name(self):
+        return self.experiment_name() if self.name is None else self.name
+
+    def experiment_name(self):
+        src_string = "EXP-seed{}-ndr{}-nta{}-mode{}".format(self.sim_seed,
+                                                            self.n_drones,
+                                                            self.n_targets,
+                                                            self.drone_mobility.value)
+        return src_string
 
     def directory_simulation(self):
-        return config.RL_DATA + self.name() + "/"
+        return config.RL_DATA + self.campaign_name() + "/"
 
     # ---- # KEYS and MOUSE CLICKS # ---- #
 
@@ -251,10 +251,10 @@ class PatrollingSimulator:
         self.draw_manager.draw_simulation_info(cur_step=cur_step, max_steps=max_steps)
         self.draw_manager.draw_obstacles()
         self.draw_manager.draw_targets()
-        self.draw_manager.update(save=config.SAVE_PLOT, filename=self.name() + str(cur_step) + ".png")
+        self.draw_manager.update(save=config.SAVE_PLOT, filename=self.campaign_name() + str(cur_step) + ".png")
 
     def print_sim_info(self):
-        print("simulation starting", self.name())
+        print("simulation starting", self.campaign_name())
         print(self.learning)
         print()
 
@@ -281,40 +281,29 @@ class PatrollingSimulator:
                     for drone in self.environment.drones:
                         drone.set_next_target()
 
-                        # if self.environment.state_manager.is_final_episode_for_some:
-                        #     self.environment.state_manager.is_final_episode_for_some = False
-                        #     print("breaking bad")
-                        #     break
-
                     for drone in self.environment.drones:
                         drone.move()
 
                     if config.SAVE_PLOT or self.is_plot:
                         self.__plot(self.cur_step, self.episode_duration)
 
+                    SEC = 7
+                    if self.cur_step % SEC == 0:
+                        self.metrics.append_statistics()
+
                     self.cur_step_total += 1
                 self.log_model(cur_number_episodes)
 
+            self.metrics.save_dataframe()
             for drone in self.environment.drones:
                 drone.was_final_epoch = True
 
-            if self.learning['is_pretrained']:
-                self.checkout()
-                return
-
-    def checkout(self):
-        """ print metrics save stuff. """
-        for target in self.environment.targets:
-            self.metrics.append_statistics_on_target_reached(self.cur_step, None, target)
-
-        self.metrics.save_dataframe()
-
     def log_model(self, cur_number_episodes):
-        if not self.learning['is_pretrained']:
+        if not self.learning['is_pretrained'] and self.wandb is not None:
             SAVE_EPOCH_EVERY = int(self.n_epochs * self.n_episodes * 0.1)
             is_last_epoch = cur_number_episodes == self.n_epochs * self.n_episodes
 
             if cur_number_episodes % SAVE_EPOCH_EVERY == 0 or is_last_epoch:
                 model_file_name = "model-episode{}.h5".format(cur_number_episodes)
-                path = config.RL_DATA + self.name() + "/" + model_file_name if self.wandb is None else os.path.join(self.wandb.dir, model_file_name)
+                path = config.RL_DATA + self.campaign_name() + "/" + model_file_name if self.wandb is None else os.path.join(self.wandb.dir, model_file_name)
                 self.environment.state_manager.DQN.save_model(path)

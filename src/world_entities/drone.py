@@ -11,6 +11,7 @@ from src.utilities import config
 from src.patrolling.patrolling_MDP import RLModule
 import matplotlib.pyplot as plt
 
+
 class Drone(SimulatedEntity, AntennaEquippedDevice):
 
     def __init__(self,
@@ -66,7 +67,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         elif self.mobility == config.Mobility.RANDOM_MOVEMENT:
             if self.will_reach_target():
                 self.coords = self.next_target()
-                self.simulator.metrics.append_statistics_on_target_reached(self.simulator.cur_step, self, self.prev_target)
+                # self.simulator.metrics.append_statistics_on_target_reached(self.simulator.cur_step, self, self.prev_target)
                 self.update_target_reached()
 
                 action = self.simulator.rnd_explore.randint(0, len(self.simulator.environment.targets))
@@ -76,7 +77,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         elif self.mobility == config.Mobility.GO_MAX_AOI:
             if self.will_reach_target():
                 self.coords = self.next_target()
-                self.simulator.metrics.append_statistics_on_target_reached(self.simulator.cur_step, self, self.prev_target)
+                # self.simulator.metrics.append_statistics_on_target_reached(self.simulator.cur_step, self, self.prev_target)
                 self.update_target_reached()
 
                 target = Target.max_aoi(self.simulator.environment.targets, self.current_target(), self.identifier)
@@ -85,7 +86,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         elif self.mobility == config.Mobility.GO_MIN_RESIDUAL:
             if self.will_reach_target():
                 self.coords = self.next_target()
-                self.simulator.metrics.append_statistics_on_target_reached(self.simulator.cur_step, self, self.prev_target)
+                # self.simulator.metrics.append_statistics_on_target_reached(self.simulator.cur_step, self, self.prev_target)
                 self.update_target_reached()
 
                 target = Target.min_residual(self.simulator.environment.targets, self.current_target(), drone_id=self.identifier)
@@ -94,7 +95,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         elif self.mobility == config.Mobility.GO_MIN_SUM_RESIDUAL:
             if self.will_reach_target():
                 self.coords = self.next_target()
-                self.simulator.metrics.append_statistics_on_target_reached(self.simulator.cur_step, self, self.prev_target)
+                # self.simulator.metrics.append_statistics_on_target_reached(self.simulator.cur_step, self, self.prev_target)
                 self.update_target_reached()
 
                 target = Target.min_sum_residual(self.simulator.environment.targets,
@@ -251,8 +252,8 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
             # UPDATE TARGET IDLENESS
             if not self.is_flying():
-                if self.simulator.learning['is_pretrained']:
-                    self.simulator.metrics.append_statistics_on_target_reached(self.simulator.cur_step, self, self.prev_target)
+                # if self.simulator.learning['is_pretrained']:
+                #     self.simulator.metrics.append_statistics_on_target_reached(self.simulator.cur_step, self, self.prev_target)
                 self.prev_target.set_last_visit_ts(self.simulator.cur_step + (1 if is_end else 0), self.identifier)
                 self.prev_target.lock = None
 

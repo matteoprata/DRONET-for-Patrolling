@@ -9,7 +9,6 @@ simulation. For an extensive experimental campaign read the header at src.simula
 
 # ----------------------------- SIMULATION PARAMS ---------------------------- #
 
-SIM_DESCRIPTION = "default"
 SIM_SEED = 100                # int: seed of this simulation.
 SIM_DURATION = 24000*24*10      # int: steps of simulation. (np.inf)
 SIM_TS_DURATION = 0.150     # float: seconds duration of a step in seconds.
@@ -101,7 +100,7 @@ TARGETS_FILE = "data/targets/"
 ZERO_TOLERANCE = 0.1     # 10% at 80% of the simulation
 EXPLORE_PORTION = 0.7    # what portion of time of the simulation is spent exploring
 
-DRONE_MOBILITY = Mobility.DECIDED
+DRONE_MOBILITY = Mobility.GO_MAX_AOI
 DELTA_DEC = 5       # seconds
 
 # variables from here

@@ -6,8 +6,7 @@ import wandb
 
 parser = argparse.ArgumentParser(description='Run experiments of patrolling.')
 
-parser.add_argument('-wandb', '--is_wandb', type=int, default=1)
-parser.add_argument('-de', '--description', type=str, default=config.SIM_DESCRIPTION)
+parser.add_argument('-mode', '--mode', type=int, default=0)  # 0: train, 1:test
 
 # -- learning params, n_hidden_naurons
 parser.add_argument('-ip', '--is_pretrained', type=int, default=config.LEARNING_PARAMETERS['is_pretrained'])
@@ -55,7 +54,7 @@ for arg in vars(args):
 
 def main():
     """ the place where to run simulations and experiments. """
-    if bool(args.is_wandb):
+    if args.mode == 0:
         with wandb.init(project="uavsimulator_patrolling") as wandb_instance:
             wandb_config = wandb_instance.config
 
@@ -68,7 +67,6 @@ def main():
             learning["n_hidden_neurons_lv3"] = wandb_config["n_hidden_neurons_lv3"]
 
             sim = PatrollingSimulator(learning=learning,
-                                      sim_description=args.description,
                                       drone_speed=args.drone_speed,
                                       n_targets=wandb_config['n_targets'],
                                       n_drones=wandb_config['n_drones'],
@@ -83,24 +81,33 @@ def main():
                                       is_expired_target_condition=wandb_config["is_expired_target_condition"],
                                       wandb=wandb_instance)
             sim.run()
-    else:
-        sim = PatrollingSimulator(learning=learning,
-                                  sim_description=args.description,
-                                  n_targets=args.n_targets,
-                                  n_drones=args.n_drones,
-                                  drone_speed=args.drone_speed,
-                                  drone_max_battery=args.battery,
-                                  log_state=args.log_state,
-                                  is_plot=bool(args.plotting),
-                                  n_epochs=args.n_epochs,
-                                  n_episodes=args.n_episodes,
-                                  episode_duration=args.episode_duration,
-                                  penalty_on_bs_expiration=args.penalty,
-                                  sim_seed=args.seed)
-        sim.run()
+
+    elif args.mode == 1:
+        seeds_range = 1
+        modes = (3, 6)
+        name = "seeds{}-ndr{}-nta{}-modes{}".format(seeds_range, args.n_drones, args.n_targets, modes)
+
+        for mod in range(modes[0], modes[1]+1):
+            mode = config.Mobility(mod)
+            sim = PatrollingSimulator(drone_mobility=mode,
+                                      name=name,
+                                      drone_speed=args.drone_speed,
+                                      n_targets=args.n_targets,
+                                      n_drones=args.n_drones,
+                                      drone_max_battery=args.battery,
+                                      log_state=args.log_state,
+                                      is_plot=bool(args.plotting),
+                                      n_epochs=1,
+                                      n_episodes=seeds_range,
+                                      episode_duration=config.Time.HOUR.value * 5,
+                                      penalty_on_bs_expiration=args.penalty,
+                                      sim_seed=1,
+                                      is_expired_target_condition=args.is_expired_target_condition,
+                                      wandb=None)
+            sim.run()
+        sim.metrics.join_metrics(sim.directory_simulation())
 
 
 if __name__ == "__main__":
     main()
-
 

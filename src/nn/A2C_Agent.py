@@ -108,7 +108,7 @@ class PatrollingA2C:
         self.saved_actions.append((actions_distribution.log_prob(action), state_value))
         self.cur_batch += 1
 
-        print("RESULT", action.item())
+        # print("RESULT", action.item())
 
         return action.item()
 
@@ -150,6 +150,7 @@ class PatrollingA2C:
 
             # sum up all the values of policy_losses and value_losses
             loss = torch.stack(policy_losses).sum() + torch.stack(value_losses).sum()
+            self.current_loss = loss.item()
 
             # perform backprop
             loss.backward()
@@ -160,7 +161,7 @@ class PatrollingA2C:
             del self.rewards[:]
             self.cur_batch = 0
 
-            return loss.item()
+            return self.current_loss
 
 
 

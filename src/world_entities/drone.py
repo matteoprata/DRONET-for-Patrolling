@@ -56,6 +56,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
     def set_next_target(self):
         """ Called at every time step. """
+
         if self.mobility == config.Mobility.PLANNED:
             if self.will_reach_target():
                 self.coords = self.next_target()
@@ -138,6 +139,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                        "loss": 0 if loss is None else loss}
 
             self.simulator.wandb.log(metrics)  # , commit=self.is_new_episode())
+            # print("LOGGING,", metrics)
         # else:
         #     self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
 
@@ -214,8 +216,8 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
     def decided_on_flight(self):
         # If it is time to decide, or the state was None
-        if self.is_decision_step() or self.previous_state is None:
 
+        if self.is_decision_step() or self.previous_state is None:
             reward, epsilon, loss, is_end, s, s_prime = self.simulator.environment.state_manager.invoke_train(self)
             action = 0 if is_end else self.simulator.environment.state_manager.invoke_predict(s_prime, self)
 

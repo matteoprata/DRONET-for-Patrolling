@@ -100,7 +100,7 @@ TARGETS_FILE = "data/targets/"
 ZERO_TOLERANCE = 0.1     # 10% at 80% of the simulation
 EXPLORE_PORTION = 0.7    # what portion of time of the simulation is spent exploring
 
-DRONE_MOBILITY = Mobility.GO_MAX_AOI
+DRONE_MOBILITY = Mobility.DECIDED
 DELTA_DEC = 5       # seconds
 
 # variables from here

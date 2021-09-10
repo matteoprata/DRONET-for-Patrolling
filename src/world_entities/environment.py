@@ -1,7 +1,7 @@
 
 from src.utilities.utilities import log, is_segments_intersect, distance_point_segment, TraversedCells, euclidean_distance
 from src.world_entities.target import Target
-from src.patrolling.patrolling_MDP import RLModule
+from src.nn.A2C_MDP import RLModule_A2C
 
 from src.utilities.utilities import config
 from tqdm import tqdm
@@ -40,7 +40,7 @@ class Environment:
         self.write_previous_actions_drones = [None]*self.simulator.n_drones
 
     def end_init(self):
-        self.state_manager = RLModule(self)
+        self.state_manager = RLModule_A2C(self)
 
     def add_drones(self, drones: list):
         """ add a list of drones in the env """

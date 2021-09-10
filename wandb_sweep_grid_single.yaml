@@ -23,17 +23,19 @@ parameters:
   discount_factor:
     value: 1
   n_hidden_neurons_lv1:
-    value: 25 # [30,25] # 20 is the input
+    value: 18 # [30,25] # 20 is the input
   n_hidden_neurons_lv2:
-    value: 0              # 20 is the output
+    value: 15              # 20 is the output
   n_hidden_neurons_lv3:
-    value: 0
+    value: 13
   swap_models_every_decision:
     value: 7000 # 5000
   battery:
     value: 900
   is_expired_target_condition:
     values: [0, 1]
+  is_plot:
+    value: 0
 
 command:
   - ${env}

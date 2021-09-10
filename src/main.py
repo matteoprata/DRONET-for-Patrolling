@@ -18,7 +18,7 @@ parser.add_argument('-sw', '--swap_models_every_decision', type=int, default=con
 parser.add_argument('-sl', '--is_allow_self_loop', type=int, default=config.IS_ALLOW_SELF_LOOP)
 
 # -- logging
-parser.add_argument('-pl', '--plotting', type=int, default=0)
+parser.add_argument('-pl', '--is_plot', type=int, default=0)
 parser.add_argument('-lo', '--log_state', type=float, default=-1)
 
 # -- battery, speed, number of targets
@@ -67,12 +67,12 @@ def main():
             learning["n_hidden_neurons_lv3"] = wandb_config["n_hidden_neurons_lv3"]
 
             sim = PatrollingSimulator(learning=learning,
+                                      is_plot=bool(wandb_config["is_plot"]),
                                       drone_speed=args.drone_speed,
                                       n_targets=wandb_config['n_targets'],
                                       n_drones=wandb_config['n_drones'],
                                       drone_max_battery=wandb_config['battery'],
                                       log_state=args.log_state,
-                                      is_plot=bool(args.plotting),
                                       n_epochs=wandb_config['n_epochs'],
                                       n_episodes=wandb_config['n_episodes'],
                                       episode_duration=wandb_config['episode_duration'],
@@ -84,7 +84,7 @@ def main():
 
     elif args.mode == 1:
         seeds_range = 1
-        modes = (3, 6)
+        modes = (2, 2)
         name = "seeds{}-ndr{}-nta{}-modes{}".format(seeds_range, args.n_drones, args.n_targets, modes)
 
         for mod in range(modes[0], modes[1]+1):
@@ -96,7 +96,7 @@ def main():
                                       n_drones=args.n_drones,
                                       drone_max_battery=args.battery,
                                       log_state=args.log_state,
-                                      is_plot=bool(args.plotting),
+                                      is_plot=bool(args.is_plot),
                                       n_epochs=1,
                                       n_episodes=seeds_range,
                                       episode_duration=config.Time.HOUR.value * 5,

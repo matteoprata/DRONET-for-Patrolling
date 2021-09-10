@@ -268,6 +268,7 @@ class PatrollingSimulator:
             for episode in tqdm(range(len(episodes_perm)), desc='episodes', leave=False, disable=IS_PRO_BARS):
                 cur_number_episodes += 1
                 ie = episodes_perm[episode]
+
                 for drone in self.environment.drones:
                     drone.reset_environment_info()
 

@@ -62,7 +62,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 self.increase_waypoint_counter()
 
         elif self.mobility == config.Mobility.DECIDED:
-            self.decided_on_flight(self.is_decision_step())
+            self.decided_on_flight()
 
         elif self.mobility == config.Mobility.RANDOM_MOVEMENT:
             if self.will_reach_target():
@@ -205,47 +205,16 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         """ Cyclic visit in the waypoints list. """
         self.current_waypoint_count = self.current_waypoint_count + 1 if self.current_waypoint_count + 1 < len(self.path) else 0
 
-    # DRONE BUFFER
-
-    def is_full(self):
-        return self.buffer_length() == self.max_buffer
-
-    def is_known_packet(self, packet):
-        return packet in self.buffer
-
-    def buffer_length(self):
-        return len(self.buffer)
-
     # DROPPING PACKETS
-
-    def drop_expired_packets(self, ts):
-        """ Drops expired packets form the buffer. """
-        for packet in self.buffer:
-            if packet.is_expired(ts):
-                self.buffer.remove(packet)
-                log("drone: {} - removed a packet id: {}".format(str(self.identifier), str(packet.identifier)))
-
-    def drop_packets(self, packets):
-        """ Drops the packets from the buffer. """
-        for packet in packets:
-            if packet in self.buffer:
-                self.buffer.remove(packet)
-                log("drone: {} - removed a packet id: {}".format(str(self.identifier), str(packet.identifier)))
-
-    def routing(self, simulator):
-        pass
-
-    def feel_event(self, cur_step):
-        pass
-
     def __hash__(self):
         return hash(self.identifier)
 
     def is_new_episode(self):
         return self.prev_step_at_decision >= self.simulator.cur_step
 
-    def decided_on_flight(self, eval_trigger):
-        if eval_trigger or self.previous_state is None:
+    def decided_on_flight(self):
+        # If it is time to decide, or the state was None
+        if self.is_decision_step() or self.previous_state is None:
 
             reward, epsilon, loss, is_end, s, s_prime = self.simulator.environment.state_manager.invoke_train(self)
             action = 0 if is_end else self.simulator.environment.state_manager.invoke_predict(s_prime, self)

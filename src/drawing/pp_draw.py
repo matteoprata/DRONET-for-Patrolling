@@ -104,10 +104,10 @@ class PathPlanningDrawer:
 
     def draw_drone(self, drone, cur_step):
         coords = drone.coords
-        if drone.buffer_length() > 0:  # change color when find a packet
-            stddraw.setPenColor(c=stddraw.GREEN)
-        else:     
-            stddraw.setPenColor(c=stddraw.BLACK)
+        # if drone.buffer_length() > 0:  # change color when find a packet
+        #     stddraw.setPenColor(c=stddraw.GREEN)
+        # else:
+        stddraw.setPenColor(c=stddraw.BLACK)
         stddraw.setPenRadius(0.0055)
         stddraw.point(coords[0], coords[1])
 

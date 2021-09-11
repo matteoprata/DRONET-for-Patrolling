@@ -90,7 +90,7 @@ class PatrollingA2C:
         """ Returns True if it is time to explore, False otherwise. """
         return self.flip_biased_coin(self.decay())
 
-    def predict(self, state, is_explore=True):
+    def predict(self, state, is_explore=True, forced_action=None):
         """  Given an input state, it returns the action predicted by the model if no exploration is done
           and the model is given as an input, if the exploration goes through. """
 
@@ -101,6 +101,12 @@ class PatrollingA2C:
         state = torch.tensor(state).double().to(self.device)
 
         probs, state_value = self.model(state)
+        
+        # When on flight, do not change direction 
+        if forced_action is not None:
+            probs.data[:] = 0
+            probs.data[forced_action] = 1 
+
         actions_distribution = torch.distributions.Categorical(probs)
         action = actions_distribution.sample()
 

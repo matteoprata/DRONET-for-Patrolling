@@ -237,7 +237,10 @@ class RLModule_A2C:
         if state is None and self.simulator.learning["is_pretrained"]:
             action_index = drone.identifier
         else:
-            action_index = self.A2C_Agent.predict(state_attempt.vector())
+            if drone.is_flying() and drone.previous_action is not None:
+                action_index = self.A2C_Agent.predict(state_attempt.vector(), forced_action=drone.previous_action)
+            else:
+                action_index = self.A2C_Agent.predict(state_attempt.vector())
 
         state = state_attempt
         # if drone.is_flying() and drone.previous_action is not None:

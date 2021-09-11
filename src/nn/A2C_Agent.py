@@ -140,7 +140,7 @@ class PatrollingA2C:
                 policy_losses.append(-log_prob * advantage)
 
                 # calculate critic (value) loss using L1 smooth loss
-                value_losses.append(torch.nn.functional.smooth_l1_loss(value, torch.tensor([R])))
+                value_losses.append(torch.nn.functional.smooth_l1_loss(value, torch.tensor([ret])))
 
             # reset gradients
             self.optimizer.zero_grad()

@@ -11,16 +11,16 @@ parameters:
   n_epochs:
     value: 1
   n_episodes:
-    value: 2000
+    value: 50000
   episode_duration:
-    value: 48000
+    value: 120000  # 5 hours 
 
   n_targets:
     value: 5
   n_drones:
     value: 1
   battery:
-    value: 900
+    value: 6000
 
   learning_rate:
     value: 0.001

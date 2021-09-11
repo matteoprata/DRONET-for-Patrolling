@@ -101,7 +101,7 @@ ZERO_TOLERANCE = 0.1     # 10% at 80% of the simulation
 EXPLORE_PORTION = 0.7    # what portion of time of the simulation is spent exploring
 
 DRONE_MOBILITY = Mobility.DECIDED
-DELTA_DEC = 5       # seconds
+DELTA_DEC = 15       # seconds circa, or a bit more 
 
 # variables from here
 DRONE_MAX_ENERGY = 3 * Time.MIN.value       # int: max energy of a drone sec

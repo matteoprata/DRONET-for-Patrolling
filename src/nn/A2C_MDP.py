@@ -223,6 +223,7 @@ class RLModule_A2C:
         IS_TRAIN = drone.identifier == self.simulator.n_drones - 1 # ony the last drone actually trains the NN
         # Continuous Tasks: Reinforcement Learning tasks which are not made of episodes, but rather last forever.
         # This tasks have no terminal states. For simplicity, they are usually assumed to be made of one never-ending episode.
+        
         self.previous_loss = self.A2C_Agent.train()
 
         return r, self.previous_epsilon, self.A2C_Agent.current_loss, s_prime.is_final, s, s_prime

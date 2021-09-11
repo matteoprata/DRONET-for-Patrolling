@@ -89,6 +89,7 @@ def main():
 
         for mod in range(modes[0], modes[1]+1):
             mode = config.Mobility(mod)
+
             sim = PatrollingSimulator(drone_mobility=mode,
                                       name=name,
                                       drone_speed=args.drone_speed,

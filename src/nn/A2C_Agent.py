@@ -120,7 +120,12 @@ class PatrollingA2C:
         if self.is_load_model:
             return
 
-        if len(self.rewards) == self.batch_size:
+        # if len(self.rewards) == self.batch_size: # 
+        # True if it is the last training possible in this episode
+
+        if (self.simulator.cur_step + 1) + np.ceil(config.DELTA_DEC / self.simulator.ts_duration_sec) >= self.simulator.episode_duration:
+            # print("It is", self.simulator.episode_duration, "time for a new training.")
+
             R = 0
             policy_losses = []  # list to save actor (policy) loss
             value_losses = []   # list to save critic (value) loss

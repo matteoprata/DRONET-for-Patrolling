@@ -9,11 +9,11 @@ metric:
 
 parameters:
   n_epochs:
-    value: 1
+    value: 10000
   n_episodes:
-    value: 50000
+    value: 1
   episode_duration:
-    value: 120000  # 5 hours 
+    value: 72000  # 5 hours 
 
   n_targets:
     value: 5

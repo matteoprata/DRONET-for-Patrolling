@@ -152,7 +152,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
     def is_decision_step(self):
         """ Whether is time to make a decision step or not """
-        return (self.simulator.cur_step * self.simulator.ts_duration_sec) % config.DELTA_DEC == 0
+        return self.simulator.cur_step % np.ceil(config.DELTA_DEC / self.simulator.ts_duration_sec)  == 0
 
     def is_flying(self):
         return not self.will_reach_target()

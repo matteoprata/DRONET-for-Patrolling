@@ -262,11 +262,12 @@ class PatrollingSimulator:
     def run(self):
         """ The method starts the simulation. """
         self.print_sim_info()
+        
         cur_number_episodes = 0
-        IS_PRO_BARS = self.is_plot
-        for epoch in tqdm(range(self.n_epochs), desc='epoch', disable=IS_PRO_BARS):
+        IS_HIDE_PRO_BARS = True #self.is_plot
+        for epoch in tqdm(range(self.n_epochs), desc='epoch', disable=IS_HIDE_PRO_BARS):
             episodes_perm = self.rstate_sample_batch_training.permutation(self.n_episodes)
-            for episode in tqdm(range(len(episodes_perm)), desc='episodes', leave=False, disable=IS_PRO_BARS):
+            for episode in tqdm(range(len(episodes_perm)), desc='episodes', leave=False, disable=IS_HIDE_PRO_BARS):
                 cur_number_episodes += 1
                 ie = episodes_perm[episode]
 
@@ -277,7 +278,7 @@ class PatrollingSimulator:
                 self.environment.spawn_targets(targets)
 
                 self.cur_step = 0
-                for cur_step in tqdm(range(self.episode_duration), desc='step', leave=False, disable=IS_PRO_BARS):
+                for cur_step in tqdm(range(self.episode_duration), desc='step', leave=False, disable=IS_HIDE_PRO_BARS):
                     self.cur_step = cur_step
 
                     for drone in self.environment.drones:

@@ -43,11 +43,12 @@ class PatrollingSimulator:
 
                  log_state=config.LOG_STATE,
                  penalty_on_bs_expiration=config.PENALTY_ON_BS_EXPIRATION,
-                 episode_duration=config.EPISODE_DURATION,
                  is_plot=config.PLOT_SIM,
 
                  n_epochs=config.N_EPOCHS,
                  n_episodes=config.N_EPISODES,
+                 episode_duration=config.EPISODE_DURATION,
+
                  is_expired_target_condition=config.IS_EXPIRED_TARGET_CONDITION,
                  name = None,
                  wandb=None

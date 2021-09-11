@@ -121,10 +121,10 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
             self.set_next_target_angle()
             self.__movement(self.angle)
 
+    # WANDB LOGGING 
+
     def save_metrics(self):
         # log only if not pre-trained or identifier is of the last drone
-        # if self.identifier == self.simulator.n_drones - 1:
-        #     print("sono il drone in metriche :) ", self.identifier)
 
         if not self.simulator.learning["is_pretrained"] \
                 and self.identifier == self.simulator.n_drones - 1 \

@@ -1,0 +1,5 @@
+[default]
+entity = matteoprata
+project = uavsimulator_patrolling
+base_url = https://api.wandb.ai
+

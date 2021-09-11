@@ -90,7 +90,7 @@ class Environment:
         # loading targets list
         targets_fname = config.TARGETS_FILE + format_name.format(seed, self.simulator.n_drones, self.simulator.n_targets, self.simulator.drone_speed_meters_sec)
         path_exists = os.path.exists(targets_fname)
-        MAX_N_EPISODES = 50
+        MAX_N_EPISODES = 2000
         MAX_N_TARGETS = self.simulator.n_targets
 
         if not path_exists or force_recompute:

@@ -65,7 +65,6 @@ class PatrollingA2C:
         # TO DECLARE ABOVE
         self.saved_actions = []
         self.rewards = []
-        self.cur_batch = 0
 
     def compute_epsilon_decay(self, zero_perc_simulation=config.EXPLORE_PORTION, prob_threshold=config.ZERO_TOLERANCE):
         # keep the experience > .0001 until the first %80 of the steps
@@ -106,8 +105,6 @@ class PatrollingA2C:
         action = actions_distribution.sample()
 
         self.saved_actions.append((actions_distribution.log_prob(action), state_value))
-        self.cur_batch += 1
-
         # print("RESULT", action.item())
 
         return action.item()
@@ -117,7 +114,7 @@ class PatrollingA2C:
         if self.is_load_model:
             return
 
-        if self.cur_batch == self.batch_size:
+        if len(self.rewards) == self.batch_size:
             R = 0
             policy_losses = []  # list to save actor (policy) loss
             value_losses = []   # list to save critic (value) loss
@@ -159,7 +156,6 @@ class PatrollingA2C:
             # reset rewards and action buffer
             del self.saved_actions[:]
             del self.rewards[:]
-            self.cur_batch = 0
 
             return self.current_loss
 

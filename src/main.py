@@ -83,7 +83,7 @@ def main():
             sim.run()
 
     elif args.mode == 1:
-        seeds_range = 1
+        seeds_range = 1  # for testing
         modes = (2, 2)
         name = "seeds{}-ndr{}-nta{}-modes{}".format(seeds_range, args.n_drones, args.n_targets, modes)
 
@@ -97,11 +97,11 @@ def main():
                                       drone_max_battery=args.battery,
                                       log_state=args.log_state,
                                       is_plot=bool(args.is_plot),
-                                      n_epochs=1,
-                                      n_episodes=seeds_range,
-                                      episode_duration=config.Time.HOUR.value * 5,
                                       penalty_on_bs_expiration=args.penalty,
                                       sim_seed=1,
+                                      n_epochs=args.n_epochs,
+                                      n_episodes=args.n_episodes,
+                                      episode_duration=args.episode_duration,
                                       is_expired_target_condition=args.is_expired_target_condition,
                                       wandb=None)
             sim.run()

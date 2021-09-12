@@ -126,6 +126,7 @@ class PatrollingA2C:
         if (self.simulator.cur_step + 1) + np.ceil(config.DELTA_DEC / self.simulator.ts_duration_sec) >= self.simulator.episode_duration:
             # print("It is", self.simulator.episode_duration, "time for a new training.")
 
+            # TODO check if this R should be instead value of next state
             R = 0
             policy_losses = []  # list to save actor (policy) loss
             value_losses = []   # list to save critic (value) loss
@@ -134,12 +135,15 @@ class PatrollingA2C:
             # machine smallest number
             eps = np.finfo(np.float32).eps.item()
 
+            # RETURNS
             # calculate the true value using rewards returned from the environment
             for r in self.rewards[::-1]:
                 # calculate the discounted value
+                # TODO add mask as in https://github.com/yc930401/Actor-Critic-pytorch/blob/master/Actor-Critic.py
                 R = r + self.discount_factor * R
                 returns.insert(0, R)
 
+            # TODO remove this normalization 
             # normalization
             returns = torch.tensor(returns)
             returns = (returns - returns.mean()) / (returns.std() + eps)
@@ -148,7 +152,7 @@ class PatrollingA2C:
                 advantage = ret - value.item()
 
                 # calculate actor (policy) loss
-                policy_losses.append(-log_prob * advantage)
+                policy_losses.append(-log_prob * advantage)  # TODO add mean 
 
                 # calculate critic (value) loss using L1 smooth loss
                 value_losses.append(torch.nn.functional.smooth_l1_loss(value, torch.tensor([ret])))

@@ -262,9 +262,9 @@ class PatrollingSimulator:
     def run(self):
         """ The method starts the simulation. """
         self.print_sim_info()
-        
+
         cur_number_episodes = 0
-        IS_HIDE_PRO_BARS = True #self.is_plot
+        IS_HIDE_PRO_BARS = self.is_plot
         for epoch in tqdm(range(self.n_epochs), desc='epoch', disable=IS_HIDE_PRO_BARS):
             episodes_perm = self.rstate_sample_batch_training.permutation(self.n_episodes)
             for episode in tqdm(range(len(episodes_perm)), desc='episodes', leave=False, disable=IS_HIDE_PRO_BARS):

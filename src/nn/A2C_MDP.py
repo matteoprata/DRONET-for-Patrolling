@@ -5,6 +5,19 @@ from src.utilities import config
 import numpy as np
 import time
 
+class HistoryState:
+    def __init__(self, k, emply_vector):
+        self.history_state = [emply_vector]*k
+
+    def add_state(self, s):
+        del self.history_state[-1]
+        self.history_state.insert(0, s)
+
+    def vector(self, normalized=True, rounded=False):
+        out_vec = []
+        for state in self.history_state:
+            out_vec += state.vector(normalized, rounded)
+        return out_vec
 
 class State:
     def __init__(self, aoi_idleness_ratio, time_distances, position, aoi_norm, time_norm,
@@ -114,6 +127,8 @@ class RLModule_A2C:
         # self.AOI_FUTURE_NORM = 1  # self.simulator.duration_seconds() / min_threshold
         # self.ACTION_NORM = self.N_ACTIONS
 
+        self.history_state = HistoryState(4, self.empy_state())
+
     def get_current_aoi_idleness_ratio(self, drone, next=0):
         res = []
         for target in self.simulator.environment.targets:
@@ -165,6 +180,15 @@ class RLModule_A2C:
         state = State(residuals, distances, None, self.AOI_NORM, self.TIME_NORM, self.N_ACTIONS, False, None, None, closests, actions_past, is_multi_drone)
         return state
 
+    def empy_state(self):
+        distances = [0]*len(self.environment.targets)      # N
+        residuals = [0]*len(self.environment.targets)      # N
+        closests = self.get_targets_closest_drone(drone) if self.simulator.n_drones > 1 else None  # N
+        actions_past = self.prev_actions() if self.simulator.n_drones > 1 else None                   # U
+        is_multi_drone = self.simulator.n_drones > 1
+        state = State(residuals, distances, None, self.AOI_NORM, self.TIME_NORM, self.N_ACTIONS, False, None, None, closests, actions_past, is_multi_drone)
+        return state
+
     def evaluate_reward(self, s, a, s_prime, drone):
 
         # # REWARD TEST ATP01
@@ -206,6 +230,8 @@ class RLModule_A2C:
         s_prime = self.evaluate_state(drone)
         s_prime.is_final = self.evaluate_is_final_state(s, a, s_prime, drone)
 
+        self.history_state.add_state(s_prime)
+
         r = self.evaluate_reward(s, a, s_prime, drone)
         self.A2C_Agent.rewards.append(r)
 
@@ -239,9 +265,9 @@ class RLModule_A2C:
             action_index = drone.identifier
         else:
             if drone.is_flying() and drone.previous_action is not None:
-                action_index = self.A2C_Agent.predict(state_attempt.vector(), forced_action=drone.previous_action)
+                action_index = self.A2C_Agent.predict(self.history_state.vector(), forced_action=drone.previous_action)
             else:
-                action_index = self.A2C_Agent.predict(state_attempt.vector())
+                action_index = self.A2C_Agent.predict(self.history_state.vector())
 
         state = state_attempt
         # if drone.is_flying() and drone.previous_action is not None:

@@ -32,7 +32,7 @@ class PatrollingA2C:
 
         # number of actions, actions, number of states
         self.n_actions = n_actions
-        self.n_features = n_features
+        self.n_features = n_features*4
         self.n_hidden_neurons_lv1 = n_hidden_neurons_lv1
         self.n_hidden_neurons_lv2 = n_hidden_neurons_lv2
         self.n_hidden_neurons_lv3 = n_hidden_neurons_lv3
@@ -96,10 +96,9 @@ class PatrollingA2C:
 
         if self.is_load_model:
             is_explore = False
-
+ 
         # state = np.asarray(state).astype(np.float32)
         state = torch.tensor(state).double().to(self.device)
-
         probs, state_value = self.model(state)
         
         # When on flight, do not change direction 

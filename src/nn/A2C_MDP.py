@@ -129,7 +129,7 @@ class RLModule_A2C:
 
     def reset_history_state(self):
         # Done at the beginning of an episode
-        self.history_state = HistoryState(4, self.empy_state())
+        self.history_state = HistoryState(config.N_HISTORY_STATES, self.empy_state())
 
     def get_current_aoi_idleness_ratio(self, drone, next=0):
         res = []
@@ -259,7 +259,7 @@ class RLModule_A2C:
 
     def invoke_predict(self, state, drone):
         assert(len(self.environment.drones) <= len(self.environment.targets))
-        
+
         state_attempt = state
         if state is None:
             state_attempt = self.evaluate_state(drone)

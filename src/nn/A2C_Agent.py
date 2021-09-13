@@ -32,7 +32,7 @@ class PatrollingA2C:
 
         # number of actions, actions, number of states
         self.n_actions = n_actions
-        self.n_features = n_features*4
+        self.n_features = n_features*config.N_HISTORY_STATES
         self.n_hidden_neurons_lv1 = n_hidden_neurons_lv1
         self.n_hidden_neurons_lv2 = n_hidden_neurons_lv2
         self.n_hidden_neurons_lv3 = n_hidden_neurons_lv3
@@ -145,8 +145,8 @@ class PatrollingA2C:
 
             # TODO remove this normalization 
             # normalization
-            # returns = torch.tensor(returns)
-            # returns = (returns - returns.mean()) / (returns.std() + eps)
+            returns = torch.tensor(returns)
+            returns = (returns - returns.mean()) / (returns.std() + eps)
 
             for (log_prob, value), ret in zip(self.saved_actions, returns):
                 # RET is the truth

@@ -20,7 +20,7 @@ parameters:
   n_drones:
     value: 1
   battery:
-    value: 2000
+    value: 600 # seconds
 
   learning_rate:
     value: 0.0001

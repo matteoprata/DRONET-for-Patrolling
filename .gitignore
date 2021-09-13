@@ -117,3 +117,8 @@ dmypy.json
 *.iml
 
 data/rl/
+cluster_data/conda-environment.yaml
+cluster_data/config.yaml
+cluster_data/requirements.txt
+cluster_data/wandb-metadata.json
+cluster_data/wandb-summary.json

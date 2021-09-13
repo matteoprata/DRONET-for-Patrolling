@@ -124,3 +124,4 @@ PENALTY_ON_BS_EXPIRATION = - N_TARGETS  # TARGET_VIOLATION_FACTOR * N_TARGETS  #
 
 
 IS_EXPIRED_TARGET_CONDITION = True  # count only targets that are expired for the penalty, the rest is 0
+N_HISTORY_STATES = 4

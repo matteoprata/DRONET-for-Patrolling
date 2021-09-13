@@ -10,6 +10,7 @@ import src.utilities.config as config
 from src.drawing import pp_draw
 
 from tqdm import tqdm
+from itertools import count
 
 import numpy as np
 import time
@@ -265,7 +266,7 @@ class PatrollingSimulator:
 
         cur_number_episodes = 0
         IS_HIDE_PRO_BARS = self.is_plot
-        for epoch in tqdm(range(self.n_epochs), desc='epoch', disable=IS_HIDE_PRO_BARS):
+        for epoch in count(): #tqdm(range(self.n_epochs), desc='epoch', disable=IS_HIDE_PRO_BARS):
             episodes_perm = self.rstate_sample_batch_training.permutation(self.n_episodes)
             for episode in tqdm(range(len(episodes_perm)), desc='episodes', leave=False, disable=IS_HIDE_PRO_BARS):
                 cur_number_episodes += 1

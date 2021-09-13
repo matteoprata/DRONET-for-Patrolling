@@ -218,6 +218,12 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         # If it is time to decide, or the state was None
 
         if self.is_decision_step() or self.previous_state is None:
+
+            if self.simulator.cur_step == 0:
+                print("DONE RESET")
+                # at each new episode, reset the history
+                self.simulator.environment.state_manager.reset_history_state()
+
             reward, epsilon, loss, is_end, s, s_prime = self.simulator.environment.state_manager.invoke_train(self)
             action = 0 if is_end else self.simulator.environment.state_manager.invoke_predict(s_prime, self)
 

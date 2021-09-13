@@ -127,6 +127,8 @@ class RLModule_A2C:
         # self.AOI_FUTURE_NORM = 1  # self.simulator.duration_seconds() / min_threshold
         # self.ACTION_NORM = self.N_ACTIONS
 
+    def reset_history_state(self):
+        # Done at the beginning of an episode
         self.history_state = HistoryState(4, self.empy_state())
 
     def get_current_aoi_idleness_ratio(self, drone, next=0):
@@ -234,6 +236,7 @@ class RLModule_A2C:
 
         r = self.evaluate_reward(s, a, s_prime, drone)
         self.A2C_Agent.rewards.append(r)
+        self.A2C_Agent.dones.append(0 if s_prime.is_final else 1) # final reset reward
 
         if not drone.is_flying():
             s_prime._aoi_idleness_ratio[a] = 0  # set to 0 the residual of the just visited target (it will be reset later from drone.py)
@@ -256,6 +259,7 @@ class RLModule_A2C:
 
     def invoke_predict(self, state, drone):
         assert(len(self.environment.drones) <= len(self.environment.targets))
+        
         state_attempt = state
         if state is None:
             state_attempt = self.evaluate_state(drone)

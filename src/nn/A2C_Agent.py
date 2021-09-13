@@ -65,6 +65,7 @@ class PatrollingA2C:
         # TO DECLARE ABOVE
         self.saved_actions = []
         self.rewards = []
+        self.dones = []
 
     def compute_epsilon_decay(self, zero_perc_simulation=config.EXPLORE_PORTION, prob_threshold=config.ZERO_TOLERANCE):
         # keep the experience > .0001 until the first %80 of the steps
@@ -96,7 +97,7 @@ class PatrollingA2C:
 
         if self.is_load_model:
             is_explore = False
- 
+
         # state = np.asarray(state).astype(np.float32)
         state = torch.tensor(state).double().to(self.device)
         probs, state_value = self.model(state)
@@ -136,22 +137,23 @@ class PatrollingA2C:
 
             # RETURNS
             # calculate the true value using rewards returned from the environment
-            for r in self.rewards[::-1]:
+            for irev in reversed(range(len(self.rewards))):
                 # calculate the discounted value
-                # TODO add mask as in https://github.com/yc930401/Actor-Critic-pytorch/blob/master/Actor-Critic.py
-                R = r + self.discount_factor * R
+                # DONE TODO add mask as in https://github.com/yc930401/Actor-Critic-pytorch/blob/master/Actor-Critic.py
+                R = self.rewards[irev] + self.discount_factor * R * self.dones[irev]
                 returns.insert(0, R)
 
             # TODO remove this normalization 
             # normalization
-            returns = torch.tensor(returns)
-            returns = (returns - returns.mean()) / (returns.std() + eps)
+            # returns = torch.tensor(returns)
+            # returns = (returns - returns.mean()) / (returns.std() + eps)
 
             for (log_prob, value), ret in zip(self.saved_actions, returns):
+                # RET is the truth
                 advantage = ret - value.item()
 
                 # calculate actor (policy) loss
-                policy_losses.append(-log_prob * advantage)  # TODO add mean 
+                policy_losses.append(-log_prob * advantage)  # DONE TODO add mean 
 
                 # calculate critic (value) loss using L1 smooth loss
                 value_losses.append(torch.nn.functional.smooth_l1_loss(value, torch.tensor([ret])))

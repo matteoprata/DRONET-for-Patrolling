@@ -37,7 +37,7 @@ parameters:
   swap_models_every_decision:
     value: 7000 # 5000
   is_expired_target_condition:
-    values: 1
+    value: 1
   is_plot:
     value: 0
 

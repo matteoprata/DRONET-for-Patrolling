@@ -220,7 +220,6 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         if self.is_decision_step() or self.previous_state is None:
 
             if self.simulator.cur_step == 0:
-                print("DONE RESET")
                 # at each new episode, reset the history
                 self.simulator.environment.state_manager.reset_history_state()
 

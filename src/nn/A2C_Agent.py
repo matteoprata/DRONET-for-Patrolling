@@ -175,6 +175,8 @@ class PatrollingA2C:
 
             return self.current_loss
 
+    def save_model(self, fname):
+        torch.save(self.model, fname)
 
 
 

@@ -296,18 +296,18 @@ class PatrollingSimulator:
                         self.metrics.append_statistics()
 
                     self.cur_step_total += 1
-                self.log_model(cur_number_episodes)
+            self.log_model(epoch)
 
             self.metrics.save_dataframe()
             for drone in self.environment.drones:
                 drone.was_final_epoch = True
-
-    def log_model(self, cur_number_episodes):
+                
+    def log_model(self, cur_epoch, last=True):
         if not self.learning['is_pretrained'] and self.wandb is not None:
-            SAVE_EPOCH_EVERY = int(self.n_epochs * self.n_episodes * 0.1)
-            is_last_epoch = cur_number_episodes == self.n_epochs * self.n_episodes
+            # SAVE_EPOCH_EVERY = int(self.n_epochs * self.n_episodes * 0.1)
+            # is_last_epoch = cur_number_episodes == self.n_epochs * self.n_episodes
 
-            if cur_number_episodes % SAVE_EPOCH_EVERY == 0 or is_last_epoch:
-                model_file_name = "model-episode{}.h5".format(cur_number_episodes)
-                path = config.RL_DATA + self.campaign_name() + "/" + model_file_name if self.wandb is None else os.path.join(self.wandb.dir, model_file_name)
-                self.environment.state_manager.DQN.save_model(path)
+            # if cur_number_episodes % SAVE_EPOCH_EVERY == 0 or is_last_epoch:
+            model_file_name = "model.h5" if last else "model-episode{}.h5".format(cur_number_episodes)
+            path = config.RL_DATA + self.campaign_name() + "/" + model_file_name if self.wandb is None else os.path.join(self.wandb.dir, model_file_name)
+            self.environment.state_manager.A2C_Agent.save_model(path)

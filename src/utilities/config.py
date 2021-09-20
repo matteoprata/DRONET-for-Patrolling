@@ -25,7 +25,7 @@ BASE_STATION_COORDS = [ENV_WIDTH / 2, 0]   # coordinates of the base staion
 BASE_STATION_COM_RANGE = 200               # float: meters, communication range of the depot.
 
 # IMPORTANT: coordinates of the drones at the beginning, it can be NONE in that case drone will follow
-# fixed tours determined in FIXED_TOURS_DIR
+# fixed tours3 determined in FIXED_TOURS_DIR
 DRONE_COORDS = BASE_STATION_COORDS
 
 DRONE_ANGLE = 0               # degrees (0, 359)
@@ -41,11 +41,11 @@ PLOT_TRAJECTORY_NEXT_TARGET = True
 
 # ------------------------------- CONSTANTS ------------------------------- #
 
-FIXED_TOURS_DIR = "data/tours/"        # str: the path to the drones tours
-DEMO_PATH = False                      # bool: whether to use handcrafted tours or not (in utilities.utilities)
+FIXED_TOURS_DIR = "data/tours3/"        # str: the path to the drones tours3
+DEMO_PATH = False                      # bool: whether to use handcrafted tours3 or not (in utilities.utilities)
 
 PLOT_SIM = False  # bool: whether to plot or not the simulation (set to false for faster experiments)
-WAIT_SIM_STEP = 0     # float >= 0: seconds, pauses the rendering for x seconds
+WAIT_SIM_STEP = 0.01     # float >= 0: seconds, pauses the rendering for x seconds
 SKIP_SIM_STEP = 20     # int > 0 : steps, plot the simulation every x steps
 DRAW_SIZE = 700       # int: size of the drawing window
 
@@ -117,11 +117,16 @@ N_EPISODES = 20     # 50
 EPISODE_DURATION = 3 * Time.HOUR.value
 
 TARGET_VIOLATION_FACTOR = 2
-IS_ALLOW_SELF_LOOP = False
 PLOT_STATES_INFO = False
 
 PENALTY_ON_BS_EXPIRATION = - N_TARGETS  # TARGET_VIOLATION_FACTOR * N_TARGETS  # - 2 * TARGET_VIOLATION_FACTOR  #
 
 
 IS_EXPIRED_TARGET_CONDITION = True  # count only targets that are expired for the penalty, the rest is 0
+
 N_HISTORY_STATES = 1
+END_EPISODE_AT_BATTERY_EXPIRATION = False
+DECIDE_ON_TARGET = True
+IS_ALLOW_SELF_LOOP = False  # dont allow self loop to avoid many states on target state evaluation
+
+

@@ -31,7 +31,7 @@ def euclidean_distance(p1, p2):
     return np.linalg.norm(np.array(p1)-np.array(p2))
 
 
-def min_max_normalizer(value, startLB, startUB, endLB=0, endUB=1, active=True):
+def min_max_normalizer(value, startLB, startUB, endLB=0, endUB=1):
     # Figure out how 'wide' each range is
     value = np.asarray(value)
     if not (value <= startUB).all() and (value >= startLB).all():
@@ -44,8 +44,13 @@ def min_max_normalizer(value, startLB, startUB, endLB=0, endUB=1, active=True):
     # Convert the left range into a 0-1 range (float)
     valueScaled = (value - startLB) / leftSpan
 
+    new_value = ((valueScaled * rightSpan) + endLB)
+
+    # if new_value > endUB or new_value < endLB:
+    #     print("WARNING: scaled value exceeded the bounds", new_value, "[{}, {}]".format(endLB, endUB))
+
     # Convert the 0-1 range into a value in the right range.
-    return ((valueScaled * rightSpan) + endLB) if active else value
+    return new_value
 
 
 def angle_between_three_points(p1, p2, p3):

@@ -41,6 +41,7 @@ parser.add_argument('-hn3', '--n_hidden_neurons_lv3', type=int, default=config.L
 parser.add_argument('-exp', '--is_expired_target_condition', type=int, default=config.IS_EXPIRED_TARGET_CONDITION)
 parser.add_argument('-nta', '--n_targets', type=int, default=config.N_TARGETS)
 parser.add_argument('-ndr', '--n_drones', type=int, default=config.N_DRONES)
+parser.add_argument('-rew', '--reward_type', type=int, default=0)
 
 # END PARAMETERS DEFINITION
 
@@ -67,7 +68,7 @@ def main():
             learning["n_hidden_neurons_lv3"] = wandb_config["n_hidden_neurons_lv3"]
 
             sim = PatrollingSimulator(learning=learning,
-                                      is_plot=bool(wandb_config["is_plot"]),
+                                      is_plot=False,
                                       drone_speed=args.drone_speed,
                                       n_targets=wandb_config['n_targets'],
                                       n_drones=wandb_config['n_drones'],
@@ -78,7 +79,7 @@ def main():
                                       episode_duration=wandb_config['episode_duration'],
                                       penalty_on_bs_expiration=args.penalty,
                                       sim_seed=args.seed,
-                                      is_expired_target_condition=wandb_config["is_expired_target_condition"],
+                                      is_expired_target_condition=args.is_expired_target_condition,
                                       wandb=wandb_instance)
             sim.run()
 
@@ -99,7 +100,7 @@ def main():
                                       log_state=args.log_state,
                                       is_plot=bool(args.is_plot),
                                       penalty_on_bs_expiration=args.penalty,
-                                      sim_seed=1,
+                                      sim_seed=args.seed,
                                       n_epochs=args.n_epochs,
                                       n_episodes=args.n_episodes,
                                       episode_duration=args.episode_duration,

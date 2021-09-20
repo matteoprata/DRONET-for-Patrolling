@@ -4,6 +4,7 @@ from src.utilities.utilities import euclidean_distance, min_max_normalizer
 from src.utilities import config
 import numpy as np
 import time
+from src.patrolling import rewards
 
 class HistoryState:
     def __init__(self, k, emply_vector):
@@ -38,6 +39,7 @@ class State:
         self.position_norm = position_norm
         self._objective = objective
         self.is_multi_drone = is_multi_drone
+
 
     def actions_past(self, normalized=True):
         return self._actions_past # if not normalized else min_max_normalizer(self._actions_past, 0, self.position_norm)
@@ -80,7 +82,7 @@ class State:
             return str_state.format(self.aoi_idleness_ratio(), self.time_distances())
         else:
             str_state = "res: {}\ndis: {}\nclo: {}\nact: {}\n"
-            return str_state.format(self.aoi_idleness_ratio(), self.time_distances(), self.closests(), self.actions_past())
+            return str_state.format(self.aoi_idleness_ratio(False), self.time_distances(False), self.closests(False), self.actions_past(False))
 
     @staticmethod
     def round_feature_vector(feature, rounding_digit):
@@ -127,9 +129,11 @@ class RLModule_A2C:
         # self.AOI_FUTURE_NORM = 1  # self.simulator.duration_seconds() / min_threshold
         # self.ACTION_NORM = self.N_ACTIONS
 
+        self.WAS_DONE = False
+
     def reset_history_state(self):
         # Done at the beginning of an episode
-        self.history_state = HistoryState(config.N_HISTORY_STATES, self.empy_state())
+        self.history_state = HistoryState(config.N_HISTORY_STATES, self.empty_state())
 
     def get_current_aoi_idleness_ratio(self, drone, next=0):
         res = []
@@ -173,7 +177,6 @@ class RLModule_A2C:
         # return [0] * len(self.environment.drones) if self.environment.read_previous_actions_drones[0] is None else self.environment.read_previous_actions_drones
 
     def evaluate_state(self, drone):
-        # - - # - - # - - # - - # - - # - - # - - # - - # - - #
         distances = self.get_current_time_distances(drone)      # N
         residuals = self.get_current_aoi_idleness_ratio(drone)  # N
         closests = self.get_targets_closest_drone(drone) if self.simulator.n_drones > 1 else None  # N
@@ -182,46 +185,50 @@ class RLModule_A2C:
         state = State(residuals, distances, None, self.AOI_NORM, self.TIME_NORM, self.N_ACTIONS, False, None, None, closests, actions_past, is_multi_drone)
         return state
 
-    def empy_state(self):
+    def empty_state(self):
+        """The UNK state. """
         distances = [0]*len(self.environment.targets)      # N
         residuals = [0]*len(self.environment.targets)      # N
-        closests = self.get_targets_closest_drone(drone) if self.simulator.n_drones > 1 else None  # N
-        actions_past = self.prev_actions() if self.simulator.n_drones > 1 else None                   # U
-        is_multi_drone = self.simulator.n_drones > 1
-        state = State(residuals, distances, None, self.AOI_NORM, self.TIME_NORM, self.N_ACTIONS, False, None, None, closests, actions_past, is_multi_drone)
+        state = State(residuals, distances, None, self.AOI_NORM, self.TIME_NORM, self.N_ACTIONS, False, None, None, None, None, None)
         return state
 
     def evaluate_reward(self, s, a, s_prime, drone):
-
-        # # REWARD TEST ATP01
-        # rew = - max([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
-        # rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
-        # rew = min_max_normalizer(rew,
-        #                          startUB=0,
-        #                          startLB=(-(self.TARGET_VIOLATION_FACTOR - self.simulator.penalty_on_bs_expiration)),
-        #                          endUB=0,
-        #                          endLB=-1)
-
-        # # REWARD TEST ATP02
-        IS_EXPIRED_TARGET_CONDITION = self.simulator.is_expired_target_condition
-        rew = - sum([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False) if i >= 1 or not IS_EXPIRED_TARGET_CONDITION])
-        rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
-
-        rew = min_max_normalizer(rew,
-                                 startUB=0,
-                                 startLB=(-(self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS - self.simulator.penalty_on_bs_expiration)),
-                                 endUB=0,
-                                 endLB=-1)
-
-        return rew
+        rew_comp = s_prime, a, drone, self.simulator, self.TARGET_VIOLATION_FACTOR, self.N_ACTIONS
+        if self.simulator.wandb is not None:
+            if self.simulator.wandb.config["reward_type"] == 0:
+                return rewards.reward_0_TEMPORAL(*rew_comp)
+            elif self.simulator.wandb.config["reward_type"] == 1:
+                return rewards.reward_1_EXPIRED_ONLY(*rew_comp)
+            elif self.simulator.wandb.config["reward_type"] == 2:
+                return rewards.reward_2_NOT_ONY_EXPIRED(*rew_comp)
+            elif self.simulator.wandb.config["reward_type"] == 3:
+                return rewards.reward_3_POSITIVE_N(*rew_comp)
+            elif self.simulator.wandb.config["reward_type"] == 4:
+                return rewards.reward_4_POSITIVE_N_BOTH(*rew_comp)
+        else:
+            return rewards.reward_0_TEMPORAL(*rew_comp)
 
     def evaluate_is_final_state(self, s, a, s_prime, drone):
         """ WARNING THIS IS TRUE FOR ALL DRONES AFTER THE """
         # SETS THIS TO TRUE UNTIL ALL DRONES ARE FINISHED
-        self.is_final_episode_for_some = s_prime.aoi_idleness_ratio(False)[0] >= 1 or self.is_final_episode_for_some
-        # self.final_episode_for_drone = drone if self.is_final_episode_for_some else self.final_episode_for_drone
 
-        return s_prime.aoi_idleness_ratio(False)[0] >= 1  # or s.position() == s_prime.position()
+        # # PREEMPTIVE
+        # # battery_end = self.environment.targets[0].age_of_information(next=0, drone_id=drone.identifier) +
+        # # config.DELTA_DEC >= self.simulator.drone_max_battery
+        #
+        # # POST
+        # battery_end = s_prime.aoi_idleness_ratio(False)[0] >= 1
+        #
+        # # TODO is_final_episode_for_some RESETS DUE TO BATTERY
+        # self.is_final_episode_for_some = config.END_EPISODE_AT_BATTERY_EXPIRATION and (battery_end or self.is_final_episode_for_some)
+        # # self.final_episode_for_drone = drone if self.is_final_episode_for_some else self.final_episode_for_drone
+
+        SLACK = 60 * 5 / self.simulator.ts_duration_sec
+        final_episode_Step = (self.simulator.cur_step + SLACK) > self.simulator.episode_duration
+        if final_episode_Step:
+            self.WAS_DONE = True
+
+        return final_episode_Step # battery_end
 
     def invoke_train(self, drone):
         if drone.previous_state is None or drone.previous_action is None:
@@ -231,11 +238,12 @@ class RLModule_A2C:
         a = drone.previous_action
         s_prime = self.evaluate_state(drone)
         s_prime.is_final = self.evaluate_is_final_state(s, a, s_prime, drone)
+        r = self.evaluate_reward(s, a, s_prime, drone)
 
         self.history_state.add_state(s_prime)
-
-        r = self.evaluate_reward(s, a, s_prime, drone)
         self.A2C_Agent.rewards.append(r)
+
+        # TODO: ADD WHEN THE AGENT BATTERY IS OVER IS FINAL STATE
         self.A2C_Agent.dones.append(0 if s_prime.is_final else 1) # final reset reward
 
         if not drone.is_flying():
@@ -252,8 +260,19 @@ class RLModule_A2C:
         IS_TRAIN = drone.identifier == self.simulator.n_drones - 1 # ony the last drone actually trains the NN
         # Continuous Tasks: Reinforcement Learning tasks which are not made of episodes, but rather last forever.
         # This tasks have no terminal states. For simplicity, they are usually assumed to be made of one never-ending episode.
-        
-        self.previous_loss = self.A2C_Agent.train()
+
+        if s_prime.is_final:
+            metrics = {"loss": self.A2C_Agent.current_loss}
+            self.simulator.wandb.log(metrics)
+
+            # for r in self.A2C_Agent.rewards:
+            #     self.simulator.wandb.log({"cumulative_reward": r})
+
+            self.simulator.wandb.log({"cumulative_reward_M": np.mean(self.A2C_Agent.rewards)})
+            self.simulator.wandb.log({"cumulative_reward_STF_MU": np.mean(self.A2C_Agent.rewards) + np.std(self.A2C_Agent.rewards)})
+            self.simulator.wandb.log({"cumulative_reward_STF_ML": np.mean(self.A2C_Agent.rewards) - np.std(self.A2C_Agent.rewards)})
+
+        self.previous_loss = self.A2C_Agent.train(s_prime)
 
         return r, self.previous_epsilon, self.A2C_Agent.current_loss, s_prime.is_final, s, s_prime
 
@@ -263,15 +282,18 @@ class RLModule_A2C:
         state_attempt = state
         if state is None:
             state_attempt = self.evaluate_state(drone)
+            self.history_state.add_state(state_attempt)
 
         # to avoid all of them heading to the same target
         if state is None and self.simulator.learning["is_pretrained"]:
             action_index = drone.identifier
         else:
-            if drone.is_flying() and drone.previous_action is not None:
-                action_index = self.A2C_Agent.predict(self.history_state.vector(), forced_action=drone.previous_action)
-            else:
-                action_index = self.A2C_Agent.predict(self.history_state.vector())
+            # if drone.is_flying() and drone.previous_action is not None:
+            #     # force the same action when flying to target
+            #     action_index = self.A2C_Agent.predict(self.history_state.vector(), forced_action=drone.previous_action)
+            # else:
+            forbidden_action = drone.previous_action if not config.IS_ALLOW_SELF_LOOP else None
+            action_index = self.A2C_Agent.predict(self.history_state.vector(), forbidden_action=forbidden_action)
 
         state = state_attempt
         # if drone.is_flying() and drone.previous_action is not None:
@@ -293,10 +315,11 @@ class RLModule_A2C:
     def log_transition(self, s, s_prime, a, r, every=1, drone=None):
         print("From drone n", drone.identifier)
 
+        print(s)
         print(s_prime)
         # print(s_prime.aoi_idleness_ratio(False))
 
-        print(a, r)
+        print("ACTION & REWARD", a, r)
         print("---")
 
         if drone.identifier == self.simulator.n_drones-1:

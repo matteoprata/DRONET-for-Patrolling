@@ -9,7 +9,7 @@ class Target(SimulatedEntity):
     def __init__(self, identifier, coords, maximum_tolerated_idleness, simulator, is_depot=False, n_drones=1):
         SimulatedEntity.__init__(self, identifier, coords, simulator)
         self.maximum_tolerated_idleness = maximum_tolerated_idleness
-        self.last_visit_ts = [0] * n_drones if is_depot else [0]  # each drone ha its own view
+        self.last_visit_ts = [0] * n_drones if is_depot else [0]  # each drone ha its own view SECONDS SINCE START
 
         self.furthest_target = None
         self.closest_target = None
@@ -21,6 +21,7 @@ class Target(SimulatedEntity):
     # ------ AGE OF INFORMATION -- RESIDUAL OF INFORMATION
 
     def age_of_information(self, next=0, drone_id=None):
+        """ seconds since the last visit  """
         drone_id = 0 if not self.is_depot else drone_id
         return (self.simulator.cur_step - self.last_visit_ts[drone_id])*self.simulator.ts_duration_sec + next * self.simulator.ts_duration_sec
 

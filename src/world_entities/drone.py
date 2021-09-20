@@ -63,7 +63,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 self.increase_waypoint_counter()
 
         elif self.mobility == config.Mobility.DECIDED:
-            self.decided_on_flight()
+            self.decision_step(self.will_reach_target() if config.DECIDE_ON_TARGET else self.is_decision_step())
 
         elif self.mobility == config.Mobility.RANDOM_MOVEMENT:
             if self.will_reach_target():
@@ -214,22 +214,25 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
     def is_new_episode(self):
         return self.prev_step_at_decision >= self.simulator.cur_step
 
-    def decided_on_flight(self):
+    def decision_step(self, condition):
         # If it is time to decide, or the state was None
 
-        if self.is_decision_step() or self.previous_state is None:
+        if condition or self.previous_state is None:
 
+            # TODO CHECK
+            if self.will_reach_target():
+                self.coords = self.prev_target.coords
+
+            # at each new episode, reset the history
             if self.simulator.cur_step == 0:
-                # at each new episode, reset the history
                 self.simulator.environment.state_manager.reset_history_state()
 
+            # EVAL, TAKE ACTION
             reward, epsilon, loss, is_end, s, s_prime = self.simulator.environment.state_manager.invoke_train(self)
             action = 0 if is_end else self.simulator.environment.state_manager.invoke_predict(s_prime, self)
 
             # UPDATE TARGET IDLENESS
             if not self.is_flying():
-                # if self.simulator.learning['is_pretrained']:
-                #     self.simulator.metrics.append_statistics_on_target_reached(self.simulator.cur_step, self, self.prev_target)
                 self.prev_target.set_last_visit_ts(self.simulator.cur_step + (1 if is_end else 0), self.identifier)
                 self.prev_target.lock = None
 
@@ -238,7 +241,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
             self.increase_waypoint_counter()
 
             self.learning_tuple = reward, epsilon, loss, is_end, s, self.was_final_epoch
-            self.save_metrics()
+            # self.save_metrics()
             self.was_final_epoch = False
 
             self.prev_step_at_decision = self.simulator.cur_step

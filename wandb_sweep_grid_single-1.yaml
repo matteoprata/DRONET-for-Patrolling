@@ -9,11 +9,11 @@ metric:
 
 parameters:
   n_epochs:
-    value: 10000
+    value: 500000
   n_episodes:
     value: 1
   episode_duration:
-    value: 120000  # 5 hours 
+    value: 72000  # 3 hours
 
   n_targets:
     value: 5
@@ -28,22 +28,24 @@ parameters:
     value: 0.99
 
   n_hidden_neurons_lv1:
-    value: 15 # 30 # [30,25] # 20 is the input
+    value: 10 # 30 # [30,25] # 20 is the input
   n_hidden_neurons_lv2:
-    value: 10 # 20              # 20 is the output
+    value: 8 # 20              # 20 is the output
   n_hidden_neurons_lv3:
-    value: 8 # 10
+    value: 0 # 10
 
   swap_models_every_decision:
     value: 7000 # 5000
-  is_expired_target_condition:
-    value: 1
-  is_plot:
+
+  is_allow_self_loop:
     value: 0
+
+  reward_type:
+    values: [0, 1, 2, 3, 4]
 
 command:
   - ${env}
-  - python3.7
+  - python3.8
   - ${program}
   - ${args}
 

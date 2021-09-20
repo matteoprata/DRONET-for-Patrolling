@@ -23,7 +23,7 @@ The project has the following structure:
 .
 ├── README.md
 ├── data
-│   ├── tours
+│   ├── tours3
 │   │   ├── RANDOM_missions0.json
 │   │   ├── ...
 │   │   └── RANDOM_missions50.json

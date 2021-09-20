@@ -279,7 +279,10 @@ class PatrollingSimulator:
                 self.environment.spawn_targets(targets)
 
                 self.cur_step = 0
+
+                # start this episode
                 for cur_step in tqdm(range(self.episode_duration), desc='step', leave=False, disable=IS_HIDE_PRO_BARS):
+                    self.environment.state_manager.WAS_DONE = False
                     self.cur_step = cur_step
 
                     for drone in self.environment.drones:
@@ -296,6 +299,9 @@ class PatrollingSimulator:
                         self.metrics.append_statistics()
 
                     self.cur_step_total += 1
+                    if self.environment.state_manager.WAS_DONE:
+                        break
+
             self.log_model(epoch)
 
             self.metrics.save_dataframe()

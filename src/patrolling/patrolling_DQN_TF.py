@@ -2,9 +2,9 @@
 import numpy as np
 from src.utilities import config, utilities as util
 
-from tensorflow import keras
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense
+# from tensorflow import keras
+# from tensorflow.keras.models import Sequential
+# from tensorflow.keras.layers import Dense
 
 
 class PatrollingDQN:

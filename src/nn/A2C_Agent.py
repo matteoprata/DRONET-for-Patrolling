@@ -32,7 +32,7 @@ class PatrollingA2C:
 
         # number of actions, actions, number of states
         self.n_actions = n_actions
-        self.n_features = n_features*config.N_HISTORY_STATES
+        self.n_features = n_features
         self.n_hidden_neurons_lv1 = n_hidden_neurons_lv1
         self.n_hidden_neurons_lv2 = n_hidden_neurons_lv2
         self.n_hidden_neurons_lv3 = n_hidden_neurons_lv3

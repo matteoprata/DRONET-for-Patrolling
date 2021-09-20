@@ -106,8 +106,12 @@ class RLModule_A2C:
         self.N_FEATURES = len(self.environment.targets) * (2 if self.simulator.n_drones <= 1 else 4)
         self.TARGET_VIOLATION_FACTOR = config.TARGET_VIOLATION_FACTOR  # above this we are not interested on how much the
 
+        self.N_REPLICAS = self.simulator.wandb.config["state_replicas"] if self.simulator.wandb is not None else config.N_HISTORY_STATES
+
+        print("State has ", self.N_FEATURES*self.N_REPLICAS, "components")
+
         self.A2C_Agent = PatrollingA2C(n_actions=self.N_ACTIONS,
-                                 n_features=self.N_FEATURES,
+                                 n_features=self.N_FEATURES*self.N_REPLICAS,
                                  n_hidden_neurons_lv1=self.simulator.learning["n_hidden_neurons_lv1"],
                                  n_hidden_neurons_lv2=self.simulator.learning["n_hidden_neurons_lv2"],
                                  n_hidden_neurons_lv3=self.simulator.learning["n_hidden_neurons_lv3"],
@@ -133,7 +137,7 @@ class RLModule_A2C:
 
     def reset_history_state(self):
         # Done at the beginning of an episode
-        self.history_state = HistoryState(config.N_HISTORY_STATES, self.empty_state())
+        self.history_state = HistoryState(self.N_REPLICAS, self.empty_state())
 
     def get_current_aoi_idleness_ratio(self, drone, next=0):
         res = []

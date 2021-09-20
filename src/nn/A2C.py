@@ -5,7 +5,7 @@ import torch.nn.functional as fn
 import numpy as np
 
 
-class A2C(torch.nn.Module):
+class A2C(LightningModule):
     def __init__(self, in_shape, n_h1, n_h2, n_h3, out_shape):
         super(A2C, self).__init__()
 

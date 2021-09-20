@@ -41,7 +41,9 @@ parser.add_argument('-hn3', '--n_hidden_neurons_lv3', type=int, default=config.L
 parser.add_argument('-exp', '--is_expired_target_condition', type=int, default=config.IS_EXPIRED_TARGET_CONDITION)
 parser.add_argument('-nta', '--n_targets', type=int, default=config.N_TARGETS)
 parser.add_argument('-ndr', '--n_drones', type=int, default=config.N_DRONES)
+
 parser.add_argument('-rew', '--reward_type', type=int, default=0)
+parser.add_argument('-rep', '--state_replicas', type=int, default=1)
 
 # END PARAMETERS DEFINITION
 

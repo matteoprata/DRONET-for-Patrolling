@@ -229,6 +229,8 @@ class RLModule_A2C:
                 return rewards.reward_3_POSITIVE_N(*rew_comp)
             elif self.simulator.wandb.config["reward_type"] == 4:
                 return rewards.reward_4_POSITIVE_N_BOTH(*rew_comp)
+            elif self.simulator.wandb.config["reward_type"] == 5:
+                return rewards.reward_5_TEMPORAL_POSITIVE_N_BOTH(*rew_comp)
         else:
             return rewards.reward_0_TEMPORAL(*rew_comp)
 

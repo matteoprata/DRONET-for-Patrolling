@@ -37,19 +37,11 @@ def min_max_normalizer(value, startLB, startUB, endLB=0, endUB=1):
     if not (value <= startUB).all() and (value >= startLB).all():
         print("ERROR", value, startLB, startUB)
         exit()
-
     leftSpan = startUB - startLB
     rightSpan = endUB - endLB
-
     # Convert the left range into a 0-1 range (float)
     valueScaled = (value - startLB) / leftSpan
-
     new_value = ((valueScaled * rightSpan) + endLB)
-
-    # if new_value > endUB or new_value < endLB:
-    #     print("WARNING: scaled value exceeded the bounds", new_value, "[{}, {}]".format(endLB, endUB))
-
-    # Convert the 0-1 range into a value in the right range.
     return new_value
 
 

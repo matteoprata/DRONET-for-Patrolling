@@ -266,7 +266,7 @@ class PatrollingSimulator:
 
         cur_number_episodes = 0
         IS_HIDE_PRO_BARS = self.is_plot
-        for epoch in count(): #tqdm(range(self.n_epochs), desc='epoch', disable=IS_HIDE_PRO_BARS):
+        for epoch in tqdm(range(self.n_epochs), desc='epoch', disable=IS_HIDE_PRO_BARS):
             episodes_perm = self.rstate_sample_batch_training.permutation(self.n_episodes)
             for episode in tqdm(range(len(episodes_perm)), desc='episodes', leave=False, disable=IS_HIDE_PRO_BARS):
                 cur_number_episodes += 1
@@ -302,18 +302,16 @@ class PatrollingSimulator:
                     if self.environment.state_manager.WAS_DONE:
                         break
 
-            self.log_model(epoch)
+            self.log_model(epoch, every=500)
 
             self.metrics.save_dataframe()
             for drone in self.environment.drones:
                 drone.was_final_epoch = True
                 
-    def log_model(self, cur_epoch, last=True):
-        if not self.learning['is_pretrained'] and self.wandb is not None:
-            # SAVE_EPOCH_EVERY = int(self.n_epochs * self.n_episodes * 0.1)
-            # is_last_epoch = cur_number_episodes == self.n_epochs * self.n_episodes
+    def log_model(self, step, every):
+        if not self.learning['is_pretrained'] and self.wandb is not None and step % every == 0:
 
             # if cur_number_episodes % SAVE_EPOCH_EVERY == 0 or is_last_epoch:
-            model_file_name = "model.h5" if last else "model-episode{}.h5".format(cur_number_episodes)
-            path = config.RL_DATA + self.campaign_name() + "/" + model_file_name if self.wandb is None else os.path.join(self.wandb.dir, model_file_name)
+            model_file_name = "model-episode{}.h5".format(step)
+            path = os.path.join(self.wandb.dir, model_file_name)
             self.environment.state_manager.A2C_Agent.save_model(path)

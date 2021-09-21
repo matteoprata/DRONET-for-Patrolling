@@ -110,11 +110,9 @@ class PatrollingA2C:
         actions_distribution = torch.distributions.Categorical(probs)
         action = actions_distribution.sample()
 
-        assert(forbidden_action != action.item())
+        # assert(forbidden_action != action.item())
 
         self.saved_actions.append((actions_distribution.log_prob(action), state_value))
-        # print("RESULT", action.item())
-
         return action.item()
 
     # UTILITIES
@@ -160,10 +158,9 @@ class PatrollingA2C:
             for irev in reversed(range(len(self.rewards))):
                 # calculate the discounted value
                 # DONE TODO add mask as in https://github.com/yc930401/Actor-Critic-pytorch/blob/master/Actor-Critic.py
-                R = self.rewards[irev] + self.discount_factor * R * self.dones[irev]
+                R = self.rewards[irev] + self.discount_factor * R  # * self.dones[irev]
                 returns.insert(0, R)
 
-            # TODO remove this normalization 
             # normalization
             returns = torch.tensor(returns)
             returns = (returns - returns.mean()) / (returns.std() + eps)

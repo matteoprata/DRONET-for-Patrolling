@@ -5,7 +5,7 @@ method: grid
 
 metric:
   goal: maximize
-  name: cumulative_reward_M
+  name: reward_SUM_RUNNING
 
 parameters:
   n_epochs:
@@ -28,14 +28,14 @@ parameters:
     value: 0.99
 
   state_replicas:
-    value: 4
+    value: 1
 
   n_hidden_neurons_lv1:
-    value: 38 # 30 # [30,25] # 20 is the input
+    value: 15 # 30 # [30,25] # 20 is the input
   n_hidden_neurons_lv2:
-    value: 28 # 20              # 20 is the output
+    value: 10 # 20              # 20 is the output
   n_hidden_neurons_lv3:
-    value: 10 # 10
+    value: 8 # 10
 
   swap_models_every_decision:
     value: 7000 # 5000

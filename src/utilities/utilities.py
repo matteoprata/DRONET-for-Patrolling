@@ -57,10 +57,8 @@ def angle_between_three_points(p1, p2, p3):
     """ Given points p1, p2, p3 returns the angle between them.  """
     point_a = p1 - p2
     point_b = p3 - p2
-
     ang_a = np.arctan2(*point_a[::-1])
     ang_b = np.arctan2(*point_b[::-1])
-
     return np.rad2deg((ang_a - ang_b) % (2 * np.pi))
 
 

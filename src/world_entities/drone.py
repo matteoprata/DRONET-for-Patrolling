@@ -223,10 +223,6 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
             if self.will_reach_target():
                 self.coords = self.prev_target.coords
 
-            # at each new episode, reset the history
-            if self.simulator.cur_step == 0:
-                self.simulator.environment.state_manager.reset_history_state()
-
             # EVAL, TAKE ACTION
             reward, epsilon, loss, is_end, s, s_prime = self.simulator.environment.state_manager.invoke_train(self)
             action = 0 if is_end else self.simulator.environment.state_manager.invoke_predict(s_prime, self)

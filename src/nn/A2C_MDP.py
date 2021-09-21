@@ -1,28 +1,32 @@
 
 from src.nn.A2C_Agent import PatrollingA2C
-from src.utilities.utilities import euclidean_distance, min_max_normalizer
+from src.utilities.utilities import euclidean_distance, min_max_normalizer, angle_between_three_points
 from src.utilities import config
 import numpy as np
 import time
 from src.patrolling import rewards
 
 class HistoryState:
-    def __init__(self, k, emply_vector):
-        self.history_state = [emply_vector]*k
+    def __init__(self, k):
+        self.history_state = []
+        self.k = k
 
     def add_state(self, s):
-        del self.history_state[-1]
-        self.history_state.insert(0, s)
+        if len(self.history_state) == 0:
+            self.history_state = [s]*self.k
+        else:
+            del self.history_state[-1]
+            self.history_state.insert(0, s)
 
     def vector(self, normalized=True, rounded=False):
         out_vec = []
         for state in self.history_state:
-            out_vec += state.vector(normalized, rounded)
+            out_vec += state.vector(normalized, rounded)  # CONCAT
         return out_vec
 
 class State:
     def __init__(self, aoi_idleness_ratio, time_distances, position, aoi_norm, time_norm,
-                 position_norm, is_final, is_flying, objective, closests, actions_past, is_multi_drone):
+                 position_norm, is_final, is_flying, objective, closests, actions_past, is_multi_drone, angles):
 
         self._aoi_idleness_ratio: list = aoi_idleness_ratio
         self._time_distances: list = time_distances
@@ -31,6 +35,7 @@ class State:
 
         self.aoi_norm = aoi_norm
         self.time_norm = time_norm
+        self.angles = angles
 
         # UNUSED from here
         self._position = position
@@ -40,6 +45,10 @@ class State:
         self._objective = objective
         self.is_multi_drone = is_multi_drone
 
+        self.is_empty = False
+
+    def angles_state(self, normalized=True):
+        return self.angles if not normalized else min_max_normalizer(self.angles, 0, 360)
 
     def actions_past(self, normalized=True):
         return self._actions_past # if not normalized else min_max_normalizer(self._actions_past, 0, self.position_norm)
@@ -63,25 +72,33 @@ class State:
         """ NN INPUT """
         if not rounded:
             if not self.is_multi_drone:
-                return list(self.aoi_idleness_ratio(normalized)) + list(self.time_distances(normalized))
+                return list(self.aoi_idleness_ratio(normalized)) + \
+                       list(self.time_distances(normalized)) + \
+                       list(self.angles_state(normalized))
             else:
-                return list(self.aoi_idleness_ratio(normalized)) + list(self.time_distances(normalized)) + list(self.closests(normalized)) + list(self.actions_past(normalized))
+                return list(self.aoi_idleness_ratio(normalized)) + \
+                       list(self.time_distances(normalized)) + \
+                       list(self.closests(normalized)) + \
+                       list(self.actions_past(normalized)) + \
+                       list(self.angles_state(normalized))
         else:
-            if not self.is_multi_drone:
-                return [round(i, 2) for i in list(self.aoi_idleness_ratio(normalized))] + \
-                       [round(i, 2) for i in list(self.time_distances(normalized))]
-            else:
-                return [round(i, 2) for i in list(self.aoi_idleness_ratio(normalized))] + \
-                       [round(i, 2) for i in list(self.time_distances(normalized))] + \
-                       [round(i, 2) for i in list(self.closests(normalized))] + \
-                       [round(i, 2) for i in list(self.actions_past(normalized))]
+            pass
+            # if not self.is_multi_drone:
+            #     # TO HANDLE
+            #     return [round(i, 2) for i in list(self.aoi_idleness_ratio(normalized))] + \
+            #            [round(i, 2) for i in list(self.time_distances(normalized))]
+            # else:
+            #     return [round(i, 2) for i in list(self.aoi_idleness_ratio(normalized))] + \
+            #            [round(i, 2) for i in list(self.time_distances(normalized))] + \
+            #            [round(i, 2) for i in list(self.closests(normalized))] + \
+            #            [round(i, 2) for i in list(self.actions_past(normalized))]
 
     def __repr__(self):
         if not self.is_multi_drone:
-            str_state = "res: {}\ndis: {}\n"
-            return str_state.format(self.aoi_idleness_ratio(), self.time_distances())
+            str_state = "res: {}\ndis: {}\nangles: {}\n"
+            return str_state.format(self.aoi_idleness_ratio(), self.time_distances(), self.angles_state(False))
         else:
-            str_state = "res: {}\ndis: {}\nclo: {}\nact: {}\n"
+            str_state = "res: {}\ndis: {}\nclo: {}\nact: {}\ndis: {}\n"
             return str_state.format(self.aoi_idleness_ratio(False), self.time_distances(False), self.closests(False), self.actions_past(False))
 
     @staticmethod
@@ -103,10 +120,10 @@ class RLModule_A2C:
         self.is_final_episode_for_some = False
 
         self.N_ACTIONS = len(self.environment.targets)
-        self.N_FEATURES = len(self.environment.targets) * (2 if self.simulator.n_drones <= 1 else 4)
+        self.N_FEATURES = len(self.environment.targets) * (3 if self.simulator.n_drones <= 1 else 4)
         self.TARGET_VIOLATION_FACTOR = config.TARGET_VIOLATION_FACTOR  # above this we are not interested on how much the
 
-        self.N_REPLICAS = self.simulator.wandb.config["state_replicas"] if self.simulator.wandb is not None else config.N_HISTORY_STATES
+        self.N_REPLICAS = 4 #self.simulator.wandb.config["state_replicas"] if self.simulator.wandb is not None else config.N_HISTORY_STATES
 
         print("State has ", self.N_FEATURES*self.N_REPLICAS, "components")
 
@@ -134,10 +151,9 @@ class RLModule_A2C:
         # self.ACTION_NORM = self.N_ACTIONS
 
         self.WAS_DONE = False
+        self.running_reward = 0
+        self.history_state = HistoryState(self.N_REPLICAS)
 
-    def reset_history_state(self):
-        # Done at the beginning of an episode
-        self.history_state = HistoryState(self.N_REPLICAS, self.empty_state())
 
     def get_current_aoi_idleness_ratio(self, drone, next=0):
         res = []
@@ -149,6 +165,16 @@ class RLModule_A2C:
             res_val = 0 if is_ignore_target else min(target.aoi_idleness_ratio(next, drone.identifier), self.TARGET_VIOLATION_FACTOR)
             res_val = max(0, res_val)
             res.append(res_val)
+        return res
+
+    def get_current_angels(self, drone):
+        res = []
+        for target in self.simulator.environment.targets:
+            if not np.array_equal(np.array(target.coords), np.array(drone.coords)):
+                angle = angle_between_three_points(np.array(target.coords), np.array(drone.coords), np.array([drone.coords[0]+1, drone.coords[1]]))
+            else:
+                angle = 0
+            res.append(angle)
         return res
 
     def get_current_time_distances(self, drone):
@@ -181,19 +207,13 @@ class RLModule_A2C:
         # return [0] * len(self.environment.drones) if self.environment.read_previous_actions_drones[0] is None else self.environment.read_previous_actions_drones
 
     def evaluate_state(self, drone):
+        angles = self.get_current_angels(drone)
         distances = self.get_current_time_distances(drone)      # N
         residuals = self.get_current_aoi_idleness_ratio(drone)  # N
         closests = self.get_targets_closest_drone(drone) if self.simulator.n_drones > 1 else None  # N
         actions_past = self.prev_actions() if self.simulator.n_drones > 1 else None                   # U
         is_multi_drone = self.simulator.n_drones > 1
-        state = State(residuals, distances, None, self.AOI_NORM, self.TIME_NORM, self.N_ACTIONS, False, None, None, closests, actions_past, is_multi_drone)
-        return state
-
-    def empty_state(self):
-        """The UNK state. """
-        distances = [0]*len(self.environment.targets)      # N
-        residuals = [0]*len(self.environment.targets)      # N
-        state = State(residuals, distances, None, self.AOI_NORM, self.TIME_NORM, self.N_ACTIONS, False, None, None, None, None, None)
+        state = State(residuals, distances, None, self.AOI_NORM, self.TIME_NORM, self.N_ACTIONS, False, None, None, closests, actions_past, is_multi_drone, angles)
         return state
 
     def evaluate_reward(self, s, a, s_prime, drone):
@@ -265,20 +285,26 @@ class RLModule_A2C:
         # Continuous Tasks: Reinforcement Learning tasks which are not made of episodes, but rather last forever.
         # This tasks have no terminal states. For simplicity, they are usually assumed to be made of one never-ending episode.
 
-        if s_prime.is_final:
-            metrics = {"loss": self.A2C_Agent.current_loss}
-            self.simulator.wandb.log(metrics)
-
-            # for r in self.A2C_Agent.rewards:
-            #     self.simulator.wandb.log({"cumulative_reward": r})
-
-            self.simulator.wandb.log({"cumulative_reward_M": np.mean(self.A2C_Agent.rewards)})
-            self.simulator.wandb.log({"cumulative_reward_STF_MU": np.mean(self.A2C_Agent.rewards) + np.std(self.A2C_Agent.rewards)})
-            self.simulator.wandb.log({"cumulative_reward_STF_ML": np.mean(self.A2C_Agent.rewards) - np.std(self.A2C_Agent.rewards)})
+        # LOG AT END OF EPISODE
+        self.log_metrics(s_prime)
 
         self.previous_loss = self.A2C_Agent.train(s_prime)
 
         return r, self.previous_epsilon, self.A2C_Agent.current_loss, s_prime.is_final, s, s_prime
+
+    def log_metrics(self, s_prime):
+        if s_prime.is_final:
+            metrics = {"loss": self.A2C_Agent.current_loss}
+            self.simulator.wandb.log(metrics)
+
+            self.running_reward = np.sum(self.A2C_Agent.rewards) * 0.05 + self.running_reward * (1-0.05)
+
+            self.simulator.wandb.log({"reward_SUM_RUNNING": self.running_reward})
+            self.simulator.wandb.log({"reward_SUM": np.sum(self.A2C_Agent.rewards)})
+            self.simulator.wandb.log({"reward_MEAN": np.mean(self.A2C_Agent.rewards)})
+            self.simulator.wandb.log({"reward_STD_UP": np.mean(self.A2C_Agent.rewards) + np.std(self.A2C_Agent.rewards)})
+            self.simulator.wandb.log({"reward_STD_LOW": np.mean(self.A2C_Agent.rewards) - np.std(self.A2C_Agent.rewards)})
+
 
     def invoke_predict(self, state, drone):
         assert(len(self.environment.drones) <= len(self.environment.targets))
@@ -321,7 +347,8 @@ class RLModule_A2C:
 
         print(s)
         print(s_prime)
-        # print(s_prime.aoi_idleness_ratio(False))
+        print()
+        print(self.history_state.vector())
 
         print("ACTION & REWARD", a, r)
         print("---")

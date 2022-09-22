@@ -1,6 +1,6 @@
 
 """ To clean. """
-
+import src.utilities.constants
 from src.utilities import config
 
 import pathlib
@@ -147,7 +147,7 @@ class PathManager:
         """ json file to read for take the paths of drones
             We assume json_file + seed + .json
         """
-        if config.DRONE_MOBILITY == config.Mobility.PLANNED:
+        if config.DRONE_MOBILITY == src.utilities.constants.Mobility.FIXED_TRAJECTORIES:
             self.json_file = json_file.replace(".json", "") + str(seed) + ".json"
             self.path_dict = json_to_paths(self.json_file)
 

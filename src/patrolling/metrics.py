@@ -31,14 +31,14 @@ class Metrics:
             for t in self.simulator.environment.targets:
                 if rep == -1:
                     if t.identifier == action:
-                        self.target_aoi[t.identifier].append(t.age_of_information(rep))
+                        self.target_aoi[t.identifier].append(t.AOI_absolute(rep))
                     else:
                         self.target_aoi[t.identifier].append(None)
                 else:
                     if t.identifier == action:
                         self.target_aoi[t.identifier].append(0)
                     else:
-                        self.target_aoi[t.identifier].append(t.age_of_information())
+                        self.target_aoi[t.identifier].append(t.AOI_absolute())
 
         if learning_tuple is not None:
             reward, epsilon, loss, end_epoch, s, q, was_new_epoch = learning_tuple

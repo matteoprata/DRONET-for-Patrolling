@@ -1,4 +1,4 @@
-
+import src.utilities.constants
 from src.world_entities.environment import Environment
 from src.world_entities.base_station import BaseStation
 from src.world_entities.drone import Drone
@@ -194,8 +194,8 @@ class PatrollingSimulator:
 
         drones = []
         for i in range(self.n_drones):
-            drone_path = self.path_manager.path(i) if self.drone_mobility == config.Mobility.PLANNED else [self.drone_coo]
-            drone_speed = 0 if self.drone_mobility == config.Mobility.FREE else self.drone_speed_meters_sec
+            drone_path = self.path_manager.path(i) if self.drone_mobility == src.utilities.constants.Mobility.FIXED_TRAJECTORIES else [self.drone_coo]
+            drone_speed = 0 if self.drone_mobility == src.utilities.constants.Mobility.FREE else self.drone_speed_meters_sec
             drone = Drone(identifier=i,
                           path=drone_path,
                           bs=base_stations[0],
@@ -254,13 +254,13 @@ class PatrollingSimulator:
 
         IS_PRO_BARS = self.is_plot
         for epoch in tqdm(range(self.n_epochs), desc='epoch', disable=IS_PRO_BARS):
-            episodes_perm = self.rstate_sample_batch_training.permutation(self.n_episodes)
+            episodes_perm = self.rstate_sample_batch_training.permutation(self.n_episodes)  # at each epoch you see the same episodes but shuffled
             for episode in tqdm(range(len(episodes_perm)), desc='episodes', leave=False, disable=IS_PRO_BARS):
                 ie = episodes_perm[episode]
                 for drone in self.environment.drones:
                     drone.reset_environment_info()
 
-                targets = self.environment.targets_dataset[ie]
+                targets = self.environment.targets_dataset[ie]  # [Target1, Target2]
                 self.environment.spawn_targets(targets)
 
                 self.cur_step = 0
@@ -275,8 +275,8 @@ class PatrollingSimulator:
                         self.__plot(self.cur_step, self.episode_duration)
 
                     self.cur_step_total += 1
-
                 self.checkout(do=self.wandb is None, epoch=epoch, is_last_epoch=self.n_epochs-1 == epoch)
+
             for drone in self.environment.drones:
                 drone.was_final_epoch = True
 
@@ -306,5 +306,3 @@ class PatrollingSimulator:
             path = config.RL_DATA + self.name() + "/" + model_file_name if self.wandb is None else os.path.join(self.wandb.dir, model_file_name)
             self.environment.drones[0].state_manager.DQN.save_model(path)
 
-    # def close(self):
-    #     self.checkout(True)

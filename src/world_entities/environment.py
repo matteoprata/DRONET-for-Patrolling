@@ -94,7 +94,7 @@ class Environment:
                     # else:
                     rtt = 2 * (euclidean_distance(coordinates[i], self.base_stations[0].coords) / self.simulator.drone_speed_meters_sec)
                     LOW = int(tsp_path_time)  # int(rtt)
-                    UP  = int(tsp_path_time) * 2 # int(rtt)+1 if int(rtt) >= int(tsp_path_time) else int(tsp_path_time)
+                    UP  = int(tsp_path_time) * 2  # int(rtt)+1 if int(rtt) >= int(tsp_path_time) else int(tsp_path_time)
                     idleness = self.simulator.rnd_env.randint(LOW, UP)
                     to_json[ep].append((i, tuple(coordinates[i]), idleness))
 

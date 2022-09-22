@@ -1,3 +1,4 @@
+import src.utilities.constants
 from src.drawing import stddraw
 from src.world_entities.environment import Environment
 from src.utilities import config, utilities
@@ -84,27 +85,39 @@ class PathPlanningDrawer:
         for i in range(len(self.simulator.environment.targets)):
             # generation is done only at the beginning
             target = self.simulator.environment.targets[i]
-            aoi = int(target.age_of_information())
-            max_tol = int(target.maximum_tolerated_idleness)
+            text_aois = ""
+            if not target.is_base_station(): # NO BASE STATION
+                aoi = int(target.AOI_absolute())
+                max_tol = int(target.maximum_tolerated_idleness)
 
-            if aoi > max_tol:
-                stddraw.setPenColor(c=stddraw.RED)
-            else:
-                stddraw.setPenColor(c=stddraw.BLACK)
+                if aoi > max_tol:
+                    stddraw.setPenColor(c=stddraw.RED)
+                else:
+                    stddraw.setPenColor(c=stddraw.BLACK)
+                text_aois += "[{}]: {}/{}".format(target.identifier, aoi, max_tol)
+
+            else:  # BASE STATION
+                max_tol = int(target.maximum_tolerated_idleness)
+                for dd in range(self.simulator.n_drones):
+                    aoi_tol = target.AOI_tolerance_ratio(drone_id_view=dd)
+                    aoi_tol = round(aoi_tol * 100, 1)
+                    text_aois += "d{}: {}% ".format(dd, aoi_tol)
+
+                LIM_CHAR = 70
+                text_aois = "[bat: {}] ".format(max_tol) + text_aois[:LIM_CHAR] + "..."
 
             startx, starty = tuple(target.coords)
-
             stddraw.filledSquare(startx, starty, 10)
-            stddraw.text(startx, starty+25, "[{}]: {}/{}".format(target.identifier, aoi, max_tol))
+            stddraw.text(startx, starty + 35, text_aois)
 
         self.__reset_pen()
 
     def draw_drone(self, drone, cur_step):
         coords = drone.coords
-        if drone.buffer_length() > 0:  # change color when find a packet
-            stddraw.setPenColor(c=stddraw.GREEN)
-        else:     
-            stddraw.setPenColor(c=stddraw.BLACK)
+        # if drone.buffer_length() > 0:  # change color when find a packet
+        #     stddraw.setPenColor(c=stddraw.GREEN)
+        # else:
+        stddraw.setPenColor(c=stddraw.BLACK)
         stddraw.setPenRadius(0.0055)
         stddraw.point(coords[0], coords[1])
 
@@ -116,7 +129,7 @@ class PathPlanningDrawer:
         self.__draw_distance_radar(coords[0], coords[1], drone.radar_range)
         self.__reset_pen()
 
-        if config.PLOT_TRAJECTORY_NEXT_TARGET and not self.simulator.drone_mobility == config.Mobility.FREE:
+        if config.PLOT_TRAJECTORY_NEXT_TARGET and not self.simulator.drone_mobility == src.utilities.constants.Mobility.FREE:
             self.__draw_next_target(drone.coords, drone.next_target())
 
     def __validate_rew(self, drone, cur_step):
@@ -201,12 +214,18 @@ class PathPlanningDrawer:
         # draw the buffer size
         stddraw.setPenRadius(0.0125)
         stddraw.setPenColor(c=stddraw.BLACK)
-        stddraw.text(depot.coords[0], depot.coords[1]+100, "pk: " + str(len(depot.buffer)))
+        # stddraw.text(depot.coords[0], depot.coords[1]+100, "pk: " + str(len(depot.buffer)))
 
     def __draw_sensing_range(self, body):
         stddraw.setPenRadius(0.0015)
         stddraw.setPenColor(c=stddraw.RED)
         stddraw.circle(body.coords[0], body.coords[1], body.sensing_range)
+        stddraw.setPenColor(c=stddraw.BLACK)
+
+    def __draw_target_sensing_range(self, body):
+        stddraw.setPenRadius(0.0015)
+        stddraw.setPenColor(c=stddraw.DARK_GREEN)
+        stddraw.circle(body[0], body[1], config.OK_VISIT_RADIUS)
         stddraw.setPenColor(c=stddraw.BLACK)
 
     def __draw_communication_range(self, body):
@@ -248,7 +267,7 @@ class PathPlanningDrawer:
         # index
         stddraw.text(drone.coords[0], drone.coords[1] + (drone.com_range / 2.0), "id: " + str(drone.identifier))
         # state action
-        if self.simulator.drone_mobility == config.Mobility.DECIDED:
+        if self.simulator.drone_mobility == src.utilities.constants.Mobility.RL_DECISION:
             lt = self.simulator.environment.drones[0].state_manager.previous_learning_tuple
             if lt is not None:
                 s, a, s_prime, r = lt

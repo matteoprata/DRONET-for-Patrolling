@@ -5,12 +5,13 @@ import argparse
 import wandb
 
 """
-WARNING: when running sweeps, params are in the YAML otherwise be careful and look in config and main
+WARNING: When running sweeps, params are in the YAML otherwise be careful and look in config and main.
+         Parameters are taken from the config file if they are not overwritten from the command line.
 """
 
 parser = argparse.ArgumentParser(description='Run experiments of patrolling.')
 
-parser.add_argument('-sweep', '--is_sweep', type=int, default=1)
+parser.add_argument('-sweep', '--is_sweep', type=int, default=0)
 parser.add_argument('-de', '--description', type=str, default=config.SIM_DESCRIPTION)
 
 # -- learning params, n_hidden_naurons
@@ -103,5 +104,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # python -m src.main -pl 1
 
 

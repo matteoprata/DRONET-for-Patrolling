@@ -1,14 +1,15 @@
-import time
 
+import src.utilities.constants
 from src.world_entities.entity import SimulatedEntity
 from src.world_entities.base_station import BaseStation
 from src.world_entities.antenna import AntennaEquippedDevice
-from src.world_entities.target import Target
 
 from src.utilities.utilities import euclidean_distance, log, angle_between_three_points
 import numpy as np
 from src.utilities import config
 from src.patrolling.patrolling_MDP import RLModule
+
+import src.patrolling.patrolling_planner as planners
 
 
 class Drone(SimulatedEntity, AntennaEquippedDevice):
@@ -52,61 +53,65 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
     def move(self):
         """ Called at every time step. """
-        if self.mobility == config.Mobility.PLANNED:
+        if self.mobility == src.utilities.constants.Mobility.FIXED_TRAJECTORIES:
             if self.will_reach_target():
                 self.coords = self.next_target()
                 self.increase_waypoint_counter()
 
-        elif self.mobility == config.Mobility.DECIDED:
+        elif self.mobility == src.utilities.constants.Mobility.RL_DECISION:
             if config.IS_DECIDED_ON_TARGET:
                 self.decided_on_target(self.will_reach_target())
             else:
                 self.decided_on_flight(self.is_decision_step())
 
-        elif self.mobility == config.Mobility.RANDOM_MOVEMENT:
+        elif self.mobility == src.utilities.constants.Mobility.RANDOM_MOVEMENT:
+            if self.will_reach_target():
+                self.coords = self.next_target()  # this instruction sets the position of the drone on top of the target (useful due to discrete time)
+                self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
+                self.update_target_reached()
+
+                target_id = self.simulator.rnd_explore.randint(0, len(self.simulator.environment.targets))
+                target = self.simulator.environment.targets[target_id]
+                self.update_next_target_at_reach(target)
+
+        elif self.mobility == src.utilities.constants.Mobility.GO_MAX_AOI:
             if self.will_reach_target():
                 self.coords = self.next_target()
                 self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
                 self.update_target_reached()
 
-                action = self.simulator.rnd_explore.randint(0, len(self.simulator.environment.targets))
-                target = self.simulator.environment.targets[action]
+                target = planners.max_aoi(self.simulator.environment.targets, self)
                 self.update_next_target_at_reach(target)
 
-        elif self.mobility == config.Mobility.GO_MAX_AOI:
+        elif self.mobility == src.utilities.constants.Mobility.GO_MIN_RESIDUAL:
             if self.will_reach_target():
                 self.coords = self.next_target()
                 self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
                 self.update_target_reached()
 
-                target = Target.max_aoi(self.simulator.environment.targets, self.current_target())
+                target = planners.min_residual(self.simulator.environment.targets, self)
                 self.update_next_target_at_reach(target)
 
-        elif self.mobility == config.Mobility.GO_MIN_RESIDUAL:
+        elif self.mobility == src.utilities.constants.Mobility.GO_MIN_SUM_RESIDUAL:
             if self.will_reach_target():
                 self.coords = self.next_target()
                 self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
                 self.update_target_reached()
 
-                target = Target.min_residual(self.simulator.environment.targets, self.current_target())
+                target = planners.min_sum_residual(self.simulator.environment.targets,
+                                                   self.current_target(),
+                                                   self.speed,
+                                                   self.simulator.cur_step,
+                                                   self.simulator.ts_duration_sec,
+                                                   self)
                 self.update_next_target_at_reach(target)
 
-        elif self.mobility == config.Mobility.GO_MIN_SUM_RESIDUAL:
-            if self.will_reach_target():
-                self.coords = self.next_target()
-                self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
-                self.update_target_reached()
-
-                target = Target.min_sum_residual(self.simulator.environment.targets,
-                                                 self.current_target(),
-                                                 self.speed,
-                                                 self.simulator.cur_step,
-                                                 self.simulator.ts_duration_sec)
-                self.update_next_target_at_reach(target)
-
-        elif self.mobility == config.Mobility.FREE:
+        elif self.mobility == src.utilities.constants.Mobility.FREE:
             if self.will_reach_target():
                 self.update_target_reached()
+
+        elif self.mobility == src.utilities.constants.Mobility.MICHELE:
+            pass
 
         if self.is_flying():
             self.set_next_target_angle()
@@ -154,15 +159,16 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
     def update_target_reached(self):
         """ Once reached, update target last visit """
         self.prev_target.last_visit_ts = self.simulator.cur_step
+        self.prev_target.last_visit_ts_by_drone[self.identifier] = self.simulator.cur_step  # vector of times of visit
 
     def set_next_target_angle(self):
         """ Set the angle of the next target """
-        if self.mobility != config.Mobility.FREE:
+        if self.mobility != src.utilities.constants.Mobility.FREE:
             horizontal_coo = np.array([self.coords[0] + 1, self.coords[1]])
             self.angle = angle_between_three_points(self.next_target(), np.array(self.coords), horizontal_coo)
 
     def __movement(self, angle):
-        """ Moves update drone coordinate based on the angle cruise """
+        """ updates drone coordinate based on the angle cruise """
         self.previous_coords = np.asarray(self.coords)
         distance_travelled = self.speed * self.simulator.ts_duration_sec
         coords = np.asarray(self.coords)
@@ -184,50 +190,16 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
     def will_reach_target(self):
         """ Returns true if the drone will reach its target or overcome it in this step. """
-        return self.speed * self.simulator.ts_duration_sec >= euclidean_distance(self.coords, self.next_target())
+        return self.speed * self.simulator.ts_duration_sec + config.OK_VISIT_RADIUS >= euclidean_distance(self.coords, self.next_target())
 
     def increase_waypoint_counter(self):
         """ Cyclic visit in the waypoints list. """
         self.current_waypoint_count = self.current_waypoint_count + 1 if self.current_waypoint_count + 1 < len(self.path) else 0
 
-    # DRONE BUFFER
-
-    def is_full(self):
-        return self.buffer_length() == self.max_buffer
-
-    def is_known_packet(self, packet):
-        return packet in self.buffer
-
-    def buffer_length(self):
-        return len(self.buffer)
-
-    # DROPPING PACKETS
-
-    def drop_expired_packets(self, ts):
-        """ Drops expired packets form the buffer. """
-        for packet in self.buffer:
-            if packet.is_expired(ts):
-                self.buffer.remove(packet)
-                log("drone: {} - removed a packet id: {}".format(str(self.identifier), str(packet.identifier)))
-
-    def drop_packets(self, packets):
-        """ Drops the packets from the buffer. """
-        for packet in packets:
-            if packet in self.buffer:
-                self.buffer.remove(packet)
-                log("drone: {} - removed a packet id: {}".format(str(self.identifier), str(packet.identifier)))
-
-    def routing(self, simulator):
-        pass
-
-    def feel_event(self, cur_step):
-        pass
-
-    def __hash__(self):
-        return hash(self.identifier)
-
     def is_new_episode(self):
         return self.prev_step_at_decision >= self.simulator.cur_step
+
+    # DECISION STEP TYPE
 
     def decided_on_target(self, eval_trigger):
         # if self.will_reach_target() or self.was_final:
@@ -259,3 +231,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
     def decided_on_flight(self, eval_trigger):
         self.decided_on_target(eval_trigger)
+
+    def __hash__(self):
+        return hash(self.identifier)
+

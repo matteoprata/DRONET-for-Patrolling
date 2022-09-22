@@ -166,7 +166,7 @@ class RLModule:
         #                          endLB=-1)
 
         # # REWARD TEST ATP02
-        rew = - sum([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.AOI_ratio(False)])
+        rew = - sum([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
         rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
 
         rew = min_max_normalizer(rew,
@@ -211,7 +211,7 @@ class RLModule:
 
     def evaluate_is_final_state(self, s, a, s_prime):
         """ The residual of the base station is >= 1, i.e. it is expired. """
-        return s_prime.AOI_ratio(False)[0] >= 1  # or s.position() == s_prime.position()
+        return s_prime.aoi_idleness_ratio(False)[0] >= 1  # or s.position() == s_prime.position()
 
     def invoke_train(self):
         if self.previous_state is None or self.previous_action is None:

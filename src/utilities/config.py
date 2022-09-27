@@ -101,9 +101,9 @@ N_TARGETS = 10                              # number of random targets in the ma
 
 LOG_STATE = False                       # print the state or not
 
-N_EPISODES = 20                         # how many times the scenario (a.k.a. episode) changes during a simulation
+N_EPISODES = 1                         # how many times the scenario (a.k.a. episode) changes during a simulation
 N_EPOCHS = 1                            # how many times you will see the same scenario
-EPISODE_DURATION = 5 * Time.HOUR.value  # how much time the episode lasts
+EPISODE_DURATION = int(.3 * Time.HOUR.value)  # how much time the episode lasts
 
 TARGET_VIOLATION_FACTOR = 2    # ?
 
@@ -113,6 +113,6 @@ DELTA_DEC = 5                 # after how many seconds a new decision must take 
 IS_RESIDUAL_REWARD = False                                        # ?
 IS_ALLOW_SELF_LOOP = True                                         # drone can decide to visit the same target in two consecutive decisions or not
 PENALTY_ON_BS_EXPIRATION = - N_TARGETS * TARGET_VIOLATION_FACTOR  # reward due to the violation of the base station (i.e. the drone dies)
-
 OK_VISIT_RADIUS = 0  # radius of a target, suffices to visit it IGNORE
-DRONE_MOBILITY = Mobility.GO_MIN_RESIDUAL
+
+DRONE_MOBILITY = Mobility.GO_MIN_SUM_RESIDUAL

@@ -12,3 +12,6 @@ class Mobility(Enum):
     GO_MIN_SUM_RESIDUAL = 6
 
     MICHELE = 7
+
+
+PATH_STATS = "data/experiments/"

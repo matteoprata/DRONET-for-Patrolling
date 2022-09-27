@@ -57,6 +57,7 @@ for arg in vars(args):
 
 def main():
     """ the place where to run simulations and experiments. """
+
     if bool(args.is_sweep):
         with wandb.init(project="uavsimulator_patrolling") as wandb_instance:
             wandb_config = wandb_instance.config
@@ -86,6 +87,7 @@ def main():
 
                                       wandb=wandb_instance)
             sim.run()
+
     else:
         sim = PatrollingSimulator(learning=learning,
                                   sim_description=args.description,

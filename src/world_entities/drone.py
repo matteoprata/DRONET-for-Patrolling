@@ -67,7 +67,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         elif self.mobility == src.utilities.constants.Mobility.RANDOM_MOVEMENT:
             if self.will_reach_target():
                 self.coords = self.next_target()  # this instruction sets the position of the drone on top of the target (useful due to discrete time)
-                self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
+                self.handle_metrics()
                 self.update_target_reached()
 
                 target_id = self.simulator.rnd_explore.randint(0, len(self.simulator.environment.targets))
@@ -77,7 +77,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         elif self.mobility == src.utilities.constants.Mobility.GO_MAX_AOI:
             if self.will_reach_target():
                 self.coords = self.next_target()
-                self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
+                self.handle_metrics()
                 self.update_target_reached()
 
                 target = planners.max_aoi(self.simulator.environment.targets, self)
@@ -86,7 +86,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         elif self.mobility == src.utilities.constants.Mobility.GO_MIN_RESIDUAL:
             if self.will_reach_target():
                 self.coords = self.next_target()
-                self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
+                self.handle_metrics()
                 self.update_target_reached()
 
                 target = planners.min_residual(self.simulator.environment.targets, self)
@@ -95,7 +95,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         elif self.mobility == src.utilities.constants.Mobility.GO_MIN_SUM_RESIDUAL:
             if self.will_reach_target():
                 self.coords = self.next_target()
-                self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
+                self.handle_metrics()
                 self.update_target_reached()
 
                 target = planners.min_sum_residual(self.simulator.environment.targets,
@@ -232,6 +232,9 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
     def decided_on_flight(self, eval_trigger):
         self.decided_on_target(eval_trigger)
 
+    def handle_metrics(self):
+        self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
+        self.simulator.metricsV2.visit_done(self, self.prev_target, self.simulator.cur_step)
+
     def __hash__(self):
         return hash(self.identifier)
-

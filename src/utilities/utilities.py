@@ -201,7 +201,7 @@ def json_to_paths(json_file_path):
     return out_data
 
 
-def save_json(msg, fname):
+def write_json(msg, fname):
     with open(fname, 'w') as fp:
         json.dump(msg, fp)
 
@@ -284,6 +284,7 @@ def measure_scaler(measure, dom_start, dom_target):
     return (measure - dom_start[1]) / (dom_start[2] - dom_start[1]) * (dom_target[2] - dom_target[1]) + dom_target[1]
 
 # -------------------- all cells computation ---------------------#
+
 
 class TraversedCells:
 

@@ -5,6 +5,8 @@ from src.world_entities.drone import Drone
 from src.patrolling.metrics import Metrics
 from src.patrolling.plotting import Plotting
 
+from src.patrolling.metricsV2 import MetricsV2
+
 from src.utilities.utilities import PathManager, current_date, euclidean_distance, make_path
 import src.utilities.config as config
 from src.drawing import pp_draw
@@ -217,6 +219,8 @@ class PatrollingSimulator:
         self.metrics.N_ACTIONS = drones[0].state_manager.N_ACTIONS
         self.metrics.N_FEATURES = drones[0].state_manager.N_FEATURES
 
+        self.metricsV2 = MetricsV2(self)
+
     def __plot(self, cur_step, max_steps):
         """ Plot the simulation """
 
@@ -281,7 +285,12 @@ class PatrollingSimulator:
                 drone.was_final_epoch = True
 
     def checkout(self, epoch, is_last_epoch, do=False):
-        """ print metrics save stuff. """
+        """ Print metrics save stuff at the end of an episode. """
+
+        # self.metricsV2.print_all_metrics()
+        self.metricsV2.save_metrics()
+        exit()
+
         if do:
             try:
                 if self.learning["is_pretrained"]:

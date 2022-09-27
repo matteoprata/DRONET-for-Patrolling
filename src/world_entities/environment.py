@@ -98,7 +98,7 @@ class Environment:
                     idleness = self.simulator.rnd_env.randint(LOW, UP)
                     to_json[ep].append((i, tuple(coordinates[i]), idleness))
 
-            util.save_json(to_json, config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec))
+            util.write_json(to_json, config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec))
             print("DONE: generating random episodes")
 
         to_json = util.read_json(config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec))

@@ -19,7 +19,7 @@ SIM_TS_DURATION = 0.150       # float: seconds duration of a step in seconds.
 ENV_WIDTH = 1500      # float: meters, width of environment
 ENV_HEIGHT = 1500     # float: meters, height of environment
 
-N_DRONES = 3         # int: number of drones.
+N_DRONES = 2         # int: number of drones.
 N_OBSTACLES = 0      # number of random obstacles in the map
 N_GRID_CELLS = 0     # number of cells in the grid
 
@@ -97,7 +97,7 @@ EXPLORE_PORTION = 0.7    # what portion of time of the simulation is spent explo
 # variables from here
 DRONE_MAX_ENERGY = 3 * Time.MIN.value       # int: max energy of a drone sec
 DRONE_SPEED = 15                # 54 km/h   # float: m/s, drone speed.
-N_TARGETS = 10                              # number of random targets in the map
+N_TARGETS = 20                              # number of random targets in the map
 
 LOG_STATE = False                       # print the state or not
 
@@ -106,6 +106,7 @@ N_EPOCHS = 1                            # how many times you will see the same s
 EPISODE_DURATION = int(.3 * Time.HOUR.value)  # how much time the episode lasts
 
 TARGET_VIOLATION_FACTOR = 2    # ?
+TOLERANCE_FACTOR = 0.1  # std % distance of tolerance generation
 
 IS_DECIDED_ON_TARGET = False  # the decision step happens on target visited (non uniformity of the decision step), or every DELTA_DEC
 DELTA_DEC = 5                 # after how many seconds a new decision must take place
@@ -115,4 +116,5 @@ IS_ALLOW_SELF_LOOP = True                                         # drone can de
 PENALTY_ON_BS_EXPIRATION = - N_TARGETS * TARGET_VIOLATION_FACTOR  # reward due to the violation of the base station (i.e. the drone dies)
 OK_VISIT_RADIUS = 0  # radius of a target, suffices to visit it IGNORE
 
-DRONE_MOBILITY = Mobility.GO_MIN_SUM_RESIDUAL
+DRONE_MOBILITY = Mobility.GO_MIN_RESIDUAL
+IS_PARALLEL = True

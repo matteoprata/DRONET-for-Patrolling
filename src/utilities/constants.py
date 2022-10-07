@@ -1,4 +1,5 @@
 from enum import Enum
+import multiprocessing
 
 
 class Mobility(Enum):
@@ -14,4 +15,28 @@ class Mobility(Enum):
     MICHELE = 7
 
 
+class IndependentVariable(Enum):
+    SEED = {"ID": 1, "NAME": "Seed"}
+    ALGORITHM = {"ID": 2, "NAME": "Algorithm"}
+
+    DRONES_SPEED = {"ID": 3, "NAME": "Drones Speed"}
+    DRONES_NUMBER = {"ID": 4, "NAME": "Drones Number"}
+    TARGETS_NUMBER = {"ID": 5, "NAME": "Targets Number"}
+    TARGETS_TOLERANCE = {"ID": 6, "NAME": "Tolerance Factor"}
+
+
+class DependentVariable(Enum):
+    AOI_ABSOLUTE = {"NAME": "Absolute AOI"}
+    AOI_RATIO = {"NAME": "Ratio AOI"}
+
+    # distinct target distribution & averaged targets
+    WEIGHTED_AVERAGE_AR = {"NAME": "Weighted Average AOI Ratio"}
+    CUMULATIVE_AR =       {"NAME": "Integral AOI Ratio"}
+    CUMULATIVE_DELAY_AR = {"NAME": "Cumulative Delay AOI Ratio"}
+    WORST_DELAY =      {"NAME": "Worst Age"}
+    WORST_AGE =        {"NAME": "Worst Age"}
+    VIOLATION_NUMBER = {"NAME": "Number of Violations"}
+
+
 PATH_STATS = "data/experiments/"
+N_CORES = multiprocessing.cpu_count()-1

@@ -73,41 +73,44 @@ class Environment:
 
         # loading targets list
         targets_fname = config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec)
-        path_exists = os.path.exists(targets_fname)
-        MAX_N_EPISODES = 2000
+        path_exists = False  # os.path.exists(targets_fname)
+        MAX_N_EPISODES = 1
         MAX_N_TARGETS = self.simulator.n_targets
 
         if not path_exists:
             to_json = defaultdict(list)
             print("START: generating random episodes")
 
-            for ep in tqdm(range(MAX_N_EPISODES)):
+            for ep in tqdm(range(MAX_N_EPISODES), disable=True):
                 coordinates = []
-                for i in range(MAX_N_TARGETS):
-                    point_coords = [self.simulator.rnd_env.randint(0, self.width), self.simulator.rnd_env.randint(0, self.height)]
-                    coordinates.append(point_coords)
-                tsp_path_time = self.tsp_path_time(coordinates)
 
+                # add coordinates of the targets
+                for i in range(MAX_N_TARGETS):
+                    point_coords = [self.simulator.rnd_env.randint(0, self.width),
+                                    self.simulator.rnd_env.randint(0, self.height)]
+                    coordinates.append(point_coords)
+
+                tsp_path_time = self.tsp_path_time(coordinates)  # time of a TSP from the targets
+
+                # add tolerances of the targets
+                sigma = 0.5 * tsp_path_time
+                mean = tsp_path_time * (1 - self.simulator.tolerance_factor)
+                # skew = self.simulator.tolerance_factor * tsp_path_time
                 for i in range(MAX_N_TARGETS):  # set the threshold for the targets
-                    # if i == 2:
-                    #     idleness = self.simulator.duration_seconds()
-                    # else:
-                    rtt = 2 * (euclidean_distance(coordinates[i], self.base_stations[0].coords) / self.simulator.drone_speed_meters_sec)
-                    LOW = int(tsp_path_time)  # int(rtt)
-                    UP  = int(tsp_path_time) * 2  # int(rtt)+1 if int(rtt) >= int(tsp_path_time) else int(tsp_path_time)
-                    idleness = self.simulator.rnd_env.randint(LOW, UP)
+                    # idleness = self.simulator.rnd_tolerance.normal(tsp_path_time, sigma, 1)[0]
+                    idleness = self.simulator.rnd_tolerance.normal(mean, sigma, 1)[0]  # util.rand_skew_norm(alpha=0, mean=mean, std=sigma, )  # normal
+                    # print("sigma", sigma, "mu", mean, "sample", idleness)
                     to_json[ep].append((i, tuple(coordinates[i]), idleness))
 
-            util.write_json(to_json, config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec))
-            print("DONE: generating random episodes")
+            # util.write_json(to_json, config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec))
+            # print("DONE: generating random episodes")
 
-        to_json = util.read_json(config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec))
+        # to_json = util.read_json(config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec))
 
-        print("LOADING random episodes")
-        assert(self.simulator.n_episodes <= MAX_N_EPISODES)
+        # assert(self.simulator.n_episodes <= MAX_N_EPISODES)
         for ep in range(self.simulator.n_episodes):
             epoch_targets = []
-            for t_id, t_coord, t_idleness in to_json[str(ep)][:self.simulator.n_targets]:
+            for t_id, t_coord, t_idleness in to_json[ep][:self.simulator.n_targets]:
 
                 t = Target(identifier=len(self.base_stations) + t_id,
                            coords=tuple(t_coord),
@@ -116,6 +119,7 @@ class Environment:
 
                 epoch_targets.append(t)
             self.targets_dataset.append(epoch_targets)
+        print("TARGETS:", self.targets_dataset)
         return self.targets_dataset
 
     def spawn_targets(self, targets=None):

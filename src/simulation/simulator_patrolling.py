@@ -41,6 +41,7 @@ class PatrollingSimulator:
                  n_obstacles=config.N_OBSTACLES,
                  n_grid_cells=config.N_GRID_CELLS,
                  n_targets=config.N_TARGETS,
+                 tolerance_factor=config.TOLERANCE_FACTOR,
                  drone_mobility=config.DRONE_MOBILITY,
                  learning=config.LEARNING_PARAMETERS,
 
@@ -53,6 +54,7 @@ class PatrollingSimulator:
                  wandb=None
                  ):
 
+        self.tolerance_factor = tolerance_factor
         self.log_state=log_state
         self.penalty_on_bs_expiration=penalty_on_bs_expiration
         self.n_epochs=n_epochs
@@ -175,6 +177,7 @@ class PatrollingSimulator:
 
     def __set_randomness(self):
         """ Set the random generators. """
+        self.rnd_tolerance = np.random.RandomState(self.sim_seed)
         self.rnd_env = np.random.RandomState(self.sim_seed)
         self.rnd_event = np.random.RandomState(self.sim_seed)
         self.rnd_explore = np.random.RandomState(self.sim_seed)
@@ -252,11 +255,11 @@ class PatrollingSimulator:
         print(self.learning)
         print()
 
-    def run(self):
+    def run(self, just_setup=False):
         """ The method starts the simulation. """
         self.print_sim_info()
 
-        IS_PRO_BARS = self.is_plot
+        IS_PRO_BARS = True
         for epoch in tqdm(range(self.n_epochs), desc='epoch', disable=IS_PRO_BARS):
             episodes_perm = self.rstate_sample_batch_training.permutation(self.n_episodes)  # at each epoch you see the same episodes but shuffled
             for episode in tqdm(range(len(episodes_perm)), desc='episodes', leave=False, disable=IS_PRO_BARS):
@@ -270,6 +273,9 @@ class PatrollingSimulator:
                 self.cur_step = 0
                 for cur_step in tqdm(range(self.episode_duration), desc='step', leave=False, disable=IS_PRO_BARS):
                     self.cur_step = cur_step
+
+                    if just_setup:
+                        return
 
                     for drone in self.environment.drones:
                         # self.environment.detect_collision(drone)
@@ -286,10 +292,11 @@ class PatrollingSimulator:
 
     def checkout(self, epoch, is_last_epoch, do=False):
         """ Print metrics save stuff at the end of an episode. """
-
+        # self.metricsV2.metrics_report_single_point()
+        # exit()
         # self.metricsV2.print_all_metrics()
         self.metricsV2.save_metrics()
-        exit()
+        # exit()
 
         if do:
             try:

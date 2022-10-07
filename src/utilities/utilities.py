@@ -1,6 +1,6 @@
 
 """ To clean. """
-import src.utilities.constants
+from src.utilities import constants
 from src.utilities import config
 
 import pathlib
@@ -13,6 +13,7 @@ import pickle
 from ast import literal_eval as make_tuple
 import os
 from shapely.geometry import LineString
+import signal
 
 
 def log(message_to_log, is_to_log=True, current_ts=1, log_every=1):
@@ -112,6 +113,25 @@ def is_segments_intersect(A, B, C, D):
 
     return not point.is_empty
 
+# from scipy.stats import norm
+# def skew_norm_pdf(x, m=0, s=1, a=0):
+#     # adapated from:
+#     # http://stackoverflow.com/questions/5884768/skew-normal-distribution-in-scipy
+#     t = (x-m) / s
+#     return 2.0 * s * norm.pdf(t) * norm.cdf(a*t)
+
+
+# def rand_skew_norm(alpha, mean, std, rand_generator=None):
+#     sigma = alpha / np.sqrt(1.0 + alpha ** 2)
+#
+#     afRN = np.random.randn(2)
+#     u0 = afRN[0]
+#     v = afRN[1]
+#     u1 = sigma*u0 + np.sqrt(1.0 -sigma**2) * v
+#
+#     if u0 >= 0:
+#         return u1 * std + mean
+#     return (-u1) * std + mean
 
 # ------------------ Event (Traffic) Generator ----------------------
 class EventGenerator:
@@ -147,7 +167,7 @@ class PathManager:
         """ json file to read for take the paths of drones
             We assume json_file + seed + .json
         """
-        if config.DRONE_MOBILITY == src.utilities.constants.Mobility.FIXED_TRAJECTORIES:
+        if config.DRONE_MOBILITY == constants.Mobility.FIXED_TRAJECTORIES:
             self.json_file = json_file.replace(".json", "") + str(seed) + ".json"
             self.path_dict = json_to_paths(self.json_file)
 
@@ -200,6 +220,34 @@ def json_to_paths(json_file_path):
             out_data[drone_index] = drone_path
     return out_data
 
+
+def box_plot(data, pos, edge_color, fill_color="white"):
+    bp = plt.boxplot(data, positions=pos, patch_artist=True, widths=0.5, showmeans=True)
+
+    for element in ['boxes', 'whiskers', 'fliers', 'means', 'medians', 'caps']:
+        plt.setp(bp[element], color=edge_color)
+
+    for patch in bp['boxes']:
+        patch.set(facecolor=fill_color, alpha=.2)
+    return bp
+
+
+def sample_color(index, cmap='tab10'):
+    # 1. Choose your desired colormap
+    cmap = plt.get_cmap(cmap)
+
+    # 2. Segmenting the whole range (from 0 to 1) of the color map into multiple segments
+    colors = [cmap(x) for x in range(cmap.N)]
+    assert index < cmap.N
+
+    # 3. Color the i-th line with the i-th color, i.e. slicedCM[i]
+    color = colors[index]
+    return color
+
+
+def initializer():
+    """Ignore CTRL+C in the worker process."""
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 def write_json(msg, fname):
     with open(fname, 'w') as fp:

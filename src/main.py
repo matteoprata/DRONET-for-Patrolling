@@ -3,6 +3,16 @@ from src.simulation.simulator_patrolling import PatrollingSimulator
 import src.utilities.config as config
 import argparse
 import wandb
+import traceback
+from multiprocessing import Pool
+
+from src.utilities.constants import IndependentVariable as indv
+from src.utilities.constants import DependentVariable as depv
+from src.utilities.constants import Mobility as pol
+import src.utilities.constants as co
+from src.utilities.utilities import initializer
+from src.simulation_setup import setup01
+from src.simulation_setup import setup02
 
 """
 WARNING: When running sweeps, params are in the YAML otherwise be careful and look in config and main.
@@ -104,8 +114,58 @@ def main():
         sim.run()
 
 
-if __name__ == "__main__":
-    main()
-    # python -m src.main -pl 1
+def simulate_greedy_policies():
+    # 1. Declare independent variables and their domain
+    # 2. Declare what independent variable varies at this execution and what stays fixed
 
+    stp = setup01
+
+    processes = []
+    indv_fixed_original = {k: stp.indv_fixed[k] for k in stp.indv_fixed}
+    for a in stp.comp_dims[indv.ALGORITHM]:
+        for s in stp.comp_dims[indv.SEED]:
+            for x_var_k in stp.indv_vary:
+                X_var = stp.indv_vary[x_var_k]
+                for x in X_var:
+                    stp.indv_fixed[x_var_k] = x
+
+                    # declare processes
+                    process = [a, s] + list(stp.indv_fixed.values())
+                    processes.append(process)
+                    stp.indv_fixed = {k: indv_fixed_original[k] for k in indv_fixed_original}  # reset the change
+
+    if config.IS_PARALLEL:
+        with Pool(initializer=initializer, processes=co.N_CORES) as pool:
+            try:
+                pool.starmap(execute_parallel_simulations, processes)
+            except KeyboardInterrupt:
+                pool.terminate()
+                pool.join()
+        print("COMPLETED SUCCESSFULLY")
+    else:
+        for p in processes:
+            execute_parallel_simulations(*p)
+
+
+def execute_parallel_simulations(algorithm, seed, d_speed, d_number, t_number, t_factor):
+    try:
+        print("Executing:\n", locals())
+        sim = PatrollingSimulator(tolerance_factor=t_factor,
+                                  n_targets=t_number,
+                                  drone_speed=d_speed,
+                                  n_drones=d_number,
+                                  drone_mobility=algorithm,
+                                  sim_seed=seed,
+                                  is_plot=bool(args.plotting))
+        sim.run()
+    except:
+        print(">> Could not solve problem!", locals())
+        trace = traceback.format_exc()
+        print("/n", trace)
+
+
+if __name__ == "__main__":
+    # main()
+    # python -m src.main -pl 1
+    simulate_greedy_policies()
 

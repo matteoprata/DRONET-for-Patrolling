@@ -5,7 +5,7 @@ from src.world_entities.drone import Drone
 from src.patrolling.metrics import Metrics
 from src.patrolling.plotting import Plotting
 
-from src.patrolling.metricsV2 import MetricsV2
+from src.patrolling.metricsV2 import MetricsLog
 
 from src.utilities.utilities import PathManager, current_date, euclidean_distance, make_path
 import src.utilities.config as config
@@ -222,7 +222,7 @@ class PatrollingSimulator:
         self.metrics.N_ACTIONS = drones[0].state_manager.N_ACTIONS
         self.metrics.N_FEATURES = drones[0].state_manager.N_FEATURES
 
-        self.metricsV2 = MetricsV2(self)
+        self.metricsV2 = MetricsLog(self)
 
     def __plot(self, cur_step, max_steps):
         """ Plot the simulation """

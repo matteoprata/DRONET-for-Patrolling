@@ -1,3 +1,4 @@
+import time
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -21,47 +22,66 @@ class ErrorType(Enum):
     STD_ERROR = "stde"
 
 
-class MetricsUtilities:
-    def __init__(self, n_drones, targets_tolerance, episode_duration, ts_duration_sec):
-        self.n_drones = n_drones
-        self.targets_tolerance = targets_tolerance
-        self.episode_duration = episode_duration
-        self.ts_duration_sec = ts_duration_sec
+class JSONFields(Enum):
+    # L0
+    VISIT_TIMES = "visit_times"
+    SIMULATION_INFO = "info"
 
-    def fname_generator(self, sim_seed, n_drones, n_targets, drone_mobility, drone_speed_meters_sec, tolerance_factor):
+    # L1
+    TOLERANCE = "targets_tolerance"
+    EPISODE_DURATION = "episode_duration"
+    TS_DURATION = "ts_duration_sec"
+
+
+class MetricsEvaluation:
+    def __init__(self, sim_seed, n_drones, n_targets, drone_mobility, drone_speed_meters_sec, tolerance_factor):
+
+        self.sim_seed               = sim_seed
+        self.n_drones               = n_drones
+        self.n_targets              = n_targets
+        self.drone_mobility         = drone_mobility
+        self.drone_speed_meters_sec = drone_speed_meters_sec
+        self.tolerance_factor       = tolerance_factor
+
+        simulation_visits_info = self.load_metrics()
+        self.times_visit = simulation_visits_info[JSONFields.VISIT_TIMES.value]
+
+        self.targets_tolerance = simulation_visits_info[JSONFields.SIMULATION_INFO.value][JSONFields.TOLERANCE.value]
+        self.episode_duration  = simulation_visits_info[JSONFields.SIMULATION_INFO.value][JSONFields.EPISODE_DURATION.value]
+        self.ts_duration_sec   = simulation_visits_info[JSONFields.SIMULATION_INFO.value][JSONFields.TS_DURATION.value]
+
+    def fname_generator(self):
         # independent variables
-        return "exp_se-{}_nd-{}_nt-{}_pol-{}_sp-{}_tolf-{}.json".format(sim_seed,
-                                                                        n_drones,
-                                                                        n_targets,
-                                                                        drone_mobility.value,
-                                                                        drone_speed_meters_sec,
-                                                                        tolerance_factor
+        return "exp_se-{}_nd-{}_nt-{}_pol-{}_sp-{}_tolf-{}.json".format(self.sim_seed,
+                                                                        self.n_drones,
+                                                                        self.n_targets,
+                                                                        self.drone_mobility.value,
+                                                                        self.drone_speed_meters_sec,
+                                                                        self.tolerance_factor
                                                                         )
 
-    def load_metrics(self, sim_seed, n_drones, n_targets, drone_mobility, drone_speed_meters_sec, tolerance_factor):
-        args = sim_seed, n_drones, n_targets, drone_mobility, drone_speed_meters_sec, tolerance_factor
-        print("Looking for file", self.fname_generator(*args))
-        json_file = util.read_json(PATH_STATS + self.fname_generator(*args))
-        out = dict()
-        for t in json_file:
-            temp = dict()
-            for d in json_file[t]:
-                temp[int(d)] = json_file[t][d]
-            out[int(t)] = temp
-        self.times_visit = out
+    def load_metrics(self):
+        print("Looking for file", self.fname_generator())
+        json_dict = util.read_json(PATH_STATS + self.fname_generator())
+        return json_dict
 
-    def __AOI_func_PH1(self, target, drone=None, is_absolute=False):
+    def plot_aoi(self, target_id, drone_id=None):
+        X, Y = self.AOI_func(target_id, drone_id)
+        plt.plot(X, Y)
+        plt.hlines(1, 0, self.ts_duration_sec * self.episode_duration, colors="red")
+        plt.show()
+
+    def __AOI_func_PH1(self, target_id, drone_id=None, is_absolute=False):
         # careful adding [self.simulator.episode_duration] adds the last visit even if it did not happen
 
-        def times_visit_map(target, drone=None):
+        def times_visit_map(target_id, drone_id=None):
             """ Times of visit of input target from particular drone (if not none). """
-            if drone is not None:
-                return self.times_visit[target.identifier][drone.identifier]
+            if drone_id is not None:
+                return self.times_visit[str(target_id)][str(drone_id)]
             else:
                 times = []
-                # print(self.times_visit, target.identifier)
                 for didx in range(self.n_drones):
-                    times += self.times_visit[target.identifier][didx]
+                    times += self.times_visit[str(target_id)][str(didx)]
                 return sorted(times)
 
         def visit_AOI_map(time_visit, target_tolerance):
@@ -85,9 +105,9 @@ class MetricsUtilities:
                 funcs_dic[i + 1] = np.poly1d(coefficients)
             return funcs_dic
 
-        time_visit = [0] + times_visit_map(target, drone) + [self.episode_duration]
+        time_visit = [0] + times_visit_map(target_id, drone_id) + [self.episode_duration]
         time_visit = np.asarray(time_visit) * self.ts_duration_sec  # seconds
-        target_tolerance = target.maximum_tolerated_idleness
+        target_tolerance = self.targets_tolerance[str(target_id)]
 
         X, Y = visit_AOI_map(time_visit, target_tolerance)
         lines = AOI_progressions(X, Y)
@@ -106,11 +126,11 @@ class MetricsUtilities:
     # ------------ FUNCTIONS ------------
 
     # AOI
-    def AOI_func(self, target, drone=None, density=1000, is_absolute=False):
+    def AOI_func(self, target_id, drone_id=None, density=1000, is_absolute=False):
         MAX_TIME = self.episode_duration * self.ts_duration_sec
         x_axis = np.linspace(0, MAX_TIME, density)
 
-        X, _, lines = self.__AOI_func_PH1(target, drone, is_absolute)
+        X, _, lines = self.__AOI_func_PH1(target_id, drone_id, is_absolute)
         y_axis = np.array([self.__AOI_func_PH2(i, X, lines) for i in x_axis])
         return x_axis, y_axis
 
@@ -141,41 +161,6 @@ class MetricsUtilities:
         violation_time = np.sum((y_axis >= 1) * 1, axis=0)
         return violation_time
 
-    # ----- mean over targets
-    # def per_target_metrics(self, metric, drone=None, density=1000):
-    #     vals = [metric(t, drone, density) for t in self.simulator.environment.targets if t.identifier != 0]
-    #     return vals, np.average(vals), np.std(vals)
-
-    def print_all_metrics(self):
-        t1 = self.simulator.environment.targets[1]
-
-        # AOI target 1 plot
-        xa, ya = self.AOI_func(t1, is_absolute=True)
-        self.plot_AOI(xa, ya)
-
-        # mean per target
-        ys = []
-        for tr in self.targets:
-            if not tr.is_base_station():
-                xa, ya = self.AOI_func(tr)
-                ys.append(ya)
-
-        ya = np.average(ys, axis=0)
-        self.plot_AOI(xa, ya)
-
-        _, y_axis = self.AOI_func(t1)
-        print("AOI INTEGRAL t1", self.AOI1_integral_func(y_axis))
-        print("N_VIOLATIONS t1", self.AOI4_n_violations_func(y_axis))
-        print("TIME VIOLATION t1", self.AOI5_violation_time_func(y_axis))
-        print("MAX DELAY t1", self.AOI3_max_delay_func(y_axis))
-        print("MAX AOI t1", self.AOI2_max_func(y_axis))
-
-        # print("AOI INTEGRAL mean", self.per_target_metrics(self.AOI1_integral_func))
-        # print("N_VIOLATIONS mean", self.per_target_metrics(self.AOI4_n_violations_func))
-        # print("TIME VIOLATION mean", self.per_target_metrics(self.AOI5_violation_time_func))
-        # print("MAX DELAY mean", self.per_target_metrics(self.AOI3_max_delay_func))
-        # print("MAX AOI mean", self.per_target_metrics(self.AOI2_max_func))
-
     # PLOTTING
     @staticmethod
     def plot_AOI(x_axis, y_axis):
@@ -184,19 +169,23 @@ class MetricsUtilities:
         plt.show()
 
 
-
-class MetricsV2:
+class MetricsLog:
 
     def __init__(self, simulator):
         self.simulator = simulator
-        # {Target: {Drone: Time}}
         self.times_visit = defaultdict(lambda: defaultdict(list))
 
-        # initialize the dict
+        self.to_store_dictionary = dict()
         for tidx in range(self.simulator.n_targets+1):
             for didx in range(self.simulator.n_drones):
                 self.times_visit[tidx][didx] = list()
 
+        self.to_store_dictionary[JSONFields.SIMULATION_INFO.value] = dict()
+        self.to_store_dictionary[JSONFields.SIMULATION_INFO.value][JSONFields.EPISODE_DURATION.value] = self.simulator.episode_duration
+        self.to_store_dictionary[JSONFields.SIMULATION_INFO.value][JSONFields.TS_DURATION.value] = self.simulator.ts_duration_sec
+
+        tols = {t.identifier: t.maximum_tolerated_idleness for t in self.simulator.environment.targets}
+        self.to_store_dictionary[JSONFields.SIMULATION_INFO.value][JSONFields.TOLERANCE.value] = tols
 
     def fname_generator(self):
         # independent variables
@@ -208,39 +197,23 @@ class MetricsV2:
                                                                         self.simulator.tolerance_factor
                                                                         )
 
-    def generate_output_data(self):
-        pass
-
     def save_metrics(self):
-        util.write_json(self.times_visit, PATH_STATS + self.fname_generator())
-
-    # def load_metrics(self):
-    #     print("Looking for file", self.fname_generator())
-    #     json_file = util.read_json(PATH_STATS + self.fname_generator())
-    #     out = dict()
-    #     for t in json_file:
-    #         temp = dict()
-    #         for d in json_file[t]:
-    #             temp[int(d)] = json_file[t][d]
-    #         out[int(t)] = temp
-    #     self.times_visit = out
+        util.write_json(self.to_store_dictionary, PATH_STATS + self.fname_generator())
 
     def visit_done(self, drone, target, time_visit):
         """ Saves in the matrix the visit time of the drone to the target. """
         self.times_visit[target.identifier][drone.identifier].append(time_visit)
-        # print("updated", self.times_visit[target.identifier])
-
-
+        self.to_store_dictionary[JSONFields.VISIT_TIMES.value] = self.times_visit
 
 
 def setup_simulation(args):
     algorithm, seed, d_speed, d_number, t_number, t_factor = args
     sim = sim_pat.PatrollingSimulator(tolerance_factor=t_factor,
-                              n_targets=t_number,
-                              drone_speed=d_speed,
-                              n_drones=d_number,
-                              drone_mobility=algorithm,
-                              sim_seed=seed)
+                                      n_targets=t_number,
+                                      drone_speed=d_speed,
+                                      n_drones=d_number,
+                                      drone_mobility=algorithm,
+                                      sim_seed=seed)
     # sim.run(just_setup=True)
     return sim
 
@@ -264,40 +237,56 @@ def data_matrix_multiple_exps(setup_file, independent_variable, is_absolute_aoi=
                     stp.indv_fixed[x_var_k] = x
 
                     process = (a, s) + tuple(stp.indv_fixed.values())
-                    print(process)
-                    sim = setup_simulation(process)
-                    met = MetricsV2(simulator=sim)
+                    met = MetricsEvaluation(sim_seed               = s,
+                                            drone_mobility         = a,
+                                            n_drones               = stp.indv_fixed[indv.DRONES_NUMBER],
+                                            n_targets              = stp.indv_fixed[indv.TARGETS_NUMBER],
+                                            drone_speed_meters_sec = stp.indv_fixed[indv.DRONES_SPEED],
+                                            tolerance_factor       = stp.indv_fixed[indv.TARGETS_TOLERANCE])
+
                     met.load_metrics()
 
-                    times = []
-                    for tss in met.simulator.environment.targets:
-                        if tss.identifier != 0:
-                            _, time = met.AOI_func(tss, is_absolute=is_absolute_aoi)
-                            times.append(time)
+                    N_TARGETS = max(stp.indv_vary[indv.TARGETS_NUMBER]) if independent_variable == indv.TARGETS_NUMBER else stp.indv_fixed[indv.TARGETS_NUMBER]
+
+                    times = []  # for each target
+                    for t_id in met.targets_tolerance:
+                        if t_id != str(0):
+                            _, timee = met.AOI_func(t_id, is_absolute=is_absolute_aoi)
+
+                            # # debug an area is negative
+                            # suma = MetricsEvaluation.AOI1_integral_func(timee)
+                            # if suma <= 0:
+                            #     print(process, timee, suma)
+                            #     met.plot_aoi(t_id)
+
+                            times.append(timee)
+                    times_array = np.asarray(times).T  # rows is time, column are targets
+                    times_array = np.pad(times_array, ((0, 0), (0, N_TARGETS - times_array.shape[1])),
+                                         'constant', constant_values=((0, 0), (0, 0)))  # adds zero vectors
 
                     if is_first:
                         # SIGNATURE: TIME x SEEDS x ALGORITHMS x TARGETS x INDEPENDENT
                         TOT_MAT = np.zeros((len(times[0]),
                                             len(stp.comp_dims[indv.SEED]),
                                             len(stp.comp_dims[indv.ALGORITHM]),
-                                            stp.indv_fixed[indv.TARGETS_NUMBER],
+                                            N_TARGETS,
                                             len(X_var)))
                         is_first = False
 
                     stp.indv_fixed = {k: indv_fixed_original[k] for k in indv_fixed_original}  # reset the change
-                    TOT_MAT[:, si, ai, :, xi] = np.asarray(times).T
+                    TOT_MAT[:, si, ai, :, xi] = times_array
     return TOT_MAT
 
 
-dep_var_map = {depv.CUMULATIVE_AR: MetricsV2.AOI1_integral_func,
-               depv.CUMULATIVE_DELAY_AR: MetricsV2.AOI5_violation_time_func,
-               depv.WORST_DELAY: MetricsV2.AOI3_max_delay_func,
-               depv.WORST_AGE: MetricsV2.AOI2_max_func,
-               depv.VIOLATION_NUMBER: MetricsV2.AOI4_n_violations_func
+dep_var_map = {depv.CUMULATIVE_AR: MetricsEvaluation.AOI1_integral_func,
+               depv.CUMULATIVE_DELAY_AR: MetricsEvaluation.AOI5_violation_time_func,
+               depv.WORST_DELAY: MetricsEvaluation.AOI3_max_delay_func,
+               depv.WORST_AGE: MetricsEvaluation.AOI2_max_func,
+               depv.VIOLATION_NUMBER: MetricsEvaluation.AOI4_n_violations_func
                }
 
 
-def plot_sum_AOI(setup, indep_var, dep_var, error_type=ErrorType.STD_ERROR, is_boxplot=True, is_absolute_aoi=False):
+def plot_stats(setup, indep_var, dep_var, error_type=ErrorType.STD_ERROR, is_boxplot=True, is_absolute_aoi=False):
     """ Given a matrix of data, plots an XY chart """
 
     data = data_matrix_multiple_exps(setup, indep_var, is_absolute_aoi=is_absolute_aoi)
@@ -316,7 +305,10 @@ def plot_sum_AOI(setup, indep_var, dep_var, error_type=ErrorType.STD_ERROR, is_b
 
         for al in range(len(AL)):
             for xi in range(len(X)):
-                data = metrics_aoi[:, al, :, xi].ravel()
+                # this is done because when the independent variable is the number of targets, the average must be done on
+                # a limited set of columns, for each tick
+                N_TARGETS = xi if indep_var == indv.TARGETS_NUMBER else setup.indv_fixed[indv.TARGETS_NUMBER]
+                data = metrics_aoi[:, al, :N_TARGETS, xi].ravel()
                 bp = util.box_plot(data, pos=[al + xi * (len(AL)+1)], edge_color=util.sample_color(al), fill_color=util.sample_color(al))
                 if xi == 0:
                     boxes.append(bp["boxes"][0])
@@ -353,18 +345,21 @@ if __name__ == '__main__':
     # 1. Declare independent variables and their domain
     # 2. Declare what independent variable varies at this execution and what stays fixed
 
-    plot_sum_AOI(setup01, indv.TARGETS_TOLERANCE, depv.CUMULATIVE_AR, is_absolute_aoi=False, is_boxplot=False)
-    plot_sum_AOI(setup01, indv.TARGETS_TOLERANCE, depv.CUMULATIVE_AR, is_absolute_aoi=False, is_boxplot=True)
+    plot_stats(setup01, indv.TARGETS_NUMBER, depv.CUMULATIVE_AR, is_absolute_aoi=False, is_boxplot=True)
+    plot_stats(setup01, indv.DRONES_SPEED, depv.CUMULATIVE_AR, is_absolute_aoi=False, is_boxplot=False)
+    # plot_stats(setup01, indv.TARGETS_NUMBER, depv.CUMULATIVE_AR, is_absolute_aoi=False, is_boxplot=False)
+    plot_stats(setup01, indv.TARGETS_TOLERANCE, depv.CUMULATIVE_AR, is_absolute_aoi=False, is_boxplot=False)
+    # plot_stats(setup01, indv.TARGETS_TOLERANCE, depv.CUMULATIVE_AR, is_absolute_aoi=False, is_boxplot=True)
 
-    plot_sum_AOI(setup01, indv.TARGETS_TOLERANCE, depv.CUMULATIVE_DELAY_AR, is_absolute_aoi=False, is_boxplot=False)
-    plot_sum_AOI(setup01, indv.TARGETS_TOLERANCE, depv.CUMULATIVE_DELAY_AR, is_absolute_aoi=False, is_boxplot=True)
+    plot_stats(setup01, indv.TARGETS_TOLERANCE, depv.CUMULATIVE_DELAY_AR, is_absolute_aoi=False, is_boxplot=False)
+    # plot_stats(setup01, indv.TARGETS_TOLERANCE, depv.CUMULATIVE_DELAY_AR, is_absolute_aoi=False, is_boxplot=True)
 
-    plot_sum_AOI(setup01, indv.TARGETS_TOLERANCE, depv.WORST_DELAY, is_absolute_aoi=False, is_boxplot=False)
-    plot_sum_AOI(setup01, indv.TARGETS_TOLERANCE, depv.WORST_DELAY, is_absolute_aoi=False, is_boxplot=True)
+    plot_stats(setup01, indv.TARGETS_TOLERANCE, depv.WORST_DELAY, is_absolute_aoi=False, is_boxplot=False)
+    # plot_stats(setup01, indv.TARGETS_TOLERANCE, depv.WORST_DELAY, is_absolute_aoi=False, is_boxplot=True)
 
-    plot_sum_AOI(setup01, indv.TARGETS_TOLERANCE, depv.WORST_AGE, is_absolute_aoi=False, is_boxplot=False)
-    plot_sum_AOI(setup01, indv.TARGETS_TOLERANCE, depv.WORST_AGE, is_absolute_aoi=False, is_boxplot=True)
+    plot_stats(setup01, indv.TARGETS_TOLERANCE, depv.WORST_AGE, is_absolute_aoi=False, is_boxplot=False)
+    # plot_stats(setup01, indv.TARGETS_TOLERANCE, depv.WORST_AGE, is_absolute_aoi=False, is_boxplot=True)
 
-    plot_sum_AOI(setup01, indv.TARGETS_TOLERANCE, depv.VIOLATION_NUMBER, is_absolute_aoi=False, is_boxplot=False)
-    plot_sum_AOI(setup01, indv.TARGETS_TOLERANCE, depv.VIOLATION_NUMBER, is_absolute_aoi=False, is_boxplot=True)
+    plot_stats(setup01, indv.TARGETS_TOLERANCE, depv.VIOLATION_NUMBER, is_absolute_aoi=False, is_boxplot=False)
+    # plot_stats(setup01, indv.TARGETS_TOLERANCE, depv.VIOLATION_NUMBER, is_absolute_aoi=False, is_boxplot=True)
 

@@ -33,9 +33,9 @@ class DependentVariable(Enum):
     WEIGHTED_AVERAGE_AR = {"NAME": "Weighted Average AOI Ratio"}
     CUMULATIVE_AR =       {"NAME": "Integral AOI Ratio"}
     CUMULATIVE_DELAY_AR = {"NAME": "Cumulative Delay AOI Ratio"}
-    WORST_DELAY =      {"NAME": "Worst Age"}
-    WORST_AGE =        {"NAME": "Worst Age"}
-    VIOLATION_NUMBER = {"NAME": "Number of Violations"}
+    WORST_DELAY =         {"NAME": "Worst Age"}
+    WORST_AGE =           {"NAME": "Worst Age"}
+    VIOLATION_NUMBER =    {"NAME": "Number of Violations"}
 
 
 PATH_STATS = "data/experiments/"

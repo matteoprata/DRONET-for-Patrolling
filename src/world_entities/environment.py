@@ -94,11 +94,13 @@ class Environment:
 
                 # add tolerances of the targets
                 sigma = 0.5 * tsp_path_time
-                mean = tsp_path_time * (1 - self.simulator.tolerance_factor)
+                mean = tsp_path_time * (1 + self.simulator.tolerance_factor)
                 # skew = self.simulator.tolerance_factor * tsp_path_time
+                MIN_IDLENESS = tsp_path_time / self.simulator.n_targets
                 for i in range(MAX_N_TARGETS):  # set the threshold for the targets
                     # idleness = self.simulator.rnd_tolerance.normal(tsp_path_time, sigma, 1)[0]
                     idleness = self.simulator.rnd_tolerance.normal(mean, sigma, 1)[0]  # util.rand_skew_norm(alpha=0, mean=mean, std=sigma, )  # normal
+                    idleness = max(idleness, MIN_IDLENESS)
                     # print("sigma", sigma, "mu", mean, "sample", idleness)
                     to_json[ep].append((i, tuple(coordinates[i]), idleness))
 

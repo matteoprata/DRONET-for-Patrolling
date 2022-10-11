@@ -2,7 +2,7 @@
 from src.utilities.constants import IndependentVariable as indv
 from src.utilities.constants import Mobility as pol
 
-comp_dims = {indv.SEED: range(2),
+comp_dims = {indv.SEED: range(5),
              indv.ALGORITHM: [pol.RANDOM_MOVEMENT,
                               pol.GO_MAX_AOI,
                               pol.GO_MIN_RESIDUAL,

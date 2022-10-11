@@ -5,7 +5,7 @@ from src.world_entities.drone import Drone
 from src.patrolling.metrics import Metrics
 from src.patrolling.plotting import Plotting
 
-from src.evaluation.metricsV2 import MetricsLog
+from src.evaluation.MetricsLog import MetricsLog
 
 from src.utilities.utilities import PathManager, current_date, euclidean_distance, make_path
 import src.utilities.config as config

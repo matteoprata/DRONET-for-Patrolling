@@ -38,5 +38,17 @@ class DependentVariable(Enum):
     VIOLATION_NUMBER =    {"NAME": "Number of Violations"}
 
 
+class JSONFields(Enum):
+    # L0
+    VISIT_TIMES = "visit_times"
+    SIMULATION_INFO = "info"
+
+    # L1
+    TOLERANCE = "targets_tolerance"
+    EPISODE_DURATION = "episode_duration"
+    TS_DURATION = "ts_duration_sec"
+
+
+
 PATH_STATS = "data/experiments/"
 N_CORES = multiprocessing.cpu_count()-1

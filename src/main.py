@@ -118,7 +118,7 @@ def simulate_greedy_policies():
     # 1. Declare independent variables and their domain
     # 2. Declare what independent variable varies at this execution and what stays fixed
 
-    stp = setup01
+    stp = setup02
 
     processes = []
     indv_fixed_original = {k: stp.indv_fixed[k] for k in stp.indv_fixed}

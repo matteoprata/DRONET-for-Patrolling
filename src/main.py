@@ -114,11 +114,11 @@ def main():
         sim.run()
 
 
-def simulate_greedy_policies():
+def simulate_greedy_policies(setup):
     # 1. Declare independent variables and their domain
     # 2. Declare what independent variable varies at this execution and what stays fixed
 
-    stp = setup02
+    stp = setup
 
     processes = []
     indv_fixed_original = {k: stp.indv_fixed[k] for k in stp.indv_fixed}
@@ -167,5 +167,5 @@ def execute_parallel_simulations(algorithm, seed, d_speed, d_number, t_number, t
 if __name__ == "__main__":
     # main()
     # python -m src.main -pl 1
-    simulate_greedy_policies()
+    simulate_greedy_policies(setup01)
 

@@ -6,7 +6,9 @@ comp_dims = {indv.SEED: range(5),
              indv.ALGORITHM: [pol.RANDOM_MOVEMENT,
                               pol.GO_MAX_AOI,
                               pol.GO_MIN_RESIDUAL,
-                              pol.GO_MIN_SUM_RESIDUAL]
+                              pol.GO_MIN_SUM_RESIDUAL,
+                              # pol.MICHELE
+                              ]
              }
 
 indv_vary = {

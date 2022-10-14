@@ -81,6 +81,7 @@ def __data_matrix_multiple_exps(setup_file, independent_variable):
 
 def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD_ERROR, is_boxplot=True):
     """ Given a matrix of data, plots an XY chart """
+    print("Plotting the stats...")
     data = __data_matrix_multiple_exps(setup, indep_var)
 
     # removes temporal dimensions, becomes: SEEDS x ALGORITHMS x TARGETS x INDEPENDENT
@@ -169,14 +170,22 @@ if __name__ == '__main__':
     # 1. Declare independent variables and their domain
     # 2. Declare what independent variable varies at this execution and what stays fixed
 
-    plot_stats_single_seed(setup01, seed=0, algorithm=mo.RANDOM_MOVEMENT)
+    # python -m src.evaluation.metrics_main
+
+    # X, Y
+    plot_stats_dep_ind_var(setup01, indv.DRONES_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False)
+    plot_stats_dep_ind_var(setup01, indv.DRONES_SPEED, depv.CUMULATIVE_AR, is_boxplot=False)
+    plot_stats_dep_ind_var(setup01, indv.TARGETS_TOLERANCE, depv.CUMULATIVE_AR, is_boxplot=False)
+    plot_stats_dep_ind_var(setup01, indv.TARGETS_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False)
+
+    # plot_stats_single_seed(setup01, seed=0, algorithm=mo.RANDOM_MOVEMENT)
 
     # plot_stats_dep_ind_var(setup01, indv.TARGETS_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False)
     # plot_stats_dep_ind_var(setup01, indv.TARGETS_NUMBER, depv.VIOLATION_NUMBER, is_boxplot=False)
     # plot_stats_dep_ind_var(setup01, indv.TARGETS_NUMBER, depv.WORST_DELAY, is_boxplot=False)
     # plot_stats_dep_ind_var(setup01, indv.TARGETS_NUMBER, depv.WORST_AGE, is_boxplot=False)
     # plot_stats_dep_ind_var(setup01, indv.TARGETS_NUMBER, depv.CUMULATIVE_DELAY_AR, is_boxplot=False)
-    # #
+    #
     # plot_stats_dep_ind_var(setup01, indv.DRONES_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False)
     # plot_stats_dep_ind_var(setup01, indv.DRONES_NUMBER, depv.VIOLATION_NUMBER, is_boxplot=False)
     # plot_stats_dep_ind_var(setup01, indv.DRONES_NUMBER, depv.WORST_DELAY, is_boxplot=False)

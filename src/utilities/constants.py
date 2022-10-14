@@ -19,6 +19,7 @@ class IndependentVariable(Enum):
     SEED = {"ID": 1, "NAME": "Seed"}
     ALGORITHM = {"ID": 2, "NAME": "Algorithm"}
 
+    # PICK FROM HERE:
     DRONES_SPEED = {"ID": 3, "NAME": "Drones Speed"}
     DRONES_NUMBER = {"ID": 4, "NAME": "Drones Number"}
     TARGETS_NUMBER = {"ID": 5, "NAME": "Targets Number"}
@@ -30,9 +31,8 @@ class DependentVariable(Enum):
     AOI_RATIO = {"NAME": "Ratio AOI"}
 
     # distinct target distribution & averaged targets
-    WEIGHTED_AVERAGE_AR = {"NAME": "Weighted Average AOI Ratio"}
-    CUMULATIVE_AR =       {"NAME": "Integral AOI Ratio"}
-    CUMULATIVE_DELAY_AR = {"NAME": "Cumulative Delay AOI Ratio"}
+    CUMULATIVE_AR =       {"NAME": "Integral AOI"}
+    CUMULATIVE_DELAY_AR = {"NAME": "Cumulative Delay AOI"}
     WORST_DELAY =         {"NAME": "Worst Delay"}
     WORST_AGE =           {"NAME": "Worst Age"}
     VIOLATION_NUMBER =    {"NAME": "Number of Violations"}
@@ -49,6 +49,5 @@ class JSONFields(Enum):
     TS_DURATION = "ts_duration_sec"
 
 
-
 PATH_STATS = "data/experiments/"
-N_CORES = multiprocessing.cpu_count()-1
+N_CORES = multiprocessing.cpu_count()-2

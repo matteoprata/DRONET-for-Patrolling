@@ -33,7 +33,7 @@ parameters:
 
 command:
   - ${env}
-  - python3.7
+  - python3.8
   - ${program}
   - ${args}
 

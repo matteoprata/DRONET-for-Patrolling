@@ -38,6 +38,23 @@ class DependentVariable(Enum):
     VIOLATION_NUMBER =    {"NAME": "Number of Violations"}
 
 
+class HyperParameters(Enum):
+    LR = "learning_rate"
+    DISCOUNT_FACTOR = "discount_factor"
+    SWAP_MODELS = "swap_models_every_decision"
+
+    MLP_HID1 = "n_hidden_neurons_lv1"
+    MLP_HID2 = "n_hidden_neurons_lv2"
+    MLP_HID3 = "n_hidden_neurons_lv3"
+
+    IS_SELF_LOOP = "is_allow_self_loop"
+    BATTERY = "battery"
+    EPISODE_DURATION = "episode_duration"
+    N_EPISODES = "n_episodes"
+    N_EPOCHS = "n_epochs"
+    DURATION_EPISODE = "episode_duration"
+
+
 class JSONFields(Enum):
     # L0
     VISIT_TIMES = "visit_times"
@@ -51,3 +68,5 @@ class JSONFields(Enum):
 
 PATH_STATS = "data/experiments/"
 N_CORES = multiprocessing.cpu_count()-2
+
+PROJECT_NAME = "uavsimulator_patrolling"

@@ -19,7 +19,7 @@ SIM_TS_DURATION = 0.150       # float: seconds duration of a step in seconds.
 ENV_WIDTH = 1500      # float: meters, width of environment
 ENV_HEIGHT = 1500     # float: meters, height of environment
 
-N_DRONES = 2         # int: number of drones.
+N_DRONES = 1         # int: number of drones.
 N_OBSTACLES = 0      # number of random obstacles in the map
 N_GRID_CELLS = 0     # number of cells in the grid
 
@@ -77,8 +77,8 @@ LEARNING_PARAMETERS = {
     "learning_rate":  0.001,
     "discount_factor": 1,
     "batch_size": 32,
-    "swap_models_every_decision": 5000,
-    "n_hidden_neurons_lv1": 1,
+    "swap_models_every_decision": 500,
+    "n_hidden_neurons_lv1": 10,
     "n_hidden_neurons_lv2": 1,
     "n_hidden_neurons_lv3": 1,
     "optimizer": "sgd",
@@ -97,24 +97,27 @@ EXPLORE_PORTION = 0.7    # what portion of time of the simulation is spent explo
 # variables from here
 DRONE_MAX_ENERGY = 3 * Time.MIN.value       # int: max energy of a drone sec
 DRONE_SPEED = 15                # 54 km/h   # float: m/s, drone speed.
-N_TARGETS = 20                              # number of random targets in the map
+N_TARGETS = 5                              # number of random targets in the map
 
 LOG_STATE = False                       # print the state or not
 
-N_EPISODES = 1                         # how many times the scenario (a.k.a. episode) changes during a simulation
-N_EPOCHS = 1                            # how many times you will see the same scenario
-EPISODE_DURATION = int(.3 * Time.HOUR.value)  # how much time the episode lasts
+N_EPISODES = 10                         # how many times the scenario (a.k.a. episode) changes during a simulation
+N_EPOCHS = 2                            # how many times you will see the same scenario
+EPISODE_DURATION = int(1 * Time.HOUR.value)  # how much time the episode lasts
 
-TARGET_VIOLATION_FACTOR = 2    # ?
+TARGET_VIOLATION_FACTOR = 5    # ?
 TOLERANCE_FACTOR = 0.1  # std % distance of tolerance generation
 
 IS_DECIDED_ON_TARGET = False  # the decision step happens on target visited (non uniformity of the decision step), or every DELTA_DEC
-DELTA_DEC = 5                 # after how many seconds a new decision must take place
+DELTA_DEC = 3                 # after how many seconds a new decision must take place
 
 IS_RESIDUAL_REWARD = False                                        # ?
 IS_ALLOW_SELF_LOOP = True                                         # drone can decide to visit the same target in two consecutive decisions or not
 PENALTY_ON_BS_EXPIRATION = - N_TARGETS * TARGET_VIOLATION_FACTOR  # reward due to the violation of the base station (i.e. the drone dies)
 OK_VISIT_RADIUS = 0  # radius of a target, suffices to visit it IGNORE
 
-DRONE_MOBILITY = Mobility.GO_MIN_RESIDUAL
+DRONE_MOBILITY = Mobility.RL_DECISION
 IS_PARALLEL = True
+
+IS_SWEEP = False
+IS_TRAINING_MODE = IS_SWEEP

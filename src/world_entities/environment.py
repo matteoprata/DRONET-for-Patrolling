@@ -72,49 +72,41 @@ class Environment:
         # Creates a dataset of targets to iterate over to
 
         # loading targets list
-        targets_fname = config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec)
-        path_exists = False  # os.path.exists(targets_fname)
-        MAX_N_EPISODES = 1
-        MAX_N_TARGETS = self.simulator.n_targets
+        # targets_fname = config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec)
 
-        if not path_exists:
-            to_json = defaultdict(list)
-            print("START: generating random episodes")
+        targets_x_episode = defaultdict(list)
+        print("START: generating random episodes")
 
-            for ep in tqdm(range(MAX_N_EPISODES), disable=True):
-                coordinates = []
+        for ep in tqdm(range(self.simulator.n_episodes), disable=True):
+            coordinates = []
 
-                # add coordinates of the targets
-                for i in range(MAX_N_TARGETS):
-                    point_coords = [self.simulator.rnd_env.randint(0, self.width),
-                                    self.simulator.rnd_env.randint(0, self.height)]
-                    coordinates.append(point_coords)
+            # add coordinates of the targets
+            for i in range(self.simulator.n_targets):
+                point_coords = [self.simulator.rnd_env.randint(0, self.width),
+                                self.simulator.rnd_env.randint(0, self.height)]
+                coordinates.append(point_coords)
 
-                # tsp_path_time = self.tsp_path_time(coordinates)  # time of a TSP from the targets
-                REF_SPEED = 15  #m/s
-                diag_space = np.sqrt(self.width**2 + self.height**2) * 2
-                diag_time = diag_space / REF_SPEED
-                # add tolerances of the targets
-                sigma = 0.3 * diag_time
-                mean = diag_time * (1 + self.simulator.tolerance_factor)
-                # skew = self.simulator.tolerance_factor * diag_time
-                MIN_IDLENESS = diag_time / self.simulator.n_targets
-                for i in range(MAX_N_TARGETS):  # set the threshold for the targets
-                    # idleness = self.simulator.rnd_tolerance.normal(tsp_path_time, sigma, 1)[0]
-                    idleness = self.simulator.rnd_tolerance.normal(mean, sigma, 1)[0]  # util.rand_skew_norm(alpha=0, mean=mean, std=sigma, )  # normal
-                    idleness = max(idleness, MIN_IDLENESS)
-                    # print("sigma", sigma, "mu", mean, "sample", idleness)
-                    to_json[ep].append((i, tuple(coordinates[i]), idleness))
+            # tsp_path_time = self.tsp_path_time(coordinates)  # time of a TSP from the targets
+            REF_SPEED = 15  #m/s
+            diag_space = np.sqrt(self.width**2 + self.height**2) * 2
+            diag_time = diag_space / REF_SPEED
+            # add tolerances of the targets
+            sigma = 0.3 * diag_time
+            mean = diag_time * (1 + self.simulator.tolerance_factor)
+            # skew = self.simulator.tolerance_factor * diag_time
+            MIN_IDLENESS = diag_time / self.simulator.n_targets
 
-            # util.write_json(to_json, config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec))
-            # print("DONE: generating random episodes")
-
-        # to_json = util.read_json(config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec))
+            for i in range(self.simulator.n_targets):  # set the threshold for the targets
+                # idleness = self.simulator.rnd_tolerance.normal(tsp_path_time, sigma, 1)[0]
+                idleness = self.simulator.rnd_tolerance.normal(mean, sigma, 1)[0]  # util.rand_skew_norm(alpha=0, mean=mean, std=sigma, )  # normal
+                idleness = max(idleness, MIN_IDLENESS)
+                # print("sigma", sigma, "mu", mean, "sample", idleness)
+                targets_x_episode[ep].append((i, tuple(coordinates[i]), idleness))
 
         # assert(self.simulator.n_episodes <= MAX_N_EPISODES)
         for ep in range(self.simulator.n_episodes):
             epoch_targets = []
-            for t_id, t_coord, t_idleness in to_json[ep][:self.simulator.n_targets]:
+            for t_id, t_coord, t_idleness in targets_x_episode[ep][:self.simulator.n_targets]:
 
                 t = Target(identifier=len(self.base_stations) + t_id,
                            coords=tuple(t_coord),

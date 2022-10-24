@@ -202,6 +202,7 @@ class DQN(LightningModule):
                 torch.nn.ReLU(),
                 torch.nn.Linear(hidden_shape1, out_shape),
             )
+
         elif hidden_shape2 != 0 and hidden_shape3 == 0:
             self.fc = torch.nn.Sequential(
                 torch.nn.Linear(in_shape, hidden_shape1),
@@ -210,6 +211,7 @@ class DQN(LightningModule):
                 torch.nn.ReLU(),
                 torch.nn.Linear(hidden_shape2, out_shape),
             )
+
         elif hidden_shape2 != 0 and hidden_shape3 != 0:
             self.fc = torch.nn.Sequential(
                 torch.nn.Linear(in_shape, hidden_shape1),

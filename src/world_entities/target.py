@@ -49,3 +49,6 @@ class Target(SimulatedEntity):
     def is_base_station(self):
         """ returns true if the target is the base station. """
         return self.identifier == 0
+
+    def __repr__(self):
+        return "tar:id_{}-tol_f{}-coo_{}".format(self.identifier, int(self.maximum_tolerated_idleness), self.coords)

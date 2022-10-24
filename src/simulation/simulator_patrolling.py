@@ -3,7 +3,7 @@ from src.world_entities.environment import Environment
 from src.world_entities.base_station import BaseStation
 from src.world_entities.drone import Drone
 from src.patrolling.metrics import Metrics
-from src.patrolling.plotting import Plotting
+from data.archive.plotting import Plotting
 
 from src.evaluation.MetricsLog import MetricsLog
 
@@ -105,7 +105,7 @@ class PatrollingSimulator:
         # create directory of the simulation
         make_path(self.directory_simulation() + "-")
 
-        self.plotting = Plotting(self.name())
+        # self.plotting = Plotting(self.name())
 
     # ---- # BOUNDS and CONSTANTS # ---- #
 
@@ -259,10 +259,10 @@ class PatrollingSimulator:
         """ The method starts the simulation. """
         self.print_sim_info()
 
-        IS_PRO_BARS = True
-        for epoch in tqdm(range(self.n_epochs), desc='epoch', disable=IS_PRO_BARS):
+        IS_HIDE_PRO_BARS = False
+        for epoch in tqdm(range(self.n_epochs), desc='epoch', disable=IS_HIDE_PRO_BARS):
             episodes_perm = self.rstate_sample_batch_training.permutation(self.n_episodes)  # at each epoch you see the same episodes but shuffled
-            for episode in tqdm(range(len(episodes_perm)), desc='episodes', leave=False, disable=IS_PRO_BARS):
+            for episode in tqdm(range(len(episodes_perm)), desc='episodes', leave=False, disable=IS_HIDE_PRO_BARS):
                 ie = episodes_perm[episode]
                 for drone in self.environment.drones:
                     drone.reset_environment_info()
@@ -271,7 +271,7 @@ class PatrollingSimulator:
                 self.environment.spawn_targets(targets)
 
                 self.cur_step = 0
-                for cur_step in tqdm(range(self.episode_duration), desc='step', leave=False, disable=IS_PRO_BARS):
+                for cur_step in tqdm(range(self.episode_duration), desc='step', leave=False, disable=IS_HIDE_PRO_BARS):
                     self.cur_step = cur_step
 
                     if just_setup:
@@ -285,7 +285,7 @@ class PatrollingSimulator:
                         self.__plot(self.cur_step, self.episode_duration)
 
                     self.cur_step_total += 1
-                self.checkout(do=self.wandb is None, epoch=epoch, is_last_epoch=self.n_epochs-1 == epoch)
+                # self.checkout(do=self.wandb is None, epoch=epoch, is_last_epoch=self.n_epochs-1 == epoch)
 
             for drone in self.environment.drones:
                 drone.was_final_epoch = True
@@ -295,7 +295,7 @@ class PatrollingSimulator:
         # self.metricsV2.metrics_report_single_point()
         # exit()
         # self.metricsV2.print_all_metrics()
-        self.metricsV2.save_metrics()
+        # self.metricsV2.save_metrics()
         # exit()
 
         if do:

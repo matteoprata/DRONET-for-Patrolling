@@ -9,6 +9,8 @@ import numpy as np
 from src.utilities import utilities as util
 from collections import defaultdict
 import os
+from src.evaluation.MetricsLog import MetricsLog
+
 
 class Environment:
     """ The environment is an entity that represents the area of interest."""
@@ -54,14 +56,19 @@ class Environment:
                                                   y_pos=drone_coods[1])
         return cell_index
 
-    def reset_drones_targets(self, is_end_epoch=True):
-        """ Reset the scenario. """
+    def reset_simulation(self, is_end_epoch=True):
+        """ Reset the scenario after every episode. """
 
-        for target in self.targets:
-            target.last_visit_ts = 0 if is_end_epoch else self.simulator.cur_step + 1
+        self.simulator.previous_metricsV2 = self.simulator.metricsV2
+        self.simulator.metricsV2 = MetricsLog(self.simulator)
 
         for drone in self.drones:
             drone.coords = drone.bs.coords
+            drone.rl_module.reset_MDP_episode()
+            drone.reset()
+
+        for tar in self.targets:
+            tar.reset()
 
     def generate_target_combinations(self, seed):
         """
@@ -77,7 +84,7 @@ class Environment:
         targets_x_episode = defaultdict(list)
         print("START: generating random episodes")
 
-        for ep in tqdm(range(self.simulator.n_episodes), disable=True):
+        for ep in tqdm(range(self.simulator.n_episodes + self.simulator.n_episodes_validation), disable=True):
             coordinates = []
 
             # add coordinates of the targets
@@ -104,7 +111,7 @@ class Environment:
                 targets_x_episode[ep].append((i, tuple(coordinates[i]), idleness))
 
         # assert(self.simulator.n_episodes <= MAX_N_EPISODES)
-        for ep in range(self.simulator.n_episodes):
+        for ep in range(self.simulator.n_episodes + self.simulator.n_episodes_validation):
             epoch_targets = []
             for t_id, t_coord, t_idleness in targets_x_episode[ep][:self.simulator.n_targets]:
 
@@ -115,7 +122,7 @@ class Environment:
 
                 epoch_targets.append(t)
             self.targets_dataset.append(epoch_targets)
-        print("TARGETS:", self.targets_dataset)
+        # print("TARGETS:", self.targets_dataset)
         return self.targets_dataset
 
     def spawn_targets(self, targets=None):
@@ -127,7 +134,8 @@ class Environment:
 
         # The base station is a target
         for i in range(self.simulator.n_base_stations):
-            self.targets.append(Target(i, self.base_stations[i].coords, self.simulator.drone_max_battery, self.simulator))
+            battery_seconds = self.simulator.drone_max_battery * self.simulator.ts_duration_sec
+            self.targets.append(Target(i, self.base_stations[i].coords, battery_seconds, self.simulator))
 
         self.targets += targets
 
@@ -211,7 +219,7 @@ class Environment:
 
     def __handle_collision(self, drone):
         """ Takes countermeasure when drone collides. """
-        drone.coords = drone.path[0]
+        drone.coords = drone.visited_targets_coordinates[0]
 
     @staticmethod
     def get_truncated_normal(mean=0, sd=1, low=0, upp=10):

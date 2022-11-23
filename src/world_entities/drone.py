@@ -8,8 +8,7 @@ from src.utilities.utilities import euclidean_distance, log, angle_between_three
 import numpy as np
 from src.utilities import config
 import src.utilities.constants as co
-from src.patrolling.patrolling_MDP import RLModule
-
+from src.patrolling.RLModule import RLModule
 import src.patrolling.patrolling_baselines as planners
 
 
@@ -28,120 +27,25 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         SimulatedEntity.__init__(self, identifier, path[0], simulator)
         AntennaEquippedDevice.__init__(self)
 
-        self.path = path
-        self.previous_coords = path[0]
-        self.current_waypoint_count = 0
         self.mobility = mobility
-
         self.angle, self.speed = angle, speed
         self.com_range, self.sensing_range, self.radar_range = com_range, sensing_range, radar_range
         self.max_battery, self.max_buffer = max_battery, max_buffer
         self.bs = bs
 
-        # parameters
-        self.state_manager = RLModule(self)
-        self.previous_ts_coordinate = None
-        self.buffer = list()
-        self.was_final = False
-        self.was_final_epoch = False
-        self.learning_tuple = None
-        self.decision_time = 0
+        # parameters to reset
+        self.visited_targets_coordinates = path
+        self.previous_coords = self.visited_targets_coordinates[0]
+        self.prev_target     = self.simulator.environment.targets[0]
+
+        self.rl_module = RLModule(self)
+
+    def reset(self):
+        self.visited_targets_coordinates = [self.visited_targets_coordinates[0]]
+        self.previous_coords = self.visited_targets_coordinates[0]
         self.prev_target = self.simulator.environment.targets[0]
-        self.cum_rew = 0
-        self.prev_step_at_decision = 0
 
-    # MOVEMENT ROUTINES
-
-    def move(self):
-        """ Called at every time step. """
-        if self.mobility == co.Mobility.FIXED_TRAJECTORIES:
-            if self.will_reach_target_now():
-                self.coords = self.next_target()
-                self.increase_waypoint_counter()
-
-        elif self.mobility == co.Mobility.RL_DECISION:
-            if config.IS_DECIDED_ON_TARGET:
-                self.rl_decide_next_target(eval_trigger=self.will_reach_target_now())
-            else:
-                self.rl_decide_next_target(eval_trigger=self.is_decision_step())
-
-        elif self.mobility == co.Mobility.RANDOM_MOVEMENT:
-            if self.will_reach_target_now():
-                self.coords = self.next_target()  # this instruction sets the position of the drone on top of the target (useful due to discrete time)
-                self.handle_metrics()
-                self.update_target_reached()
-
-                target_id = self.simulator.rnd_explore.randint(0, len(self.simulator.environment.targets))
-                target = self.simulator.environment.targets[target_id]
-                self.update_next_target_at_reach(target)
-
-        elif self.mobility == co.Mobility.GO_MAX_AOI:
-            if self.will_reach_target_now():
-                self.coords = self.next_target()
-                self.handle_metrics()
-                self.update_target_reached()
-
-                target = planners.max_aoi(self.simulator.environment.targets, self)
-                self.update_next_target_at_reach(target)
-
-        elif self.mobility == co.Mobility.GO_MIN_RESIDUAL:
-            if self.will_reach_target_now():
-                self.coords = self.next_target()
-                self.handle_metrics()
-                self.update_target_reached()
-
-                target = planners.min_residual(self.simulator.environment.targets, self)
-                self.update_next_target_at_reach(target)
-
-        elif self.mobility == co.Mobility.GO_MIN_SUM_RESIDUAL:
-            if self.will_reach_target_now():
-                self.coords = self.next_target()
-                self.handle_metrics()
-                self.update_target_reached()
-
-                target = planners.min_sum_residual(self.simulator.environment.targets,
-                                                   self.current_target(),
-                                                   self.speed,
-                                                   self.simulator.cur_step,
-                                                   self.simulator.ts_duration_sec,
-                                                   self)
-                self.update_next_target_at_reach(target)
-
-        elif self.mobility == co.Mobility.FREE:
-            if self.will_reach_target_now():
-                self.update_target_reached()
-
-        elif self.mobility == co.Mobility.MICHELE:
-            pass
-
-        if self.is_flying():
-            self.set_next_target_angle()
-            self.__movement(self.angle)
-
-    def save_metrics(self):
-        if not self.simulator.learning["is_pretrained"]:
-            # self.simulator.metrics.append_statistics_on_target_reached_light(self.learning_tuple)
-            if self.simulator.wandb is not None:
-                reward, epsilon, loss, _, _, _, _ = self.learning_tuple
-                self.cum_rew += reward
-
-                metrics = {"cumulative_reward": self.cum_rew,
-                           "experience": epsilon,
-                           "loss": 0 if loss is None else loss}
-                self.simulator.wandb.log(metrics)  # , commit=self.is_new_episode())
-        else:
-            self.simulator.metrics.append_statistics_on_target_reached(self.prev_target.identifier)
-
-    def reset_environment_info(self):
-        self.simulator.environment.reset_drones_targets()
-        self.state_manager.reset_MDP()
-        self.prev_target = self.simulator.environment.targets[0]
-        self.path.append(self.prev_target.coords)
-        self.increase_waypoint_counter()
-
-    def is_decision_step(self):
-        """ Whether is time to make a decision step or not """
-        return (self.simulator.cur_step * self.simulator.ts_duration_sec) % config.DELTA_DEC == 0
+    # ------> (begin) MOVEMENT routines
 
     def is_flying(self):
         return not self.will_reach_target_now()
@@ -152,24 +56,77 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
     def current_target(self):
         return self.simulator.environment.targets[self.prev_target.identifier]
 
-    def update_next_target_at_reach(self, next_target):
-        next_target.lock = self
-        self.prev_target.lock = None
+    def move(self):
+        """ Called at every time step. """
 
-        self.prev_target = next_target
-        self.path.append(next_target.coords)
-        self.increase_waypoint_counter()
+        if self.mobility == co.Mobility.RL_DECISION_TRAIN:
+            if (self.will_reach_target_now() and config.IS_DECIDED_ON_TARGET) or (self.rl_module.is_decision_step() and not config.IS_DECIDED_ON_TARGET and self.will_reach_target_now()):
+                self.coords = self.next_target_coo()  # this instruction sets the position of the drone on top of the target (useful due to discrete time)
+                self.__handle_metrics()
+                self.__update_target_time_visit_upon_reach()
 
-    def update_target_reached(self):
-        """ Once reached, update target last visit """
-        self.prev_target.last_visit_ts = self.simulator.cur_step
-        self.prev_target.last_visit_ts_by_drone[self.identifier] = self.simulator.cur_step  # vector of times of visit
+                action = self.rl_module.query_policy()
+                self.__update_next_target_upon_reach(action)
 
-    def set_next_target_angle(self):
+            elif self.rl_module.is_decision_step() and not config.IS_DECIDED_ON_TARGET:
+                action = self.rl_module.query_policy()
+                self.__update_next_target_upon_reach(action)
+
+        elif self.mobility == co.Mobility.RL_DECISION_TEST:
+            pass
+
+        elif self.mobility == co.Mobility.RANDOM_MOVEMENT:
+            if self.will_reach_target_now():
+                self.coords = self.next_target_coo()  # this instruction sets the position of the drone on top of the target (useful due to discrete time)
+                self.__handle_metrics()
+                self.__update_target_time_visit_upon_reach()
+
+
+                self.__update_next_target_upon_reach(target)
+
+        elif self.mobility == co.Mobility.GO_MAX_AOI:
+            if self.will_reach_target_now():
+                self.coords = self.next_target_coo()
+                self.__handle_metrics()
+                self.__update_target_time_visit_upon_reach()
+
+                policy = planners.MaxAOIPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
+                target = policy.next_visit()
+                self.__update_next_target_upon_reach(target)
+
+        elif self.mobility == co.Mobility.GO_MIN_RESIDUAL:
+            if self.will_reach_target_now():
+                self.coords = self.next_target_coo()
+                self.__handle_metrics()
+                self.__update_target_time_visit_upon_reach()
+
+                policy = planners.MaxAOIRatioPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
+                target = policy.next_visit()
+                self.__update_next_target_upon_reach(target)
+
+        elif self.mobility == co.Mobility.GO_MIN_SUM_RESIDUAL:
+            if self.will_reach_target_now():
+                self.coords = self.next_target_coo()
+                self.__handle_metrics()
+                self.__update_target_time_visit_upon_reach()
+
+                policy = planners.MaxSumResidualPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
+                target = policy.next_visit()
+                self.__update_next_target_upon_reach(target)
+
+        elif self.mobility == co.Mobility.FREE:
+            if self.will_reach_target_now():
+                self.__update_target_time_visit_upon_reach()
+
+        if self.is_flying():
+            self.__set_next_target_angle()
+            self.__movement(self.angle)
+
+    def __set_next_target_angle(self):
         """ Set the angle of the next target """
         if self.mobility != src.utilities.constants.Mobility.FREE:
             horizontal_coo = np.array([self.coords[0] + 1, self.coords[1]])
-            self.angle = angle_between_three_points(self.next_target(), np.array(self.coords), horizontal_coo)
+            self.angle = angle_between_three_points(self.next_target_coo(), np.array(self.coords), horizontal_coo)
 
     def __movement(self, angle):
         """ updates drone coordinate based on the angle cruise """
@@ -187,54 +144,34 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         coords[1] = max(0, min(coords[1], self.simulator.env_height_meters))
         self.coords = coords
 
-    def next_target(self):
-        """ In case of planned movement, returns the drone target. """
-        return np.array(self.path[self.current_waypoint_count])
+    def next_target_coo(self):
+        return np.array(self.visited_targets_coordinates[-1])
 
     def will_reach_target_now(self):
         """ Returns true if the drone will reach its target or overcome it in this step. """
-        return self.speed * self.simulator.ts_duration_sec + config.OK_VISIT_RADIUS >= euclidean_distance(self.coords, self.next_target())
+        return self.speed * self.simulator.ts_duration_sec + config.OK_VISIT_RADIUS >= euclidean_distance(self.coords, self.next_target_coo())
 
-    def increase_waypoint_counter(self):
-        """ Cyclic visit in the waypoints list. """
-        self.current_waypoint_count = self.current_waypoint_count + 1 if self.current_waypoint_count + 1 < len(self.path) else 0
+    # ------> (end) MOVEMENT routines
 
-    def is_new_episode(self):
-        return self.prev_step_at_decision >= self.simulator.cur_step
+    def __update_next_target_upon_reach(self, next_target):
+        """ When the target is chosen, sets a new target as the next. """
 
-    # DECISION STEP TYPE
-    def rl_decide_next_target(self, eval_trigger):
-        # if self.will_reach_target() or self.was_final:
-        if eval_trigger or self.was_final:
-            # print(self.was_final, self.is_decision_step())
-            self.was_final = False
+        # if next_target.lock is not None:
+        #   print("The drone {} looped over target {}".format(self.identifier, next_target))
 
-            if self.will_reach_target_now():
-                self.simulator.environment.targets[self.prev_target.identifier].lock = None
-                self.coords = self.next_target()
+        next_target.lock = self
+        self.prev_target.lock = None
 
-            # t
-            reward, epsilon, loss, is_end, s, s_prime = self.state_manager.invoke_train()
-            action, q = (0, None) if is_end else self.state_manager.invoke_predict(s_prime)
+        self.prev_target = next_target
+        self.visited_targets_coordinates.append(next_target.coords)
 
-            # it takes one step to realize it was an end None state
-            if not self.is_flying():
-                self.update_target_reached()
-                # self.prev_target.last_visit_ts = self.simulator.cur_step + (1 if is_end else 0)
-                self.prev_target = self.simulator.environment.targets[action]
-                self.path.append(self.prev_target.coords)
-                self.increase_waypoint_counter()
+    def __update_target_time_visit_upon_reach(self):
+        """ Once reached, update target last visit """
+        self.prev_target.last_visit_ts = self.simulator.cur_step
+        self.prev_target.last_visit_ts_by_drone[self.identifier] = self.simulator.cur_step  # vector of times of visit
 
-            self.was_final = is_end
-
-            self.learning_tuple = reward, epsilon, loss, is_end, s, q, self.was_final_epoch
-            self.save_metrics()
-            self.was_final_epoch = False
-
-            self.prev_step_at_decision = self.simulator.cur_step
-
-    def handle_metrics(self):
-        if not config.IS_TRAINING_MODE:
+    def __handle_metrics(self):
+        if not config.IS_TRAINING_MODE or self.simulator.is_validation:
             self.simulator.metricsV2.visit_done(self, self.prev_target, self.simulator.cur_step)
 
     def __hash__(self):

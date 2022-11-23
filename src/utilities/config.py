@@ -46,11 +46,11 @@ PLOT_TRAJECTORY_NEXT_TARGET = True   # shows the segment from the drone to its n
 
 # ------------------------------ CONSTANTS ------------------------------- #
 
-FIXED_TOURS_DIR = "data/tours/"        # str: the path to the drones tours
+FIXED_TOURS_DIR = "data/tours/"        # str: the visited_targets_coordinates to the drones tours
 DEMO_PATH = False                      # bool: whether to use handcrafted tours or not (in utilities.utilities)
 
-PLOT_SIM = False      # bool: whether to plot or not the simulation (set to false for faster experiments)
-WAIT_SIM_STEP = .1     # float >= 0: seconds, pauses the rendering for x seconds
+PLOT_SIM = True      # bool: whether to plot or not the simulation (set to false for faster experiments)
+WAIT_SIM_STEP = 0     # float >= 0: seconds, pauses the rendering for x seconds
 SKIP_SIM_STEP = 20    # int > 0 : steps, plot the simulation every x steps
 DRAW_SIZE = 700       # int: size of the drawing window
 
@@ -95,29 +95,32 @@ ZERO_TOLERANCE = 0.1     # 10% at 80% of the simulation
 EXPLORE_PORTION = 0.7    # what portion of time of the simulation is spent exploring
 
 # variables from here
-DRONE_MAX_ENERGY = 3 * Time.MIN.value       # int: max energy of a drone sec
-DRONE_SPEED = 15                # 54 km/h   # float: m/s, drone speed.
-N_TARGETS = 5                              # number of random targets in the map
+DRONE_MAX_ENERGY = int(10 * Time.MIN.value)  # int: max energy of a drone steps
+DRONE_SPEED = 15                             # 54 km/h   # float: m/s, drone speed.
+N_TARGETS = 5                                # number of random targets in the map
 
 LOG_STATE = False                       # print the state or not
 
-N_EPISODES = 10                         # how many times the scenario (a.k.a. episode) changes during a simulation
-N_EPOCHS = 2                            # how many times you will see the same scenario
-EPISODE_DURATION = int(1 * Time.HOUR.value)  # how much time the episode lasts
+N_EPISODES = 30                              # how many times the scenario (a.k.a. episode) changes during a simulation
+N_EPISODES_VAL = 10                          # how many times the scenario (a.k.a. episode) changes during a simulation
+N_EPOCHS = 100                               # how many times you will see the same scenario
+EPISODE_DURATION = int(1 * Time.HOUR.value)  # how much time the episode lasts steps
 
-TARGET_VIOLATION_FACTOR = 5    # ?
+TARGET_VIOLATION_FACTOR = 100    # ?
 TOLERANCE_FACTOR = 0.1  # std % distance of tolerance generation
 
 IS_DECIDED_ON_TARGET = False  # the decision step happens on target visited (non uniformity of the decision step), or every DELTA_DEC
-DELTA_DEC = 3                 # after how many seconds a new decision must take place
+DELTA_DEC = 5                 # after how many seconds a new decision must take place
 
 IS_RESIDUAL_REWARD = False                                        # ?
 IS_ALLOW_SELF_LOOP = True                                         # drone can decide to visit the same target in two consecutive decisions or not
 PENALTY_ON_BS_EXPIRATION = - N_TARGETS * TARGET_VIOLATION_FACTOR  # reward due to the violation of the base station (i.e. the drone dies)
 OK_VISIT_RADIUS = 0  # radius of a target, suffices to visit it IGNORE
 
-DRONE_MOBILITY = Mobility.RL_DECISION
+DRONE_MOBILITY = Mobility.GO_MIN_SUM_RESIDUAL
 IS_PARALLEL = True
 
 IS_SWEEP = False
-IS_TRAINING_MODE = IS_SWEEP
+IS_TRAINING_MODE = False
+
+TIME_DENSITY_METRICS = 5000  # density on the X axis of AOI ratio plots

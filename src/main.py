@@ -16,56 +16,6 @@ from src.wandb_configs.wandb_config1 import sweep_configuration
 from src.simulation_setup import setup01
 from src.simulation_setup import setup02
 
-"""
-WARNING: When running sweeps, params are in the YAML otherwise be careful and look in config and main.
-         Parameters are taken from the config file if they are not overwritten from the command line.
-"""
-
-parser = argparse.ArgumentParser(description='Run experiments of patrolling.')
-
-parser.add_argument('-sweep', '--is_sweep', type=bool, default=config.IS_SWEEP)
-parser.add_argument('-de', '--description', type=str, default=config.SIM_DESCRIPTION)
-
-# -- learning params, n_hidden_naurons
-parser.add_argument('-ip', '--is_pretrained', type=int, default=config.LEARNING_PARAMETERS['is_pretrained'])
-parser.add_argument('-bs', '--batch_size', type=int, default=config.LEARNING_PARAMETERS['batch_size'])
-parser.add_argument('-lr', '--learning_rate', type=float, default=config.LEARNING_PARAMETERS['learning_rate'])
-parser.add_argument('-df', '--discount_factor', type=float, default=config.LEARNING_PARAMETERS['discount_factor'])
-parser.add_argument('-rm', '--replay_memory_depth', type=int, default=config.LEARNING_PARAMETERS['replay_memory_depth'])
-parser.add_argument('-sw', '--swap_models_every_decision', type=int, default=config.LEARNING_PARAMETERS['swap_models_every_decision'])
-parser.add_argument('-sl', '--is_allow_self_loop', type=int, default=config.IS_ALLOW_SELF_LOOP)
-
-# -- logging
-parser.add_argument('-pl', '--plotting', type=int, default=0)
-parser.add_argument('-lo', '--log_state', type=float, default=-1)
-
-# -- battery, speed, number of targets
-parser.add_argument('-sp', '--drone_speed', type=int, default=config.DRONE_SPEED)
-parser.add_argument('-bat', '--battery', type=int, default=config.DRONE_MAX_ENERGY)
-parser.add_argument('-tar', '--n_targets', type=int, default=config.N_TARGETS)
-parser.add_argument('-pen', '--penalty', type=int, default=config.PENALTY_ON_BS_EXPIRATION)
-parser.add_argument('-seed', '--seed', type=int, default=config.SIM_SEED)
-
-# epochs episodes
-parser.add_argument('-epo', '--n_epochs', type=int, default=config.N_EPOCHS)
-parser.add_argument('-epi', '--n_episodes', type=int, default=config.N_EPISODES)
-parser.add_argument('-edu', '--episode_duration', type=int, default=config.EPISODE_DURATION)
-
-# network
-parser.add_argument('-hn1', '--n_hidden_neurons_lv1', type=int, default=config.LEARNING_PARAMETERS['n_hidden_neurons_lv1'])
-parser.add_argument('-hn2', '--n_hidden_neurons_lv2', type=int, default=config.LEARNING_PARAMETERS['n_hidden_neurons_lv2'])
-parser.add_argument('-hn3', '--n_hidden_neurons_lv3', type=int, default=config.LEARNING_PARAMETERS['n_hidden_neurons_lv3'])
-
-
-# END PARAMETERS DEFINITION
-
-args = parser.parse_args()
-
-learning = config.LEARNING_PARAMETERS
-for arg in vars(args):
-    if arg in learning:
-        learning[arg] = getattr(args, arg)
-
 
 def __run_sweep():
     """ the place where to run simulations and experiments. """
@@ -73,6 +23,8 @@ def __run_sweep():
     try:
         with wandb.init() as wandb_instance:
             wandb_config = wandb_instance.config
+
+            learning = config.LEARNING_PARAMETERS
 
             learning[co.HyperParameters.LR.value] = wandb_config[co.HyperParameters.LR.value]
             learning[co.HyperParameters.DISCOUNT_FACTOR.value] = wandb_config[co.HyperParameters.DISCOUNT_FACTOR.value]
@@ -85,18 +37,10 @@ def __run_sweep():
             config.IS_ALLOW_SELF_LOOP = wandb_config[co.HyperParameters.IS_SELF_LOOP.value]
 
             sim = PatrollingSimulator(learning=learning,
-                                      sim_description=args.description,
-                                      n_targets=args.n_targets,
-                                      drone_speed=args.drone_speed,
                                       drone_max_battery=wandb_config[co.HyperParameters.BATTERY.value],
-                                      log_state=args.log_state,
-                                      is_plot=bool(args.plotting),
                                       n_epochs=wandb_config[co.HyperParameters.N_EPOCHS.value],
                                       n_episodes=wandb_config[co.HyperParameters.N_EPISODES.value],
                                       episode_duration=wandb_config[co.HyperParameters.DURATION_EPISODE.value],
-                                      penalty_on_bs_expiration=args.penalty,
-                                      sim_seed=args.seed,
-                                      drone_mobility=co.Mobility.RL_DECISION,
                                       wandb=wandb_instance)
             sim.run()
 
@@ -105,24 +49,14 @@ def __run_sweep():
         print(traceback.print_exc(), file=sys.stderr)
         exit(1)
 
+
 def main_sweep():
     sweep_id = wandb.sweep(sweep=sweep_configuration, project=co.PROJECT_NAME)
     wandb.agent(sweep_id, function=__run_sweep)
 
 
 def main_normal():
-    sim = PatrollingSimulator(learning=learning,
-                              sim_description=args.description,
-                              n_targets=args.n_targets,
-                              drone_speed=args.drone_speed,
-                              drone_max_battery=args.battery,
-                              log_state=args.log_state,
-                              is_plot=bool(args.plotting),
-                              n_epochs=args.n_epochs,
-                              n_episodes=args.n_episodes,
-                              episode_duration=args.episode_duration,
-                              penalty_on_bs_expiration=args.penalty,
-                              sim_seed=args.seed)
+    sim = PatrollingSimulator()
     sim.run()
 
 
@@ -168,7 +102,7 @@ def __execute_parallel_simulations(algorithm, seed, d_speed, d_number, t_number,
                                   n_drones=d_number,
                                   drone_mobility=algorithm,
                                   sim_seed=seed,
-                                  is_plot=bool(args.plotting))
+                                  is_plot=False)
         sim.run()
     except:
         print(">> Could not solve problem!", locals())
@@ -177,10 +111,7 @@ def __execute_parallel_simulations(algorithm, seed, d_speed, d_number, t_number,
 
 
 if __name__ == "__main__":
-    if args.is_sweep:
-        main_sweep()
-    else:
-        main_normal()
+    main_normal()
 
     # python -m src.main -pl 1
     # simulate_greedy_policies(setup01)

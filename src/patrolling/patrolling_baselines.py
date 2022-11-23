@@ -1,88 +1,133 @@
 
-from src.utilities.utilities import euclidean_distance
+# from src.utilities.utilities import euclidean_distance
 import numpy as np
 
 
-def max_aoi(set_targets, drone):
-    """ Returns the target with the oldest age. """
-
-    # PER MICHELE
-    # aoi_list = []
-    # for t in set_targets:
-    #     if t.lock is None:
-    #         aoi_list.append(t.AOI_absolute())
-    #     else:
-    #         # the target is locked, this target will be the least relevant, discard
-    #         aoi_list.append(-np.inf)
-    #
-    # aoi_list_max = np.argmax(aoi_list)
-    # return set_targets[aoi_list_max]
-
-    # more efficient
-    # TODO: handle drone battery!
-    chosen_target = None
-    biggest_ratio = -np.inf
-    for t in set_targets:
-        temp = t.AOI_absolute()
-        # set the target visited furthest in the past
-        if t.lock is None and temp > biggest_ratio:
-            biggest_ratio = temp
-            chosen_target = t
-    return chosen_target
-
-    # shorter alternative but no lock considered
-    # max_aoi = np.argmax([target.AOI_absolute() for target in set_targets])
-    # return set_targets[max_aoi]
+class PlottingStyle:
+    def __init__(self, marker, color, line_tick):
+        self.line_tick = line_tick
+        self.marker = marker
+        self.color = color
 
 
-def min_residual(set_targets, drone):
-    """ Returns the target with the lowest percentage residual. """
+class PatrollingPolicy(PlottingStyle):
 
-    chosen_target = None
-    least_ratio = np.inf
+    def __init__(self, identifier, name, patrol_drone, set_drones, set_targets, marker="o", color="black", line_tick="-"):
+        super().__init__(marker, color, line_tick)
+        self.name = name
+        self.identifier = identifier
+        self.patrol_drone = patrol_drone
+        self.set_drones = set_drones
+        self.set_targets = set_targets
 
-    # TODO: handle drone battery!
-    for t in set_targets:
-        temp = t.AOI_tolerance_ratio()
-        # set the target visited furthest in the past and has lest tolerance
-        if t.lock is None and temp < least_ratio:
-            least_ratio = temp
-            chosen_target = t
-    return chosen_target
-
-    # shorter alternative but no lock considered
-    # min_res = np.argmin([target.AOI_tolerance_ratio() for target in set_targets])
-    # return set_targets[min_res]
+    def next_visit(self):
+        pass
 
 
-def min_sum_residual(set_targets, cur_tar, speed, cur_step, ts_duration_sec, drone):
-    """ Returns the target leading to the maximum minimum residual upon having reached it. """
+class RLPolicy(PatrollingPolicy):
+    """ Reinforcement Learning trained policy. """
+    name = "Go-RL"
+    identifier = 4
 
-    # TODO: handle drone battery!
-    max_min_res_list = [np.inf] * len(set_targets)
-    for ti, target_1 in enumerate(set_targets):
-        if cur_tar == target_1 or target_1.lock is not None:
-            continue
+    def __init__(self, patrol_drone, set_drones, set_targets):
+        super().__init__(name=self.name, identifier=self.identifier,
+                         patrol_drone=patrol_drone, set_drones=set_drones, set_targets=set_targets)
 
-        rel_time_arrival = euclidean_distance(target_1.coords, cur_tar.coords) / speed
-        sec_arrival = cur_step * ts_duration_sec + rel_time_arrival
-
-        min_res_list = []
-        for target_2 in set_targets:
-            ls_visit = target_2.last_visit_ts * ts_duration_sec if target_1.identifier != target_2.identifier else sec_arrival
-            RES = (sec_arrival - ls_visit) / target_2.maximum_tolerated_idleness
-            min_res_list.append(RES)
-
-        # print("min ->", min_res_list, target_1.identifier)
-        max_min_res_list[ti] = np.sum(min_res_list)
-    max_min_res_tar = set_targets[np.argmin(max_min_res_list)]
-
-    # print("max_min ->", max_min_res_list, max_min_res_tar.identifier)
-    return max_min_res_tar
+    def next_visit(self):
+        """ Returns a random target. """
+        pass
 
 
-# IMPLEMENT your own policy here
-def policy_next_target_michele(set_targets, drone):
-    # TODO: handle drone battery;
-    #  think of how the distance to reach a target may influence the decision of the drone and the drones energy!
-    pass
+class RandomPolicy(PatrollingPolicy):
+    name = "Go-Random"
+    identifier = 0
+
+    def __init__(self, patrol_drone, set_drones, set_targets):
+        super().__init__(name=self.name, identifier=self.identifier,
+                         patrol_drone=patrol_drone, set_drones=set_drones, set_targets=set_targets)
+
+    def next_visit(self):
+        """ Returns a random target. """
+        target_id = self.patrol_drone.simulator.rnd_explore.randint(0, len(self.patrol_drone.simulator.environment.targets))
+        target = self.patrol_drone.simulator.environment.targets[target_id]
+        return target
+
+
+class MaxAOIPolicy(PatrollingPolicy):
+    name = "Go-Max-AOI"
+    identifier = 1
+
+    def __init__(self, patrol_drone, set_drones, set_targets):
+        super().__init__(name=self.name, identifier=self.identifier,
+                         patrol_drone=patrol_drone, set_drones=set_drones, set_targets=set_targets)
+
+    def next_visit(self):
+        """ Returns the target with the oldest age. """
+        chosen_target = None
+        biggest_ratio = -np.inf
+        for t in self.set_targets:
+            temp = t.AOI_absolute()
+            # set the target visited furthest in the past
+            if t.lock is None and temp > biggest_ratio:
+                biggest_ratio = temp
+                chosen_target = t
+        return chosen_target
+
+
+class MaxAOIRatioPolicy(PatrollingPolicy):
+    name = "Go-Max-AOI-Ratio"
+    identifier = 2
+
+    def __init__(self, patrol_drone, set_drones, set_targets):
+        super().__init__(name=self.name, identifier=self.identifier,
+                         patrol_drone=patrol_drone, set_drones=set_drones, set_targets=set_targets)
+
+    def next_visit(self):
+        """ Returns the target with the lowest percentage residual. """
+        chosen_target = None
+        least_ratio = np.inf
+        for t in self.set_targets:
+            temp = t.AOI_tolerance_ratio()
+            # set the target visited furthest in the past and has lest tolerance
+            if t.lock is None and temp < least_ratio:
+                least_ratio = temp
+                chosen_target = t
+        return chosen_target
+
+
+class MaxSumResidualPolicy(PatrollingPolicy):
+    name = "Go-Max-Residual-Ratio"
+    identifier = 3
+
+    def __init__(self, patrol_drone, set_drones, set_targets):
+        super().__init__(name=self.name, identifier=self.identifier,
+                         patrol_drone=patrol_drone, set_drones=set_drones, set_targets=set_targets)
+
+    def next_visit(self):
+        """ Returns the target leading to the maximum minimum residual upon having reached it. """
+
+        max_min_res_list = [np.inf] * len(self.set_targets)
+        for ti, target_1 in enumerate(self.set_targets):
+            if self.patrol_drone.current_target() == target_1 or target_1.lock is not None:
+                continue
+
+            rel_time_arrival = euclidean_distance(target_1.coords, self.patrol_drone.current_target().coords) / self.patrol_drone.speed
+            sec_arrival = self.patrol_drone.simulator.cur_step * self.patrol_drone.simulator.ts_duration_sec + rel_time_arrival
+
+            min_res_list = []
+            for target_2 in self.set_targets:
+                ls_visit = target_2.last_visit_ts * self.patrol_drone.simulator.ts_duration_sec if target_1.identifier != target_2.identifier else sec_arrival
+                RES = (sec_arrival - ls_visit) / target_2.maximum_tolerated_idleness
+                min_res_list.append(RES)
+
+            # print("min ->", min_res_list, target_1.identifier)
+            max_min_res_list[ti] = np.sum(min_res_list)
+        max_min_res_tar = self.set_targets[np.argmin(max_min_res_list)]
+
+        # print("max_min ->", max_min_res_list, max_min_res_tar.identifier)
+        return max_min_res_tar
+
+
+def euclidean_distance(p1, p2):
+    """ Given points p1, p2 in R^2 it returns the norm of the vector connecting them.  """
+    return np.linalg.norm(np.array(p1)-np.array(p2))

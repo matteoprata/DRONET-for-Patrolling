@@ -7,7 +7,7 @@ class Target(SimulatedEntity):
 
     def __init__(self, identifier, coords, maximum_tolerated_idleness, simulator):
         SimulatedEntity.__init__(self, identifier, coords, simulator)
-        self.maximum_tolerated_idleness = maximum_tolerated_idleness  # how much time until next visit tolerated
+        self.maximum_tolerated_idleness = maximum_tolerated_idleness  # how much time until next visit tolerated SECONDS
 
         self.last_visit_ts = 0  # - maximum_tolerated_idleness / self.simulator.ts_duration_sec
         self.last_visit_ts_by_drone = np.zeros(simulator.n_drones)  # NEW: every target knows the last time since every drone visisted it
@@ -49,6 +49,12 @@ class Target(SimulatedEntity):
     def is_base_station(self):
         """ returns true if the target is the base station. """
         return self.identifier == 0
+
+    def reset(self):
+        self.last_visit_ts = 0
+        self.last_visit_ts_by_drone = np.zeros(self.simulator.n_drones)
+        self.lock = None
+        self.active = True
 
     def __repr__(self):
         return "tar:id_{}-tol_f{}-coo_{}".format(self.identifier, int(self.maximum_tolerated_idleness), self.coords)

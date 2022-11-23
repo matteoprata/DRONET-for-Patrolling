@@ -80,7 +80,7 @@ class PatrollingDQN:
     def explore_probability(step, exp_coeff, base=np.e):
         return base ** (-step*exp_coeff)
 
-    def decay(self):
+    def let_exploration_decay(self):
         """ Probability of exploration now. """
         explore_prob = self.explore_probability(self.simulator.cur_step_total, self.epsilon_decay)
         return explore_prob
@@ -91,7 +91,7 @@ class PatrollingDQN:
 
     def is_explore_probability(self):
         """ Returns True if it is time to explore, False otherwise. """
-        return self.flip_biased_coin(self.decay())
+        return self.flip_biased_coin(self.let_exploration_decay())
 
     @torch.no_grad()
     def predict(self, state, is_explore=True):

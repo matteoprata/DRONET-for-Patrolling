@@ -9,7 +9,7 @@ import numpy as np
 class PathPlanningDrawer:
 
     def __init__(self, env : Environment, simulator, borders=False, padding=25):
-        """ init the path plannind drawer """
+        """ init the visited_targets_coordinates plannind drawer """
         self.width =  env.width
         self.height =  env.height
         self.borders = borders
@@ -130,7 +130,7 @@ class PathPlanningDrawer:
         self.__reset_pen()
 
         if config.PLOT_TRAJECTORY_NEXT_TARGET and not self.simulator.drone_mobility == src.utilities.constants.Mobility.FREE:
-            self.__draw_next_target(drone.coords, drone.next_target())
+            self.__draw_next_target(drone.coords, drone.next_target_coo())
 
     def __validate_rew(self, drone, cur_step):
         coords = drone.coords
@@ -267,8 +267,8 @@ class PathPlanningDrawer:
         # index
         stddraw.text(drone.coords[0], drone.coords[1] + (drone.com_range / 2.0), "id: " + str(drone.identifier))
         # state action
-        if self.simulator.drone_mobility == src.utilities.constants.Mobility.RL_DECISION:
-            lt = self.simulator.environment.drones[0].state_manager.previous_learning_tuple
+        if self.simulator.drone_mobility == src.utilities.constants.Mobility.RL_DECISION_TRAIN:
+            lt = self.simulator.environment.drones[0].rl_module.previous_learning_tuple
             if lt is not None:
                 s, a, s_prime, r = lt
                 stddraw.text(drone.coords[0], drone.coords[1] - (drone.com_range / 2.0), "s:{}".format(s))

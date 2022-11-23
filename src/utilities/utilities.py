@@ -160,40 +160,6 @@ class EventGenerator:
             drone = drones[drone_index]
             drone.feel_event(cur_step)
 
-# ------------------ Path manager ----------------------
-class PathManager:
-
-    def __init__(self, json_file: str, seed: int):
-        """ json file to read for take the paths of drones
-            We assume json_file + seed + .json
-        """
-        if config.DRONE_MOBILITY == constants.Mobility.FIXED_TRAJECTORIES:
-            self.json_file = json_file.replace(".json", "") + str(seed) + ".json"
-            self.path_dict = json_to_paths(self.json_file)
-
-    def path(self, drone_id):
-        """ takes the drone id and
-            returns a path (list of tuple)
-            for it.
-
-            Notice that: the path can last
-            less or more than the simulation.
-            In the first case the path should be repeated.
-        """
-        if config.DEMO_PATH:
-            return self.__demo_path(drone_id)
-        else:
-            return self.path_dict[drone_id]
-
-    def __demo_path(self, drone_id):
-        """ Add handcrafted torus here.  """
-        tmp_path = {0: [(750, 750), (760, 750), (750, 750), (760, 750), (770, 750)],
-                    1: [(1280, 80),  (760-300, 750+300), (760+300, 750+300), (760+300, 750-300), (760-300, 750-300),  (0, 1500)],
-                    2: [(1320, 120), (760-300, 750+300), (760+300, 750+300), (760+300, 750-300), (760-300, 750-300), (0, 1500)],
-                    3: [(1400, 160), (760-300, 750+300), (760+300, 750+300), (760+300, 750-300), (760-300, 750-300), (0, 1500)],
-                    4: [(1500, 200), (760-300, 750+300), (760+300, 750+300), (760+300, 750-300), (760-300, 750-300),  (0, 1500)]}
-        return tmp_path[drone_id]
-
 
 def json_to_paths(json_file_path):
     """ load the tour for drones

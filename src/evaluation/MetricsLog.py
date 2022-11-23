@@ -1,11 +1,6 @@
-
-
 from collections import defaultdict
 from src.utilities import utilities as util
-
-
 from src.simulation import simulator_patrolling as sim_pat
-
 from src.utilities.constants import PATH_STATS
 from src.utilities.constants import JSONFields
 
@@ -25,7 +20,7 @@ class MetricsLog:
         self.to_store_dictionary[JSONFields.SIMULATION_INFO.value][JSONFields.EPISODE_DURATION.value] = self.simulator.episode_duration
         self.to_store_dictionary[JSONFields.SIMULATION_INFO.value][JSONFields.TS_DURATION.value] = self.simulator.ts_duration_sec
 
-        tols = {t.identifier: t.maximum_tolerated_idleness for t in self.simulator.environment.targets}
+        tols = {str(t.identifier): t.maximum_tolerated_idleness for t in self.simulator.environment.targets}
         self.to_store_dictionary[JSONFields.SIMULATION_INFO.value][JSONFields.TOLERANCE.value] = tols
 
     def fname_generator(self):
@@ -43,17 +38,5 @@ class MetricsLog:
 
     def visit_done(self, drone, target, time_visit):
         """ Saves in the matrix the visit time of the drone to the target. """
-        self.times_visit[target.identifier][drone.identifier].append(time_visit)
+        self.times_visit[str(target.identifier)][str(drone.identifier)].append(time_visit)
         self.to_store_dictionary[JSONFields.VISIT_TIMES.value] = self.times_visit
-
-
-def __setup_simulation(args):
-    algorithm, seed, d_speed, d_number, t_number, t_factor = args
-    sim = sim_pat.PatrollingSimulator(tolerance_factor=t_factor,
-                                      n_targets=t_number,
-                                      drone_speed=d_speed,
-                                      n_drones=d_number,
-                                      drone_mobility=algorithm,
-                                      sim_seed=seed)
-    # sim.run(just_setup=True)
-    return sim

@@ -60,7 +60,7 @@ class PatrollingDQN:
             print(self.model.summary())
         else:
             # import os
-            # assert os.path.isdir("./model")
+            # assert os.visited_targets_coordinates.isdir("./model")
             # exit()
             self.model = keras.models.load_model(pretrained_model_path)
             self.model_hat = keras.models.load_model(pretrained_model_path)

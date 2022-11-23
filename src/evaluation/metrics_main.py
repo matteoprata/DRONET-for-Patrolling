@@ -18,11 +18,11 @@ class ErrorType(Enum):
     STD_ERROR = "stde"
 
 
-dep_var_map = {depv.CUMULATIVE_AR: MetricsEvaluation.AOI1_integral_func,
-               depv.CUMULATIVE_DELAY_AR: MetricsEvaluation.AOI5_violation_time_func,
-               depv.WORST_DELAY: MetricsEvaluation.AOI3_max_delay_func,
-               depv.WORST_AGE: MetricsEvaluation.AOI2_max_func,
-               depv.VIOLATION_NUMBER: MetricsEvaluation.AOI4_n_violations_func
+dep_var_map = {depv.CUMULATIVE_AR: MetricsEvaluation.AOI1_integral,
+               depv.CUMULATIVE_DELAY_AR: MetricsEvaluation.AOI5_violation_time,
+               depv.WORST_DELAY: MetricsEvaluation.AOI3_worst_delay,
+               depv.WORST_AGE: MetricsEvaluation.AOI2_worst_age,
+               depv.VIOLATION_NUMBER: MetricsEvaluation.AOI4_n_violations
                }
 
 
@@ -79,12 +79,12 @@ def __data_matrix_multiple_exps(setup_file, independent_variable):
     return TOT_MAT
 
 
-def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD_ERROR, is_boxplot=True):
+def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD_ERROR, targets_aggregator=np.average, is_boxplot=True):
     """ Given a matrix of data, plots an XY chart """
     print("Plotting the stats...")
     data = __data_matrix_multiple_exps(setup, indep_var)
 
-    # removes temporal dimensions, becomes: SEEDS x ALGORITHMS x TARGETS x INDEPENDENT
+    # removes temporal dimensions, becomes: [(TIME) X SEEDS x ALGORITHMS x TARGETS x INDEPENDENT]
     metrics_aoi = dep_var_map[dep_var](data)
 
     plt.close('all')
@@ -116,9 +116,9 @@ def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD_E
             for x_ind, xi in enumerate(setup01.indv_vary[indep_var]):
                 # print(x_ind, xi, setup01.indv_vary[indep_var])
                 data = metrics_aoi[:, al, :xi, x_ind] if indep_var == indv.TARGETS_NUMBER else metrics_aoi[:, al, :, x_ind]
-                Y[x_ind] = np.average(data, axis=(0, 1))
-                Y_std[x_ind] = np.std(data, axis=(0, 1))
-                Y_ste[x_ind] = np.std(data, axis=(0, 1)) / np.sqrt(len(data.ravel()))
+                Y[x_ind] = np.average(targets_aggregator(data, axis=1), axis=0)
+                Y_std[x_ind] = np.std(targets_aggregator(data, axis=1), axis=0)
+                Y_ste[x_ind] = np.std(targets_aggregator(data, axis=1), axis=0) / np.sqrt(len(data.ravel()))
 
             error = Y_std
             if error_type == ErrorType.STD_ERROR:
@@ -132,7 +132,7 @@ def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD_E
         plt.legend()
 
     plt.xlabel(indep_var.value["NAME"])
-    plt.ylabel(dep_var.value["NAME"])
+    plt.ylabel(dep_var.value["NAME"] + "tar-agg {}".format(targets_aggregator.__name__))
     plt.tight_layout()
     plt.show()
 
@@ -163,7 +163,6 @@ def plot_stats_single_seed(setup, seed, algorithm):
     print()
 
     met.load_metrics()
-
 
 
 if __name__ == '__main__':

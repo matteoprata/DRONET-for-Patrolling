@@ -69,17 +69,20 @@ class MetricsEvaluation:
         plt.show()
         return X, Y_avg
 
-    def __AOI_func_PH1(self, target_id, drone_id=None, is_absolute=False):
+    @staticmethod
+    def __AOI_func_PH1(target_id, times_visit, n_drones, episode_duration,
+                       ts_duration_sec, targets_tolerance, drone_id=None, is_absolute=False):
         # careful adding [self.simulator.episode_duration] adds the last visit even if it did not happen
+        print(times_visit, targets_tolerance)
 
         def times_visit_map(target_id, drone_id=None):
             """ Times of visit of input target from particular drone (if not none). """
             if drone_id is not None:
-                return self.times_visit[str(target_id)][str(drone_id)]
+                return times_visit[str(target_id)][str(drone_id)]
             else:
                 times = []
-                for didx in range(self.n_drones):
-                    times += self.times_visit[str(target_id)][str(didx)]
+                for didx in range(n_drones):
+                    times += times_visit[str(target_id)][str(didx)]
                 return sorted(times)
 
         def visit_AOI_map(time_visit, target_tolerance):
@@ -107,9 +110,9 @@ class MetricsEvaluation:
                     funcs_dic[i + 1] = None
             return funcs_dic
 
-        time_visit = [0] + times_visit_map(target_id, drone_id) + [self.episode_duration]
-        time_visit = np.asarray(time_visit) * self.ts_duration_sec  # seconds
-        target_tolerance = self.targets_tolerance[str(target_id)]
+        time_visit = [0] + times_visit_map(target_id, drone_id) + [episode_duration]
+        time_visit = np.asarray(time_visit) * ts_duration_sec  # seconds
+        target_tolerance = targets_tolerance[str(target_id)]
 
         X, Y = visit_AOI_map(time_visit, target_tolerance)
         lines = AOI_progressions(X, Y)
@@ -129,39 +132,48 @@ class MetricsEvaluation:
     # ------------ FUNCTIONS ------------
 
     # AOI
-    def AOI_func(self, target_id, drone_id=None, density=1000, is_absolute=False):
-        MAX_TIME = self.episode_duration * self.ts_duration_sec
+    @staticmethod
+    def AOI_func(target_id, times_visit, n_drones, episode_duration,
+                       ts_duration_sec, targets_tolerance, drone_id=None, density=1000, is_absolute=False):
+        """ Returns the AOI Ratio X and Y axis """
+        MAX_TIME = episode_duration * ts_duration_sec
         x_axis = np.linspace(0, MAX_TIME, density)
 
-        X, _, lines = self.__AOI_func_PH1(target_id, drone_id, is_absolute)
-        y_axis = np.array([self.__AOI_func_PH2(i, X, lines) for i in x_axis])
+        X, _, lines = MetricsEvaluation.__AOI_func_PH1(target_id, times_visit, n_drones, episode_duration,
+                                                       ts_duration_sec, targets_tolerance, drone_id, is_absolute)
+        y_axis = np.array([MetricsEvaluation.__AOI_func_PH2(i, X, lines) for i in x_axis])
         return x_axis, y_axis
 
     # ------------ FUNCTIONS ------------
 
     @staticmethod
-    def AOI1_integral_func(y_axis):
+    def AOI1_integral(y_axis):
+        """ [INTEGRAL] of the AOI relative to the threshold. """
         sums = np.sum(y_axis, axis=0)
         return sums
 
     @staticmethod
-    def AOI2_max_func(y_axis):
+    def AOI2_worst_age(y_axis):
+        """ [WORST AGE] for a target is the max relative-AOI reached during the simulation. """
         sums = np.max(y_axis, axis=0)
         return sums
 
     @staticmethod
-    def AOI3_max_delay_func(y_axis):
+    def AOI3_worst_delay(y_axis):
+        """ [WORST DELAY] for a target is the max relative-AOI reached during the simulation, ignoring when respecting tolerance. """
         y_axis[y_axis < 1] = 0
         sums = np.max(y_axis, axis=0)
         return sums
 
     @staticmethod
-    def AOI4_n_violations_func(y_axis):
-        n_violations = np.sum((y_axis >= 1) * 1 & (np.roll(y_axis, 1) < 1) * 1, axis=0)
+    def AOI4_n_violations(y_axis):
+        """ [NUMBER VIOLATIONS] """
+        n_violations = np.sum((y_axis >= 1) * 1 & (np.roll(y_axis, 1, axis=0) < 1) * 1, axis=0)
         return n_violations
 
     @staticmethod
-    def AOI5_violation_time_func(y_axis):
+    def AOI5_violation_time(y_axis):
+        """ [VIOLATION TIME] """
         violation_time = np.sum((y_axis >= 1) * 1, axis=0)
         return violation_time
 

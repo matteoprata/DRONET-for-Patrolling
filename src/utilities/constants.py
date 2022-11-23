@@ -1,18 +1,17 @@
 from enum import Enum
 import multiprocessing
+from src.patrolling import patrolling_baselines as pbase
 
 
 class Mobility(Enum):
-    FREE = 0
-    FIXED_TRAJECTORIES = 1  # ignore
-    RL_DECISION = 2
+    FREE = None
+    RL_DECISION_TRAIN = None
 
-    RANDOM_MOVEMENT = 3
-    GO_MAX_AOI = 4
-    GO_MIN_RESIDUAL = 5
-    GO_MIN_SUM_RESIDUAL = 6
-
-    MICHELE = 7
+    RANDOM_MOVEMENT     = pbase.RandomPolicy
+    GO_MAX_AOI          = pbase.MaxAOIPolicy
+    GO_MIN_RESIDUAL     = pbase.MaxAOIRatioPolicy
+    GO_MIN_SUM_RESIDUAL = pbase.MaxSumResidualPolicy
+    RL_DECISION_TEST    = pbase.RLPolicy
 
 
 class IndependentVariable(Enum):

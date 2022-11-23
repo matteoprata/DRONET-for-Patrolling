@@ -7,7 +7,7 @@ from data.archive.plotting import Plotting
 
 from src.evaluation.MetricsLog import MetricsLog
 
-from src.utilities.utilities import PathManager, current_date, euclidean_distance, make_path
+from src.utilities.utilities import current_date, euclidean_distance, make_path
 import src.utilities.config as config
 from src.drawing import pp_draw
 
@@ -49,6 +49,7 @@ class PatrollingSimulator:
                  penalty_on_bs_expiration=config.PENALTY_ON_BS_EXPIRATION,
                  n_epochs=config.N_EPOCHS,
                  n_episodes=config.N_EPISODES,
+                 n_episodes_validation=config.N_EPISODES_VAL,
                  episode_duration=config.EPISODE_DURATION,
                  is_plot=config.PLOT_SIM,
                  wandb=None
@@ -59,6 +60,7 @@ class PatrollingSimulator:
         self.penalty_on_bs_expiration=penalty_on_bs_expiration
         self.n_epochs=n_epochs
         self.n_episodes=n_episodes
+        self.n_episodes_validation = n_episodes_validation
         self.episode_duration=episode_duration
         self.is_plot = is_plot
 
@@ -105,6 +107,8 @@ class PatrollingSimulator:
         # create directory of the simulation
         make_path(self.directory_simulation() + "-")
 
+        self.reset_episode_val = False
+        self.is_validation = False
         # self.plotting = Plotting(self.name())
 
     # ---- # BOUNDS and CONSTANTS # ---- #
@@ -186,7 +190,6 @@ class PatrollingSimulator:
     def __create_world_entities(self):
         """ Creates the world entities. """
 
-        self.path_manager = PathManager(config.FIXED_TOURS_DIR + "RANDOM_missions", self.sim_seed)
         self.environment = Environment(self.env_width_meters, self.env_height_meters, self)
 
         base_stations = []
@@ -199,7 +202,7 @@ class PatrollingSimulator:
 
         drones = []
         for i in range(self.n_drones):
-            drone_path = self.path_manager.path(i) if self.drone_mobility == src.utilities.constants.Mobility.FIXED_TRAJECTORIES else [self.drone_coo]
+            drone_path = [self.drone_coo]
             drone_speed = 0 if self.drone_mobility == src.utilities.constants.Mobility.FREE else self.drone_speed_meters_sec
             drone = Drone(identifier=i,
                           path=drone_path,
@@ -219,10 +222,11 @@ class PatrollingSimulator:
         self.environment.add_drones(drones)
 
         self.metrics = Metrics(self)
-        self.metrics.N_ACTIONS = drones[0].state_manager.N_ACTIONS
-        self.metrics.N_FEATURES = drones[0].state_manager.N_FEATURES
+        self.metrics.N_ACTIONS = drones[0].rl_module.N_ACTIONS
+        self.metrics.N_FEATURES = drones[0].rl_module.N_FEATURES
 
         self.metricsV2 = MetricsLog(self)
+        self.previous_metricsV2 = self.metricsV2  # the metrics at the previous epoch
 
     def __plot(self, cur_step, max_steps):
         """ Plot the simulation """
@@ -255,40 +259,60 @@ class PatrollingSimulator:
         print(self.learning)
         print()
 
+    def reset_episode(self):
+        self.reset_episode_val = not self.reset_episode_val
+
+    def episode_core(self, just_setup, IS_HIDE_PRO_BARS):
+        for cur_step in tqdm(range(self.episode_duration), desc='step', leave=False, disable=IS_HIDE_PRO_BARS):
+
+            if self.reset_episode_val:
+                self.reset_episode()
+                break
+
+            self.cur_step = cur_step
+
+            if just_setup:
+                return
+
+            for drone in self.environment.drones:
+                # self.environment.detect_collision(drone)
+                drone.move()
+
+            if config.SAVE_PLOT or self.is_plot:
+                self.__plot(self.cur_step, self.episode_duration)
+
+            self.cur_step_total += 1
+
     def run(self, just_setup=False):
         """ The method starts the simulation. """
         self.print_sim_info()
 
         IS_HIDE_PRO_BARS = False
         for epoch in tqdm(range(self.n_epochs), desc='epoch', disable=IS_HIDE_PRO_BARS):
+            self.is_validation = False
+            self.i_epoch = epoch
             episodes_perm = self.rstate_sample_batch_training.permutation(self.n_episodes)  # at each epoch you see the same episodes but shuffled
-            for episode in tqdm(range(len(episodes_perm)), desc='episodes', leave=False, disable=IS_HIDE_PRO_BARS):
+            for episode in tqdm(range(len(episodes_perm)), desc='episodes_train', leave=False, disable=IS_HIDE_PRO_BARS):
+
+                self.i_episode = episode
                 ie = episodes_perm[episode]
-                for drone in self.environment.drones:
-                    drone.reset_environment_info()
+                self.environment.reset_simulation()
 
                 targets = self.environment.targets_dataset[ie]  # [Target1, Target2]
                 self.environment.spawn_targets(targets)
 
                 self.cur_step = 0
-                for cur_step in tqdm(range(self.episode_duration), desc='step', leave=False, disable=IS_HIDE_PRO_BARS):
-                    self.cur_step = cur_step
+                self.episode_core(just_setup, IS_HIDE_PRO_BARS)
 
-                    if just_setup:
-                        return
+            for episode in tqdm(range(self.n_episodes_validation), desc='episodes_val', leave=False, disable=IS_HIDE_PRO_BARS):
+                self.is_validation = True
+                self.i_episode = episode
+                self.environment.reset_simulation()
+                targets = self.environment.targets_dataset[-self.n_episodes_validation:][episode]  # [Target1, Target2]
+                self.environment.spawn_targets(targets)
 
-                    for drone in self.environment.drones:
-                        # self.environment.detect_collision(drone)
-                        drone.move()
-
-                    if config.SAVE_PLOT or self.is_plot:
-                        self.__plot(self.cur_step, self.episode_duration)
-
-                    self.cur_step_total += 1
-                # self.checkout(do=self.wandb is None, epoch=epoch, is_last_epoch=self.n_epochs-1 == epoch)
-
-            for drone in self.environment.drones:
-                drone.was_final_epoch = True
+                self.cur_step = 0
+                self.episode_core(just_setup, IS_HIDE_PRO_BARS)
 
     def checkout(self, epoch, is_last_epoch, do=False):
         """ Print metrics save stuff at the end of an episode. """
@@ -320,5 +344,5 @@ class PatrollingSimulator:
         if epoch % SAVE_EPOCH_EVERY == 0 or is_last_epoch:
             model_file_name = "model-epoch{}.h5".format(epoch)
             path = config.RL_DATA + self.name() + "/" + model_file_name if self.wandb is None else os.path.join(self.wandb.dir, model_file_name)
-            self.environment.drones[0].state_manager.DQN.save_model(path)
+            self.environment.drones[0].rl_module.DQN.save_model(path)
 

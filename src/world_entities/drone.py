@@ -40,6 +40,8 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
         self.rl_module = RLModule(self)
 
+        # TODO: add picker policy instanciate the right policy
+
     def reset(self):
         self.visited_targets_coordinates = [self.visited_targets_coordinates[0]]
         self.previous_coords = self.visited_targets_coordinates[0]
@@ -80,8 +82,8 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 self.coords = self.next_target_coo()  # this instruction sets the position of the drone on top of the target (useful due to discrete time)
                 self.__handle_metrics()
                 self.__update_target_time_visit_upon_reach()
-
-
+                policy = planners.RandomPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
+                target = policy.next_visit()
                 self.__update_next_target_upon_reach(target)
 
         elif self.mobility == co.Mobility.GO_MAX_AOI:

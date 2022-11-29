@@ -117,7 +117,7 @@ IS_ALLOW_SELF_LOOP = True                                         # drone can de
 PENALTY_ON_BS_EXPIRATION = - N_TARGETS * TARGET_VIOLATION_FACTOR  # reward due to the violation of the base station (i.e. the drone dies)
 OK_VISIT_RADIUS = 0  # radius of a target, suffices to visit it IGNORE
 
-DRONE_MOBILITY = Mobility.GO_MIN_SUM_RESIDUAL
+DRONE_MOBILITY = Mobility.RANDOM_MOVEMENT
 IS_PARALLEL = True
 
 IS_SWEEP = False

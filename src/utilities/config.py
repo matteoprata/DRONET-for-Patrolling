@@ -1,126 +1,149 @@
 
 from enum import Enum
 
-from src.utilities.constants import Mobility
-
-"""
-This file contains all the constants and parameters of the simulator.
-It comes handy when you want to make one shot simulations, making parameters and constants vary in every
-simulation. For an extensive experimental campaign read the header at src.simulator.
-"""
-
-# ----------------------------- SIMULATION PARAMS ---------------------------- #
-
-SIM_DESCRIPTION = "default"
-SIM_SEED = 100                # int: seed of this simulation
-SIM_DURATION = 24000*24*10    # int: steps of simulation. (np.inf)
-SIM_TS_DURATION = 0.150       # float: seconds duration of a step in seconds.
-
-ENV_WIDTH = 1500      # float: meters, width of environment
-ENV_HEIGHT = 1500     # float: meters, height of environment
-
-N_DRONES = 1         # int: number of drones.
-N_OBSTACLES = 0      # number of random obstacles in the map
-N_GRID_CELLS = 0     # number of cells in the grid
-
-# base station
-N_BASE_STATIONS = 1
-BASE_STATION_COORDS = [ENV_WIDTH / 2, 0]   # coordinates of the base staion
-BASE_STATION_COM_RANGE = 0                 # float: meters, communication range of the depot.
-
-# IMPORTANT: coordinates of the drones at the beginning, it can be NONE in that case drone will follow
-# fixed tours determined in FIXED_TOURS_DIR
-DRONE_COORDS = BASE_STATION_COORDS
-
-# FREE MOVEMENT
-DRONE_ANGLE = 0               # degrees (0, 359)
-DRONE_SPEED_INCREMENT = 5     # increment at every key stroke
-DRONE_ANGLE_INCREMENT = 45    # increment at every key stroke
-DRONE_COM_RANGE = 100         # float: meters, communication range of the drones.
-DRONE_SENSING_RANGE = 0       # float: meters, the sensing range of the drones.
-DRONE_MAX_BUFFER_SIZE = 0     # int: max number of packets in the buffer of a drone.
-DRONE_RADAR_RADIUS = 60       # meters
-
-# map
-PLOT_TRAJECTORY_NEXT_TARGET = True   # shows the segment from the drone to its next waypoint
-
-# ------------------------------ CONSTANTS ------------------------------- #
-
-FIXED_TOURS_DIR = "data/tours/"        # str: the visited_targets_coordinates to the drones tours
-DEMO_PATH = False                      # bool: whether to use handcrafted tours or not (in utilities.utilities)
-
-PLOT_SIM = True      # bool: whether to plot or not the simulation (set to false for faster experiments)
-WAIT_SIM_STEP = 0     # float >= 0: seconds, pauses the rendering for x seconds
-SKIP_SIM_STEP = 20    # int > 0 : steps, plot the simulation every x steps
-DRAW_SIZE = 700       # int: size of the drawing window
-
-SAVE_PLOT = False              # bool: whether to save the plots of the simulation or not
-SAVE_PLOT_DIR = "data/plots/"  # string: where to save plots
-
-# ------------------------------- PATROLLING ------------------------------- #
+from src.utilities.constants import PatrollingProtocol
 
 
-class Time(Enum):
-    """ number of steps to simulate specific time """
-    DAY = int(60*60*24/SIM_TS_DURATION)
-    HOUR = int(60*60/SIM_TS_DURATION)
-    MIN = int(60/SIM_TS_DURATION)
+class LearningParameters(Enum):
+
+    IS_PRETRAINED = "is_pretrained"
+    MODEL_NAME = "model_name"
+    BETA = "beta"
+    REPLAY_MEMORY_DEPTH = "replay_memory_depth"
+    EPSILON_DECAY = "epsilon_decay"
+    LEARNING_RATE = "learning_rate"
+    DISCOUNT_FACTOR = "discount_factor"
+    BATCH_SIZE = "batch_size"
+    SWAP_MODELS_EVERY_DECISION = "swap_models_every_decision"
+
+    N_HIDDEN_1 = "n_hidden_neurons_lv1"
+    N_HIDDEN_2 = "n_hidden_neurons_lv2"
+    N_HIDDEN_3 = "n_hidden_neurons_lv3"
+
+    OPTIMIZER = "optimizer"
+    LOSS = "loss"
 
 
-LEARNING_PARAMETERS = {
-    "is_pretrained": False,
-    "model_name": "data/rl/model.h5",
-    "beta": None,  # for continuous tasks
-    "replay_memory_depth": 100000,
-    "epsilon_decay": None,
+class Configuration:
+    """ This class represent all the constants of a simulation, they vary from one run to another. """
+    def __init__(self):
 
-    "learning_rate":  0.001,
-    "discount_factor": 1,
-    "batch_size": 32,
-    "swap_models_every_decision": 500,
-    "n_hidden_neurons_lv1": 10,
-    "n_hidden_neurons_lv2": 1,
-    "n_hidden_neurons_lv3": 1,
-    "optimizer": "sgd",
-    "loss": "mse"
-}
+        self.SETUP_NAME = None
 
-# paths
-RL_DATA = "data/rl/"
-TARGETS_FILE = "data/targets/"
-YAML_FILE = "wandb_sweep_bayesian.yaml"
+        # Frequently used parameters
+        self.SIM_TS_DURATION = 0.150       # float: seconds duration of a step in seconds.
+        self.SEED = 100                # int: seed of this simulation
 
-# how much exploration, careful to edit
-ZERO_TOLERANCE = 0.1     # 10% at 80% of the simulation
-EXPLORE_PORTION = 0.7    # what portion of time of the simulation is spent exploring
+        self.DAY = int(60 * 60 * 24 / self.SIM_TS_DURATION)
+        self.HOUR = int(60 * 60 / self.SIM_TS_DURATION)
+        self.MIN = int(60 / self.SIM_TS_DURATION)
 
-# variables from here
-DRONE_MAX_ENERGY = int(10 * Time.MIN.value)  # int: max energy of a drone steps
-DRONE_SPEED = 15                             # 54 km/h   # float: m/s, drone speed.
-N_TARGETS = 5                                # number of random targets in the map
+        self.TARGETS_NUMBER = 5       # number of random targets in the map
+        self.TARGETS_TOLERANCE = 0.1  # std % distance of tolerance generation
 
-LOG_STATE = False                       # print the state or not
+        self.DRONES_NUMBER = 1                                                  # int: number of drones.
+        self.DRONE_SPEED = 15                                              # 15 m/s = 54 km/h   # float: m/s, drone speed.
+        self.DRONE_PATROLLING_POLICY = PatrollingProtocol.RANDOM_MOVEMENT  #
+        self.DRONE_MAX_ENERGY = int(10 * self.MIN)                         # int: max energy of a drone steps
 
-N_EPISODES = 30                              # how many times the scenario (a.k.a. episode) changes during a simulation
-N_EPISODES_VAL = 10                          # how many times the scenario (a.k.a. episode) changes during a simulation
-N_EPOCHS = 100                               # how many times you will see the same scenario
-EPISODE_DURATION = int(1 * Time.HOUR.value)  # how much time the episode lasts steps
+        self.N_EPOCHS = 1                         # how many times you will see the same scenario
+        self.EPISODE_DURATION = int(1 * self.HOUR)  # how much time the episode lasts steps
 
-TARGET_VIOLATION_FACTOR = 100    # ?
-TOLERANCE_FACTOR = 0.1  # std % distance of tolerance generation
+        self.N_EPISODES = 1       # how many times the scenario (a.k.a. episode) changes during a simulation
+        self.N_EPISODES_VAL = 0   # how many times the scenario (a.k.a. episode) changes during a simulation
+        self.N_EPISODES_TEST = 10  # how many times the scenario (a.k.a. episode) changes during a simulation
 
-IS_DECIDED_ON_TARGET = False  # the decision step happens on target visited (non uniformity of the decision step), or every DELTA_DEC
-DELTA_DEC = 5                 # after how many seconds a new decision must take place
+        self.DELTA_DEC = 5                 # after how many seconds a new decision must take place
+        self.IS_DECIDED_ON_TARGET = False  # the decision step happens on target visited (non uniformity of the decision step), or every DELTA_DEC
+        self.IS_ALLOW_SELF_LOOP = True     # drone can decide to visit the same target in two consecutive decisions or not
 
-IS_RESIDUAL_REWARD = False                                        # ?
-IS_ALLOW_SELF_LOOP = True                                         # drone can decide to visit the same target in two consecutive decisions or not
-PENALTY_ON_BS_EXPIRATION = - N_TARGETS * TARGET_VIOLATION_FACTOR  # reward due to the violation of the base station (i.e. the drone dies)
-OK_VISIT_RADIUS = 0  # radius of a target, suffices to visit it IGNORE
+        # ----------------------------- SIMULATION PARAMS ---------------------------- #
 
-DRONE_MOBILITY = Mobility.RANDOM_MOVEMENT
-IS_PARALLEL = True
+        self.ENV_WIDTH = 1500      # float: meters, width of environment
+        self.ENV_HEIGHT = 1500     # float: meters, height of environment
 
-IS_SWEEP = False
-IS_TRAINING_MODE = False
+        self.N_OBSTACLES = 0      # number of random obstacles in the map
+        self.N_GRID_CELLS = 0     # number of cells in the grid
 
-TIME_DENSITY_METRICS = 5000  # density on the X axis of AOI ratio plots
+        # base station
+        self.N_BASE_STATIONS = 1
+        self.BASE_STATION_COORDS = [self.ENV_WIDTH / 2, 0]   # coordinates of the base staion
+        self.BASE_STATION_COM_RANGE = 0                      # float: meters, communication range of the depot.
+
+        # IMPORTANT: coordinates of the drones at the beginning, it can be NONE in that case drone will follow
+        # fixed tours determined in FIXED_TOURS_DIR
+        self.DRONE_COORDS = self.BASE_STATION_COORDS
+
+        # FREE MOVEMENT
+        self.DRONE_ANGLE = 0               # degrees (0, 359)
+        self.DRONE_SPEED_INCREMENT = 5     # increment at every key stroke
+        self.DRONE_ANGLE_INCREMENT = 45    # increment at every key stroke
+        self.DRONE_COM_RANGE = 100         # float: meters, communication range of the drones.
+        self.DRONE_SENSING_RANGE = 0       # float: meters, the sensing range of the drones.
+        self.DRONE_MAX_BUFFER_SIZE = 0     # int: max number of packets in the buffer of a drone.
+        self.DRONE_RADAR_RADIUS = 60       # meters
+
+        # map
+        self.PLOT_TRAJECTORY_NEXT_TARGET = True   # shows the segment from the drone to its next waypoint
+
+        # ------------------------------ CONSTANTS ------------------------------- #
+
+        self.FIXED_TOURS_DIR = "data/tours/"  # str: the visited_targets_coordinates to the drones tours
+        self.DEMO_PATH = False                # bool: whether to use handcrafted tours or not (in utilities.utilities)
+
+        self.PLOT_SIM = False       # bool: whether to plot or not the simulation (set to false for faster experiments)
+        self.WAIT_SIM_STEP = 0     # float >= 0: seconds, pauses the rendering for x seconds
+        self.SKIP_SIM_STEP = 20    # int > 0 : steps, plot the simulation every x steps
+        # self.DRAW_SIZE = 700       # int: size of the drawing window
+
+        self.SAVE_PLOT = False              # bool: whether to save the plots of the simulation or not
+        self.SAVE_PLOT_DIR = "data/plots/"  # string: where to save plots
+
+        # ------------------------------- PATROLLING ------------------------------- #
+
+        self.LEARNING_PARAMETERS = {
+
+            LearningParameters.IS_PRETRAINED: False,
+            LearningParameters.MODEL_NAME: "data/rl/model.h5",
+            LearningParameters.BETA: None,  # for continuous tasks
+            LearningParameters.REPLAY_MEMORY_DEPTH: 100000,
+            LearningParameters.EPSILON_DECAY: None,
+            LearningParameters.LEARNING_RATE:  0.001,
+            LearningParameters.DISCOUNT_FACTOR: 1,
+            LearningParameters.BATCH_SIZE: 32,
+            LearningParameters.SWAP_MODELS_EVERY_DECISION: 500,
+
+            LearningParameters.N_HIDDEN_1: 10,
+            LearningParameters.N_HIDDEN_2: 1,
+            LearningParameters.N_HIDDEN_3: 1,
+
+            LearningParameters.OPTIMIZER: "sgd",
+            LearningParameters.LOSS: "mse"
+        }
+
+        # paths
+        self.RL_DATA = "data/rl/"
+        self.YAML_FILE = "wandb_sweep_bayesian.yaml"
+
+        # how much exploration, careful to edit
+        self.ZERO_TOLERANCE = 0.1     # 10% at 80% of the simulation
+        self.EXPLORE_PORTION = 0.7    # what portion of time of the simulation is spent exploring
+
+        # variables from here
+        self.LOG_STATE = False                       # print the state or not
+
+        self.TARGET_VIOLATION_FACTOR = 100  # ?
+
+        self.IS_RESIDUAL_REWARD = False                                        # ?
+        self.PENALTY_ON_BS_EXPIRATION = - self.TARGETS_NUMBER * self.TARGET_VIOLATION_FACTOR  # reward due to the violation of the base station (i.e. the drone dies)
+        self.OK_VISIT_RADIUS = 0  # radius of a target, suffices to visit it IGNORE
+
+        self.IS_PARALLEL_EXECUTION = False
+        self.IS_TRAINING_MODE = False
+        self.TIME_DENSITY_METRICS = 5000  # density on the X axis of AOI ratio plots
+
+        self.IS_WANDB = False
+
+    def conf_description(self):
+        return "seed={}_nd={}_nt={}_pol={}_sp={}_tolf={}".format(self.SEED, self.DRONES_NUMBER, self.TARGETS_NUMBER,
+                                                                 self.DRONE_PATROLLING_POLICY.name, self.DRONE_SPEED, self.TARGETS_TOLERANCE)

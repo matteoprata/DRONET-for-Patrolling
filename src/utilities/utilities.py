@@ -14,6 +14,7 @@ from ast import literal_eval as make_tuple
 import os
 from shapely.geometry import LineString
 import signal
+from multiprocessing import Pool
 
 
 def log(message_to_log, is_to_log=True, current_ts=1, log_every=1):
@@ -214,6 +215,19 @@ def sample_color(index, cmap='tab10'):
 def initializer():
     """Ignore CTRL+C in the worker process."""
     signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+
+def execute_parallel(process, arguments, n_cores=1):
+    with Pool(initializer=initializer, processes=n_cores) as pool:
+        try:
+            pool.starmap(process, arguments)
+
+        except KeyboardInterrupt:
+            pool.terminate()
+            pool.join()
+
+    print("COMPLETED SUCCESSFULLY")
+
 
 def write_json(msg, fname):
     with open(fname, 'w') as fp:

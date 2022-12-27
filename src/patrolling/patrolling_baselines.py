@@ -4,18 +4,15 @@ import numpy as np
 
 
 class PlottingStyle:
-    def __init__(self, marker, color, line_tick):
-        self.line_tick = line_tick
-        self.marker = marker
-        self.color = color
+    line_tick = "-"
+    marker = "o"
 
 
 class PatrollingPolicy(PlottingStyle):
+    name = None
+    identifier = None
 
-    def __init__(self, identifier, name, patrol_drone, set_drones, set_targets, marker="o", color="black", line_tick="-"):
-        super().__init__(marker, color, line_tick)
-        self.name = name
-        self.identifier = identifier
+    def __init__(self, patrol_drone, set_drones, set_targets):
         self.patrol_drone = patrol_drone
         self.set_drones = set_drones
         self.set_targets = set_targets
@@ -28,10 +25,11 @@ class RLPolicy(PatrollingPolicy):
     """ Reinforcement Learning trained policy. """
     name = "Go-RL"
     identifier = 4
+    line_tick = "-"
+    marker = "o"
 
     def __init__(self, patrol_drone, set_drones, set_targets):
-        super().__init__(name=self.name, identifier=self.identifier,
-                         patrol_drone=patrol_drone, set_drones=set_drones, set_targets=set_targets)
+        super().__init__(patrol_drone=patrol_drone, set_drones=set_drones, set_targets=set_targets)
 
     def next_visit(self):
         """ Returns a random target. """
@@ -41,10 +39,11 @@ class RLPolicy(PatrollingPolicy):
 class RandomPolicy(PatrollingPolicy):
     name = "Go-Random"
     identifier = 0
+    line_tick = "-"
+    marker = "p"
 
     def __init__(self, patrol_drone, set_drones, set_targets):
-        super().__init__(name=self.name, identifier=self.identifier,
-                         patrol_drone=patrol_drone, set_drones=set_drones, set_targets=set_targets)
+        super().__init__(patrol_drone=patrol_drone, set_drones=set_drones, set_targets=set_targets)
 
     def next_visit(self):
         """ Returns a random target. """
@@ -56,10 +55,11 @@ class RandomPolicy(PatrollingPolicy):
 class MaxAOIPolicy(PatrollingPolicy):
     name = "Go-Max-AOI"
     identifier = 1
+    line_tick = "-"
+    marker = ">"
 
     def __init__(self, patrol_drone, set_drones, set_targets):
-        super().__init__(name=self.name, identifier=self.identifier,
-                         patrol_drone=patrol_drone, set_drones=set_drones, set_targets=set_targets)
+        super().__init__(patrol_drone=patrol_drone, set_drones=set_drones, set_targets=set_targets)
 
     def next_visit(self):
         """ Returns the target with the oldest age. """
@@ -77,10 +77,11 @@ class MaxAOIPolicy(PatrollingPolicy):
 class MaxAOIRatioPolicy(PatrollingPolicy):
     name = "Go-Max-AOI-Ratio"
     identifier = 2
+    line_tick = "-"
+    marker = "<"
 
     def __init__(self, patrol_drone, set_drones, set_targets):
-        super().__init__(name=self.name, identifier=self.identifier,
-                         patrol_drone=patrol_drone, set_drones=set_drones, set_targets=set_targets)
+        super().__init__(patrol_drone=patrol_drone, set_drones=set_drones, set_targets=set_targets)
 
     def next_visit(self):
         """ Returns the target with the lowest percentage residual. """
@@ -98,10 +99,11 @@ class MaxAOIRatioPolicy(PatrollingPolicy):
 class MaxSumResidualPolicy(PatrollingPolicy):
     name = "Go-Max-Residual-Ratio"
     identifier = 3
+    line_tick = "-"
+    marker = "+"
 
     def __init__(self, patrol_drone, set_drones, set_targets):
-        super().__init__(name=self.name, identifier=self.identifier,
-                         patrol_drone=patrol_drone, set_drones=set_drones, set_targets=set_targets)
+        super().__init__(patrol_drone=patrol_drone, set_drones=set_drones, set_targets=set_targets)
 
     def next_visit(self):
         """ Returns the target leading to the maximum minimum residual upon having reached it. """

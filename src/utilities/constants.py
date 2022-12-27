@@ -2,8 +2,12 @@ from enum import Enum
 import multiprocessing
 from src.patrolling import patrolling_baselines as pbase
 
+"""
+This file contains all the constants of the simulator.
+"""
 
-class Mobility(Enum):
+
+class PatrollingProtocol(Enum):
     FREE = None
     RL_DECISION_TRAIN = None
 
@@ -16,10 +20,10 @@ class Mobility(Enum):
 
 class IndependentVariable(Enum):
     SEED = {"ID": 1, "NAME": "Seed"}
-    ALGORITHM = {"ID": 2, "NAME": "Algorithm"}
+    DRONE_PATROLLING_POLICY = {"ID": 2, "NAME": "Algorithm"}
 
     # PICK FROM HERE:
-    DRONES_SPEED = {"ID": 3, "NAME": "Drones Speed"}
+    DRONE_SPEED = {"ID": 3, "NAME": "Drones Speed"}
     DRONES_NUMBER = {"ID": 4, "NAME": "Drones Number"}
     TARGETS_NUMBER = {"ID": 5, "NAME": "Targets Number"}
     TARGETS_TOLERANCE = {"ID": 6, "NAME": "Tolerance Factor"}
@@ -66,6 +70,14 @@ class JSONFields(Enum):
 
 
 PATH_STATS = "data/experiments/"
-N_CORES = multiprocessing.cpu_count()-2
+N_CORES = multiprocessing.cpu_count()-1
 
 PROJECT_NAME = "uavsimulator_patrolling"
+
+
+from src.simulation_setup import setup01, setup02
+
+
+class Setups(Enum):
+    SETUP01 = setup01
+    SETUP02 = setup02

@@ -8,7 +8,7 @@ from src.utilities import utilities as util
 from enum import Enum
 from src.simulation_setup import setup01
 from src.utilities.constants import IndependentVariable as indv
-from src.utilities.constants import Mobility as mo
+from src.utilities.constants import PatrollingProtocol as mo
 from src.utilities.constants import DependentVariable as depv
 from src.evaluation.MetricsEvaluation import MetricsEvaluation
 
@@ -35,7 +35,7 @@ def __data_matrix_multiple_exps(setup_file, independent_variable):
     TOT_MAT = None
     is_first = True
 
-    for ai, a in enumerate(stp.comp_dims[indv.ALGORITHM]):
+    for ai, a in enumerate(stp.comp_dims[indv.DRONE_PATROLLING_POLICY]):
         for si, s in enumerate(stp.comp_dims[indv.SEED]):
             for x_var_k in stp.indv_vary:
                 if x_var_k != independent_variable:
@@ -49,7 +49,7 @@ def __data_matrix_multiple_exps(setup_file, independent_variable):
                                             drone_mobility         = a,
                                             n_drones               = stp.indv_fixed[indv.DRONES_NUMBER],
                                             n_targets              = stp.indv_fixed[indv.TARGETS_NUMBER],
-                                            drone_speed_meters_sec = stp.indv_fixed[indv.DRONES_SPEED],
+                                            drone_speed_meters_sec = stp.indv_fixed[indv.DRONE_SPEED],
                                             tolerance_factor       = stp.indv_fixed[indv.TARGETS_TOLERANCE])
 
                     met.load_metrics()
@@ -69,7 +69,7 @@ def __data_matrix_multiple_exps(setup_file, independent_variable):
                         # SIGNATURE: TIME x SEEDS x ALGORITHMS x TARGETS x INDEPENDENT
                         TOT_MAT = np.zeros((len(times[0]),
                                             len(stp.comp_dims[indv.SEED]),
-                                            len(stp.comp_dims[indv.ALGORITHM]),
+                                            len(stp.comp_dims[indv.DRONE_PATROLLING_POLICY]),
                                             N_TARGETS,
                                             len(X_var)))
                         is_first = False
@@ -93,7 +93,7 @@ def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD_E
     # BOXPLOT
     if is_boxplot:
         X = setup01.indv_vary[indep_var]
-        AL = setup01.comp_dims[indv.ALGORITHM]
+        AL = setup01.comp_dims[indv.DRONE_PATROLLING_POLICY]
         boxes = []
 
         for al in range(len(AL)):
@@ -111,7 +111,7 @@ def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD_E
     # LINE PLOT
     else:
         n_dims = len(setup.indv_vary[indep_var])
-        for al in range(len(setup01.comp_dims[indv.ALGORITHM])):
+        for al in range(len(setup01.comp_dims[indv.DRONE_PATROLLING_POLICY])):
             X, Y, Y_std, Y_ste = setup.indv_vary[indep_var], np.zeros(n_dims), np.zeros(n_dims), np.zeros(n_dims)
             for x_ind, xi in enumerate(setup01.indv_vary[indep_var]):
                 # print(x_ind, xi, setup01.indv_vary[indep_var])
@@ -126,7 +126,7 @@ def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD_E
             elif error_type == ErrorType.STD:
                 error = Y_std
 
-            ax.plot(X, Y, label=setup01.comp_dims[indv.ALGORITHM][al].name)
+            ax.plot(X, Y, label=setup01.comp_dims[indv.DRONE_PATROLLING_POLICY][al].name)
             ax.fill_between(X, Y+error, Y-error, alpha=.2)
         plt.xticks(setup.indv_vary[indep_var])
         plt.legend()
@@ -144,7 +144,7 @@ def plot_stats_single_seed(setup, seed, algorithm):
                             drone_mobility=algorithm,
                             n_drones=setup.indv_fixed[indv.DRONES_NUMBER],
                             n_targets=setup.indv_fixed[indv.TARGETS_NUMBER],
-                            drone_speed_meters_sec=setup.indv_fixed[indv.DRONES_SPEED],
+                            drone_speed_meters_sec=setup.indv_fixed[indv.DRONE_SPEED],
                             tolerance_factor=setup.indv_fixed[indv.TARGETS_TOLERANCE])
     # N 1
     X, Yavg = met.plot_avg_aoi()
@@ -173,7 +173,7 @@ if __name__ == '__main__':
 
     # X, Y
     plot_stats_dep_ind_var(setup01, indv.DRONES_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False)
-    plot_stats_dep_ind_var(setup01, indv.DRONES_SPEED, depv.CUMULATIVE_AR, is_boxplot=False)
+    plot_stats_dep_ind_var(setup01, indv.DRONE_SPEED, depv.CUMULATIVE_AR, is_boxplot=False)
     plot_stats_dep_ind_var(setup01, indv.TARGETS_TOLERANCE, depv.CUMULATIVE_AR, is_boxplot=False)
     plot_stats_dep_ind_var(setup01, indv.TARGETS_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False)
 
@@ -191,11 +191,11 @@ if __name__ == '__main__':
     # plot_stats_dep_ind_var(setup01, indv.DRONES_NUMBER, depv.WORST_AGE, is_boxplot=False)
     # plot_stats_dep_ind_var(setup01, indv.DRONES_NUMBER, depv.CUMULATIVE_DELAY_AR, is_boxplot=False)
     # #
-    # plot_stats_dep_ind_var(setup01, indv.DRONES_SPEED, depv.CUMULATIVE_AR, is_boxplot=False)
-    # plot_stats_dep_ind_var(setup01, indv.DRONES_SPEED, depv.VIOLATION_NUMBER, is_boxplot=False)
-    # plot_stats_dep_ind_var(setup01, indv.DRONES_SPEED, depv.WORST_DELAY, is_boxplot=False)
-    # plot_stats_dep_ind_var(setup01, indv.DRONES_SPEED, depv.WORST_AGE, is_boxplot=False)
-    # plot_stats_dep_ind_var(setup01, indv.DRONES_SPEED, depv.CUMULATIVE_DELAY_AR, is_boxplot=False)
+    # plot_stats_dep_ind_var(setup01, indv.DRONE_SPEED, depv.CUMULATIVE_AR, is_boxplot=False)
+    # plot_stats_dep_ind_var(setup01, indv.DRONE_SPEED, depv.VIOLATION_NUMBER, is_boxplot=False)
+    # plot_stats_dep_ind_var(setup01, indv.DRONE_SPEED, depv.WORST_DELAY, is_boxplot=False)
+    # plot_stats_dep_ind_var(setup01, indv.DRONE_SPEED, depv.WORST_AGE, is_boxplot=False)
+    # plot_stats_dep_ind_var(setup01, indv.DRONE_SPEED, depv.CUMULATIVE_DELAY_AR, is_boxplot=False)
     # #
     # plot_stats_dep_ind_var(setup01, indv.TARGETS_TOLERANCE, depv.CUMULATIVE_AR, is_boxplot=False)
     # # plot_stats_dep_ind_var(setup01, indv.TARGETS_TOLERANCE, depv.VIOLATION_NUMBER, is_boxplot=False)

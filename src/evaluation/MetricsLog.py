@@ -25,13 +25,9 @@ class MetricsLog:
 
     def fname_generator(self):
         # independent variables
-        return "exp_se-{}_nd-{}_nt-{}_pol-{}_sp-{}_tolf-{}.json".format(self.simulator.sim_seed,
-                                                                        self.simulator.n_drones,
-                                                                        self.simulator.n_targets,
-                                                                        self.simulator.drone_mobility.value,
-                                                                        self.simulator.drone_speed_meters_sec,
-                                                                        self.simulator.tolerance_factor
-                                                                        )
+        fname = self.simulator.config.conf_description() + ".json"
+        print("saving " + fname)
+        return fname
 
     def save_metrics(self):
         util.write_json(self.to_store_dictionary, PATH_STATS + self.fname_generator())

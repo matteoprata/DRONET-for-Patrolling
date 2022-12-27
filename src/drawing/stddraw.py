@@ -6,7 +6,6 @@ drawing.  A drawing appears on the canvas.  The canvas appears
 in the window.  As a convenience, the module also imports the
 commonly used Color objects defined in the color module.
 """
-from src.utilities import config
 import time
 import os
 import sys
@@ -61,7 +60,7 @@ _DEFAULT_XMIN = 0.0
 _DEFAULT_XMAX = 1.0
 _DEFAULT_YMIN = 0.0
 _DEFAULT_YMAX = 1.0
-_DEFAULT_CANVAS_SIZE = config.DRAW_SIZE
+_DEFAULT_CANVAS_SIZE = 700
 _DEFAULT_PEN_RADIUS = .005  # Maybe change this to 0.0 in the future.
 _DEFAULT_PEN_COLOR = color.BLACK
 

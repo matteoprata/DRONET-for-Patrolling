@@ -36,11 +36,11 @@ The project has the following structure:
     │   ├── pp_draw.py
     │   └── stddraw.py
     ├── experiments
-    ├── main.py
+    ├── main_multi_test.py
     ├── simulation
     │   └── simulator.py
     ├── utilities
-    │   ├── config.py
+    │   ├── conf.py
     │   └── utilities.py
     └── world_entities
         ├── antenna.py

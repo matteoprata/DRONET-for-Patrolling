@@ -1,19 +1,21 @@
 import src.utilities.constants
 from src.drawing import stddraw
 from src.world_entities.environment import Environment
-from src.utilities import config, utilities
+from src.utilities import utilities
 from collections import defaultdict
 import numpy as np
 
 
 class PathPlanningDrawer:
 
-    def __init__(self, env : Environment, simulator, borders=False, padding=25):
+    def __init__(self, env : Environment, simulator, config, borders=False, padding=25):
         """ init the visited_targets_coordinates plannind drawer """
-        self.width =  env.width
-        self.height =  env.height
+        self.width = env.width
+        self.height = env.height
         self.borders = borders
         self.simulator = simulator
+        self.config = config
+
         stddraw.setXscale(0 - padding, self.width + padding)
         stddraw.setYscale(0 - padding, self.height + padding)
 
@@ -129,7 +131,7 @@ class PathPlanningDrawer:
         self.__draw_distance_radar(coords[0], coords[1], drone.radar_range)
         self.__reset_pen()
 
-        if config.PLOT_TRAJECTORY_NEXT_TARGET and not self.simulator.drone_mobility == src.utilities.constants.Mobility.FREE:
+        if self.config.PLOT_TRAJECTORY_NEXT_TARGET and not self.simulator.drone_mobility == src.utilities.constants.PatrollingProtocol.FREE:
             self.__draw_next_target(drone.coords, drone.next_target_coo())
 
     def __validate_rew(self, drone, cur_step):
@@ -225,7 +227,7 @@ class PathPlanningDrawer:
     def __draw_target_sensing_range(self, body):
         stddraw.setPenRadius(0.0015)
         stddraw.setPenColor(c=stddraw.DARK_GREEN)
-        stddraw.circle(body[0], body[1], config.OK_VISIT_RADIUS)
+        stddraw.circle(body[0], body[1], self.config.OK_VISIT_RADIUS)
         stddraw.setPenColor(c=stddraw.BLACK)
 
     def __draw_communication_range(self, body):
@@ -267,7 +269,7 @@ class PathPlanningDrawer:
         # index
         stddraw.text(drone.coords[0], drone.coords[1] + (drone.com_range / 2.0), "id: " + str(drone.identifier))
         # state action
-        if self.simulator.drone_mobility == src.utilities.constants.Mobility.RL_DECISION_TRAIN:
+        if self.simulator.drone_mobility == src.utilities.constants.PatrollingProtocol.RL_DECISION_TRAIN:
             lt = self.simulator.environment.drones[0].rl_module.previous_learning_tuple
             if lt is not None:
                 s, a, s_prime, r = lt

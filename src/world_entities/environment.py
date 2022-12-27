@@ -64,7 +64,7 @@ class Environment:
 
         for drone in self.drones:
             drone.coords = drone.bs.coords
-            drone.rl_module.reset_MDP_episode()
+            # drone.rl_module.reset_MDP_episode()
             drone.reset()
 
         for tar in self.targets:
@@ -79,7 +79,7 @@ class Environment:
         # Creates a dataset of targets to iterate over to
 
         # loading targets list
-        # targets_fname = config.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec)
+        # targets_fname = conf.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec)
 
         targets_x_episode = defaultdict(list)
         print("START: generating random episodes")

@@ -90,7 +90,7 @@ class RLModule:
         return state
 
     def __rew_on_flight(self, s, a, s_prime):
-        # if config.IS_RESIDUAL_REWARD:
+        # if conf.IS_RESIDUAL_REWARD:
         #     rew = self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
         #     pos = 0
         #     neg = rew

@@ -6,9 +6,8 @@ from src.world_entities.antenna import AntennaEquippedDevice
 
 from src.utilities.utilities import euclidean_distance, log, angle_between_three_points
 import numpy as np
-from src.utilities import config
 import src.utilities.constants as co
-from src.patrolling.RLModule import RLModule
+# from src.patrolling.RLModule import RLModule
 import src.patrolling.patrolling_baselines as planners
 
 
@@ -38,7 +37,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         self.previous_coords = self.visited_targets_coordinates[0]
         self.prev_target     = self.simulator.environment.targets[0]
 
-        self.rl_module = RLModule(self)
+        #self.rl_module = RLModule(self)
 
         # TODO: add picker policy instanciate the right policy
 
@@ -61,8 +60,8 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
     def move(self):
         """ Called at every time step. """
 
-        if self.mobility == co.Mobility.RL_DECISION_TRAIN:
-            if (self.will_reach_target_now() and config.IS_DECIDED_ON_TARGET) or (self.rl_module.is_decision_step() and not config.IS_DECIDED_ON_TARGET and self.will_reach_target_now()):
+        if self.mobility == co.PatrollingProtocol.RL_DECISION_TRAIN:
+            if (self.will_reach_target_now() and self.simulator.config.IS_DECIDED_ON_TARGET) or (self.rl_module.is_decision_step() and not self.simulator.config.IS_DECIDED_ON_TARGET and self.will_reach_target_now()):
                 self.coords = self.next_target_coo()  # this instruction sets the position of the drone on top of the target (useful due to discrete time)
                 self.__handle_metrics()
                 self.__update_target_time_visit_upon_reach()
@@ -70,14 +69,14 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 action = self.rl_module.query_policy()
                 self.__update_next_target_upon_reach(action)
 
-            elif self.rl_module.is_decision_step() and not config.IS_DECIDED_ON_TARGET:
+            elif self.rl_module.is_decision_step() and not self.simulator.config.IS_DECIDED_ON_TARGET:
                 action = self.rl_module.query_policy()
                 self.__update_next_target_upon_reach(action)
 
-        elif self.mobility == co.Mobility.RL_DECISION_TEST:
+        elif self.mobility == co.PatrollingProtocol.RL_DECISION_TEST:
             pass
 
-        elif self.mobility == co.Mobility.RANDOM_MOVEMENT:
+        elif self.mobility == co.PatrollingProtocol.RANDOM_MOVEMENT:
             if self.will_reach_target_now():
                 self.coords = self.next_target_coo()  # this instruction sets the position of the drone on top of the target (useful due to discrete time)
                 self.__handle_metrics()
@@ -86,7 +85,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 target = policy.next_visit()
                 self.__update_next_target_upon_reach(target)
 
-        elif self.mobility == co.Mobility.GO_MAX_AOI:
+        elif self.mobility == co.PatrollingProtocol.GO_MAX_AOI:
             if self.will_reach_target_now():
                 self.coords = self.next_target_coo()
                 self.__handle_metrics()
@@ -96,7 +95,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 target = policy.next_visit()
                 self.__update_next_target_upon_reach(target)
 
-        elif self.mobility == co.Mobility.GO_MIN_RESIDUAL:
+        elif self.mobility == co.PatrollingProtocol.GO_MIN_RESIDUAL:
             if self.will_reach_target_now():
                 self.coords = self.next_target_coo()
                 self.__handle_metrics()
@@ -106,7 +105,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 target = policy.next_visit()
                 self.__update_next_target_upon_reach(target)
 
-        elif self.mobility == co.Mobility.GO_MIN_SUM_RESIDUAL:
+        elif self.mobility == co.PatrollingProtocol.GO_MIN_SUM_RESIDUAL:
             if self.will_reach_target_now():
                 self.coords = self.next_target_coo()
                 self.__handle_metrics()
@@ -116,7 +115,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 target = policy.next_visit()
                 self.__update_next_target_upon_reach(target)
 
-        elif self.mobility == co.Mobility.FREE:
+        elif self.mobility == co.PatrollingProtocol.FREE:
             if self.will_reach_target_now():
                 self.__update_target_time_visit_upon_reach()
 
@@ -126,7 +125,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
     def __set_next_target_angle(self):
         """ Set the angle of the next target """
-        if self.mobility != src.utilities.constants.Mobility.FREE:
+        if self.mobility != src.utilities.constants.PatrollingProtocol.FREE:
             horizontal_coo = np.array([self.coords[0] + 1, self.coords[1]])
             self.angle = angle_between_three_points(self.next_target_coo(), np.array(self.coords), horizontal_coo)
 
@@ -151,7 +150,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
     def will_reach_target_now(self):
         """ Returns true if the drone will reach its target or overcome it in this step. """
-        return self.speed * self.simulator.ts_duration_sec + config.OK_VISIT_RADIUS >= euclidean_distance(self.coords, self.next_target_coo())
+        return self.speed * self.simulator.ts_duration_sec + self.simulator.config.OK_VISIT_RADIUS >= euclidean_distance(self.coords, self.next_target_coo())
 
     # ------> (end) MOVEMENT routines
 
@@ -173,7 +172,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         self.prev_target.last_visit_ts_by_drone[self.identifier] = self.simulator.cur_step  # vector of times of visit
 
     def __handle_metrics(self):
-        if not config.IS_TRAINING_MODE or self.simulator.is_validation:
+        if not self.simulator.config.IS_TRAINING_MODE or self.simulator.is_validation:
             self.simulator.metricsV2.visit_done(self, self.prev_target, self.simulator.cur_step)
 
     def __hash__(self):

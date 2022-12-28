@@ -1,5 +1,3 @@
-import time
-
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -7,9 +5,8 @@ from src.utilities import utilities as util
 
 from enum import Enum
 from src.simulation_setup import setup01
-from src.utilities.constants import IndependentVariable as indv
-from src.utilities.constants import PatrollingProtocol as mo
-from src.utilities.constants import DependentVariable as depv
+from src.constants import IndependentVariable as indv
+from src.constants import DependentVariable as depv
 from src.evaluation.MetricsEvaluation import MetricsEvaluation
 
 

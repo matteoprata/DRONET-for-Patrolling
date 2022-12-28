@@ -1,23 +1,24 @@
-import src.utilities.constants
+import src.constants
 from src.world_entities.environment import Environment
 from src.world_entities.base_station import BaseStation
 from src.world_entities.drone import Drone
 from src.patrolling.metrics import Metrics
-from data.archive.plotting import Plotting
 
 from src.evaluation.MetricsLog import MetricsLog
 
-from src.utilities.utilities import current_date, euclidean_distance, make_path
+from src.utilities.utilities import current_date, euclidean_distance
 from src.drawing import pp_draw
-from src.utilities.config import Configuration
+from src.config import Configuration
 from tqdm import tqdm
 
 import numpy as np
 import time
-import os
 
 
 class PatrollingSimulator:
+
+    # sim.config.ENV_WIDTH OK
+    # sim.env_width_meters NO
 
     def __init__(self, config: Configuration):
 
@@ -165,7 +166,7 @@ class PatrollingSimulator:
         drones = []
         for i in range(self.n_drones):
             drone_path = [self.config.DRONE_COORDS]
-            drone_speed = 0 if self.drone_mobility == src.utilities.constants.PatrollingProtocol.FREE else self.drone_speed_meters_sec
+            drone_speed = 0 if self.drone_mobility == src.constants.PatrollingProtocol.FREE else self.drone_speed_meters_sec
             drone = Drone(identifier=i,
                           path=drone_path,
                           bs=base_stations[0],

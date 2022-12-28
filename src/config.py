@@ -1,7 +1,7 @@
 
 from enum import Enum
 
-from src.utilities.constants import PatrollingProtocol
+from src.constants import PatrollingProtocol
 
 
 class LearningParameters(Enum):

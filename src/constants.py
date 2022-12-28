@@ -1,6 +1,7 @@
 from enum import Enum
 import multiprocessing
 from src.patrolling import patrolling_baselines as pbase
+from src.patrolling.Baseline01 import Baseline01
 
 """
 This file contains all the constants of the simulator.
@@ -16,6 +17,8 @@ class PatrollingProtocol(Enum):
     GO_MIN_RESIDUAL     = pbase.MaxAOIRatioPolicy
     GO_MIN_SUM_RESIDUAL = pbase.MaxSumResidualPolicy
     RL_DECISION_TEST    = pbase.RLPolicy
+
+    BASE_01 = Baseline01
 
 
 class IndependentVariable(Enum):

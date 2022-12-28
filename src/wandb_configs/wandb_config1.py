@@ -1,5 +1,5 @@
 
-import src.utilities.config as co
+import src.config as co
 
 sweep_configuration = {
     'method': 'bayes',

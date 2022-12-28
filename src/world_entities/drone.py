@@ -1,12 +1,12 @@
 
-import src.utilities.constants
+import src.constants
 from src.world_entities.entity import SimulatedEntity
 from src.world_entities.base_station import BaseStation
 from src.world_entities.antenna import AntennaEquippedDevice
 
-from src.utilities.utilities import euclidean_distance, log, angle_between_three_points
+from src.utilities.utilities import euclidean_distance, angle_between_three_points
 import numpy as np
-import src.utilities.constants as co
+import src.constants as co
 # from src.patrolling.RLModule import RLModule
 import src.patrolling.patrolling_baselines as planners
 
@@ -125,7 +125,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
     def __set_next_target_angle(self):
         """ Set the angle of the next target """
-        if self.mobility != src.utilities.constants.PatrollingProtocol.FREE:
+        if self.mobility != src.constants.PatrollingProtocol.FREE:
             horizontal_coo = np.array([self.coords[0] + 1, self.coords[1]])
             self.angle = angle_between_three_points(self.next_target_coo(), np.array(self.coords), horizontal_coo)
 

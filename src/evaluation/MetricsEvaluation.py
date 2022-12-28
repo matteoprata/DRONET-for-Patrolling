@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 
 from src.utilities import utilities as util
 
-from src.utilities.constants import PATH_STATS
-from src.utilities.constants import JSONFields
+from src.constants import PATH_STATS
+from src.constants import JSONFields
 
 
 class MetricsEvaluation:

@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import src.utilities.config as config
+import src.config as config
 
 pd.set_option('display.max_columns', None)
 

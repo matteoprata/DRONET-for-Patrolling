@@ -2,11 +2,11 @@
 import argparse
 import traceback
 
-import src.utilities.constants as cst
+import src.constants as cst
 import src.utilities.utilities as util
 from src.simulation.simulator_patrolling import PatrollingSimulator
-from src.utilities.config import Configuration
-from src.utilities.constants import IndependentVariable as indv
+from src.config import Configuration
+from src.constants import IndependentVariable as indv
 
 import copy
 
@@ -70,7 +70,7 @@ def parser_cl_arguments(configuration: Configuration):
     parser.add_argument('-set', '--SETUP_NAME', type=str)
     parser.add_argument('-par', '--IS_PARALLEL_EXECUTION', default=0, type=int)
 
-    # python -m src.main_multi_test -set setup01 -par 1
+    # python -m src.main_multi_test -set setup02 -par 1
     # parsing arguments from cli
     args = vars(parser.parse_args())
 

@@ -4,11 +4,10 @@ from src.patrolling.StateMDP import State
 
 from src.evaluation.MetricsEvaluation import MetricsEvaluation
 from src.utilities.utilities import euclidean_distance, min_max_normalizer
-from src.utilities import config
+from src import config
 import numpy as np
 import time
-from src.utilities.constants import JSONFields
-from scipy.special import softmax
+from src.constants import JSONFields
 
 
 class RLModule:
@@ -156,7 +155,7 @@ class RLModule:
         rew = 0
 
         time_dist_to_a = s.time_distances(False)[a]
-        n_steps = max(int(time_dist_to_a/config.DELTA_DEC), 1)
+        n_steps = max(int(time_dist_to_a / config.DELTA_DEC), 1)
 
         for step in range(n_steps):
             TIME = self.simulator.current_second() - (config.DELTA_DEC * step)

@@ -1,6 +1,7 @@
 
 import numpy as np
-from src.utilities import config, utilities as util
+from src.utilities import utilities as util
+from src import config
 
 import torch
 from pytorch_lightning import LightningModule

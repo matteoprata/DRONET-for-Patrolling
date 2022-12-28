@@ -1,13 +1,12 @@
 
-from src.utilities.constants import IndependentVariable as indv
-from src.utilities.constants import PatrollingProtocol as pol
+from src.constants import IndependentVariable as indv
+from src.constants import PatrollingProtocol as pol
 
 comp_dims = {indv.SEED: range(5),
              indv.DRONE_PATROLLING_POLICY: [pol.RANDOM_MOVEMENT,
                                             pol.GO_MAX_AOI,
                                             pol.GO_MIN_RESIDUAL,
                                             pol.GO_MIN_SUM_RESIDUAL,
-                                            # pol.MICHELE
                                             ]
              }
 

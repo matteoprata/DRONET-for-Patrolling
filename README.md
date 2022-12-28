@@ -36,7 +36,7 @@ The project has the following structure:
     │   ├── pp_draw.py
     │   └── stddraw.py
     ├── experiments
-    ├── main_multi_test.py
+    ├── main_MultiTest.py
     ├── simulation
     │   └── simulator.py
     ├── utilities

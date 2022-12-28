@@ -1,4 +1,4 @@
-import src.main_multi_test as runner
+import src.main_MultiTest as runner
 runner.main()
 
 

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from src.utilities import utilities as util
 
 from enum import Enum
-from src.simulation_setup import setup01
+from src.simulation_setup import setup01, setup02
 from src.constants import IndependentVariable as indv
 from src.constants import DependentVariable as depv
 from src.evaluation.MetricsEvaluation import MetricsEvaluation
@@ -15,11 +15,11 @@ class ErrorType(Enum):
     STD_ERROR = "stde"
 
 
-dep_var_map = {depv.CUMULATIVE_AR: MetricsEvaluation.AOI1_integral,
-               depv.CUMULATIVE_DELAY_AR: MetricsEvaluation.AOI5_violation_time,
-               depv.WORST_DELAY: MetricsEvaluation.AOI3_worst_delay,
-               depv.WORST_AGE: MetricsEvaluation.AOI2_worst_age,
-               depv.VIOLATION_NUMBER: MetricsEvaluation.AOI4_n_violations
+dep_var_map = {depv.CUMULATIVE_AR: MetricsEvaluation.AOI1_integral_func,
+               depv.CUMULATIVE_DELAY_AR: MetricsEvaluation.AOI5_violation_time_func,
+               depv.WORST_DELAY: MetricsEvaluation.AOI3_max_delay_func,
+               depv.WORST_AGE: MetricsEvaluation.AOI2_max_func,
+               depv.VIOLATION_NUMBER: MetricsEvaluation.AOI4_n_violations_func
                }
 
 
@@ -33,6 +33,7 @@ def __data_matrix_multiple_exps(setup_file, independent_variable):
     is_first = True
 
     for ai, a in enumerate(stp.comp_dims[indv.DRONE_PATROLLING_POLICY]):
+        print("Algorithm", a)
         for si, s in enumerate(stp.comp_dims[indv.SEED]):
             for x_var_k in stp.indv_vary:
                 if x_var_k != independent_variable:
@@ -80,6 +81,7 @@ def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD_E
     """ Given a matrix of data, plots an XY chart """
     print("Plotting the stats...")
     data = __data_matrix_multiple_exps(setup, indep_var)
+    print("Done filling up the matrix.")
 
     # removes temporal dimensions, becomes: [(TIME) X SEEDS x ALGORITHMS x TARGETS x INDEPENDENT]
     metrics_aoi = dep_var_map[dep_var](data)
@@ -89,47 +91,55 @@ def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD_E
 
     # BOXPLOT
     if is_boxplot:
-        X = setup01.indv_vary[indep_var]
-        AL = setup01.comp_dims[indv.DRONE_PATROLLING_POLICY]
+        X = setup.indv_vary[indep_var]
+        AL = setup.comp_dims[indv.DRONE_PATROLLING_POLICY]
         boxes = []
 
         for al in range(len(AL)):
+            al_id = setup.comp_dims[indv.DRONE_PATROLLING_POLICY][al].value
             for xi in range(len(X)):
                 # this is done because when the independent variable is the number of targets, the average must be done on
                 # a limited set of columns, for each tick
                 N_TARGETS = xi if indep_var == indv.TARGETS_NUMBER else setup.indv_fixed[indv.TARGETS_NUMBER]
                 data = metrics_aoi[:, al, :N_TARGETS, xi].ravel()
-                bp = util.box_plot(data, pos=[al + xi * (len(AL)+1)], edge_color=util.sample_color(al), fill_color=util.sample_color(al))
+                bp = util.box_plot(data, pos=[al + xi * (len(AL) + 1)])  # edge_color=util.sample_color(map_color[al_id]), fill_color=util.sample_color(map_color[al_id]))
+
                 if xi == 0:
                     boxes.append(bp["boxes"][0])
-        plt.xticks(np.arange(0, len(X) * (len(AL)+1), len(AL)+1), X)
+        plt.xticks(np.arange(0, len(X) * (len(AL) + 1), len(AL) + 1), X)
         plt.legend(boxes, [al.name for al in AL])
 
     # LINE PLOT
     else:
         n_dims = len(setup.indv_vary[indep_var])
-        for al in range(len(setup01.comp_dims[indv.DRONE_PATROLLING_POLICY])):
+        for al in range(len(setup.comp_dims[indv.DRONE_PATROLLING_POLICY])):
+            al_id = setup.comp_dims[indv.DRONE_PATROLLING_POLICY][al].value
             X, Y, Y_std, Y_ste = setup.indv_vary[indep_var], np.zeros(n_dims), np.zeros(n_dims), np.zeros(n_dims)
-            for x_ind, xi in enumerate(setup01.indv_vary[indep_var]):
-                # print(x_ind, xi, setup01.indv_vary[indep_var])
+            for x_ind, xi in enumerate(setup.indv_vary[indep_var]):
                 data = metrics_aoi[:, al, :xi, x_ind] if indep_var == indv.TARGETS_NUMBER else metrics_aoi[:, al, :, x_ind]
+                # SEEDS x TARGETS
+
                 Y[x_ind] = np.average(targets_aggregator(data, axis=1), axis=0)
+                # print(al, Y[x_ind])     # -------------------------------------------------------------------------------
                 Y_std[x_ind] = np.std(targets_aggregator(data, axis=1), axis=0)
                 Y_ste[x_ind] = np.std(targets_aggregator(data, axis=1), axis=0) / np.sqrt(len(data.ravel()))
 
             error = Y_std
             if error_type == ErrorType.STD_ERROR:
-                error = Y_ste   # standard error vs standard deviation
+                error = Y_ste  # standard error vs standard deviation
             elif error_type == ErrorType.STD:
                 error = Y_std
 
-            ax.plot(X, Y, label=setup01.comp_dims[indv.DRONE_PATROLLING_POLICY][al].name)
-            ax.fill_between(X, Y+error, Y-error, alpha=.2)
+            plt.errorbar(X, Y, yerr=error, label=setup.comp_dims[indv.DRONE_PATROLLING_POLICY][al].name, # marker=algo_marker[al_id],
+                         fillstyle='full')  # color=util.sample_color(map_color[al_id]))
+
+            # ax.plot(X, Y, label=setup.comp_dims[indv.ALGORITHM][al].name, color=util.sample_color(map_color[al_id]))
+            # ax.fill_between(X, Y+error, Y-error, alpha=.2)
         plt.xticks(setup.indv_vary[indep_var])
         plt.legend()
 
     plt.xlabel(indep_var.value["NAME"])
-    plt.ylabel(dep_var.value["NAME"] + "tar-agg {}".format(targets_aggregator.__name__))
+    plt.ylabel(dep_var.value["NAME"])  # + " (tar-agg {})".format(target_aggregator.__name__))
     plt.tight_layout()
     plt.show()
 
@@ -169,10 +179,11 @@ if __name__ == '__main__':
     # python -m src.evaluation.metrics_main
 
     # X, Y
-    plot_stats_dep_ind_var(setup01, indv.DRONES_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False)
-    plot_stats_dep_ind_var(setup01, indv.DRONE_SPEED, depv.CUMULATIVE_AR, is_boxplot=False)
-    plot_stats_dep_ind_var(setup01, indv.TARGETS_TOLERANCE, depv.CUMULATIVE_AR, is_boxplot=False)
-    plot_stats_dep_ind_var(setup01, indv.TARGETS_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False)
+    plot_stats_dep_ind_var(setup02, indv.DRONES_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False)
+
+    # plot_stats_dep_ind_var(setup01, indv.DRONE_SPEED, depv.CUMULATIVE_AR, is_boxplot=False)
+    # plot_stats_dep_ind_var(setup01, indv.TARGETS_TOLERANCE, depv.CUMULATIVE_AR, is_boxplot=False)
+    # plot_stats_dep_ind_var(setup01, indv.TARGETS_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False)
 
     # plot_stats_single_seed(setup01, seed=0, algorithm=mo.RANDOM_MOVEMENT)
 

@@ -42,10 +42,15 @@ def parser_cl_arguments(configuration: Configuration):
     configuration.TARGETS_NUMBER = args["TARGETS_NUMBER"]
     configuration.DRONES_NUMBER = args["DRONES_NUMBER"]
     configuration.DRONE_SPEED = args["DRONE_SPEED"]
-    configuration.DRONE_PATROLLING_POLICY = cst.PatrollingProtocol[args["DRONE_PATROLLING_POLICY"]]
+
     configuration.DRONE_MAX_ENERGY = args["DRONE_MAX_ENERGY"]
     configuration.N_EPISODES = args["N_EPISODES"]
     configuration.EPISODE_DURATION = args["EPISODE_DURATION"]
+
+    if type(args["DRONE_PATROLLING_POLICY"]) == str:
+        configuration.DRONE_PATROLLING_POLICY = cst.PatrollingProtocol[args["DRONE_PATROLLING_POLICY"]]
+    else:
+        configuration.DRONE_PATROLLING_POLICY = args["DRONE_PATROLLING_POLICY"]
 
 
 if __name__ == "__main__":

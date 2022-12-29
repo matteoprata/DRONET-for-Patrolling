@@ -4,10 +4,8 @@ from enum import Enum
 from src.constants import PatrollingProtocol
 
 
-class LearningParameters(Enum):
+class LearningHyperParameters(Enum):
 
-    IS_PRETRAINED = "is_pretrained"
-    MODEL_NAME = "model_name"
     BETA = "beta"
     REPLAY_MEMORY_DEPTH = "replay_memory_depth"
     EPSILON_DECAY = "epsilon_decay"
@@ -22,6 +20,25 @@ class LearningParameters(Enum):
 
     OPTIMIZER = "optimizer"
     LOSS = "loss"
+
+
+DQN_LEARNING_HYPER_PARAMETERS = {
+    # "set" is the chosen value
+    LearningHyperParameters.BETA.value: {'values': [1]},
+    LearningHyperParameters.REPLAY_MEMORY_DEPTH.value: {'values': [100000]},
+    LearningHyperParameters.EPSILON_DECAY.value: {'values': [1]},
+    LearningHyperParameters.LEARNING_RATE.value:  {'min': 0.0001, 'max': 0.001},
+    LearningHyperParameters.DISCOUNT_FACTOR.value: {'values': [1]},
+    LearningHyperParameters.BATCH_SIZE.value: {'values': [32, 64]},
+    LearningHyperParameters.SWAP_MODELS_EVERY_DECISION.value: {'values': [500]},
+
+    LearningHyperParameters.N_HIDDEN_1.value: {'values': [10]},
+    LearningHyperParameters.N_HIDDEN_2.value: {'values': [1]},
+    LearningHyperParameters.N_HIDDEN_3.value: {'values': [1]},
+
+    LearningHyperParameters.OPTIMIZER.value: {'values': ["sdg"]},
+    LearningHyperParameters.LOSS.value: {'values': ["mse"]},
+}
 
 
 class Configuration:
@@ -46,12 +63,12 @@ class Configuration:
         self.DRONE_PATROLLING_POLICY = PatrollingProtocol.RANDOM_MOVEMENT  #
         self.DRONE_MAX_ENERGY = int(10 * self.MIN)                         # int: max energy of a drone steps
 
-        self.N_EPOCHS = 1                         # how many times you will see the same scenario
+        self.N_EPOCHS = 1                           # how many times you will see the same scenario
         self.EPISODE_DURATION = int(1 * self.HOUR)  # how much time the episode lasts steps
 
-        self.N_EPISODES = 1       # how many times the scenario (a.k.a. episode) changes during a simulation
-        self.N_EPISODES_VAL = 0   # how many times the scenario (a.k.a. episode) changes during a simulation
-        self.N_EPISODES_TEST = 10  # how many times the scenario (a.k.a. episode) changes during a simulation
+        self.N_EPISODES_TRAIN = 1  # how many times the scenario (a.k.a. episode) changes during a simulation
+        self.N_EPISODES_VAL = 0    # how many times the scenario (a.k.a. episode) changes during a simulation
+        self.N_EPISODES_TEST = 0  # how many times the scenario (a.k.a. episode) changes during a simulation
 
         self.DELTA_DEC = 5                 # after how many seconds a new decision must take place
         self.IS_DECIDED_ON_TARGET = False  # the decision step happens on target visited (non uniformity of the decision step), or every DELTA_DEC
@@ -98,32 +115,36 @@ class Configuration:
 
         self.SAVE_PLOT = False              # bool: whether to save the plots of the simulation or not
         self.SAVE_PLOT_DIR = "data/plots/"  # string: where to save plots
+        self.DRAW_SIZE = 700
 
-        # ------------------------------- PATROLLING ------------------------------- #
+        # ------------------------------- WANDB ------------------------------- #
 
-        self.LEARNING_PARAMETERS = {
+        self.PROJECT_NAME = "RL_Patrolling"
+        self.HYPER_PARAM_SEARCH_MODE = 'bayes'
+        self.FUNCTION_TO_OPTIMIZE = self.FUNCTION_TO_OPTIMIZE = {
+            'goal': 'maximize',
+            'name': "cumulative_reward"
+        }
 
-            LearningParameters.IS_PRETRAINED: False,
-            LearningParameters.MODEL_NAME: "data/rl/model.h5",
-            LearningParameters.BETA: None,  # for continuous tasks
-            LearningParameters.REPLAY_MEMORY_DEPTH: 100000,
-            LearningParameters.EPSILON_DECAY: None,
-            LearningParameters.LEARNING_RATE:  0.001,
-            LearningParameters.DISCOUNT_FACTOR: 1,
-            LearningParameters.BATCH_SIZE: 32,
-            LearningParameters.SWAP_MODELS_EVERY_DECISION: 500,
+        self.DQN_PARAMETERS = {
+            LearningHyperParameters.BETA: None,
+            LearningHyperParameters.REPLAY_MEMORY_DEPTH: None,
+            LearningHyperParameters.EPSILON_DECAY: None,
+            LearningHyperParameters.LEARNING_RATE: None,
+            LearningHyperParameters.DISCOUNT_FACTOR: None,
+            LearningHyperParameters.BATCH_SIZE: None,
+            LearningHyperParameters.SWAP_MODELS_EVERY_DECISION: None,
 
-            LearningParameters.N_HIDDEN_1: 10,
-            LearningParameters.N_HIDDEN_2: 1,
-            LearningParameters.N_HIDDEN_3: 1,
+            LearningHyperParameters.N_HIDDEN_1: None,
+            LearningHyperParameters.N_HIDDEN_2: None,
+            LearningHyperParameters.N_HIDDEN_3: None,
 
-            LearningParameters.OPTIMIZER: "sgd",
-            LearningParameters.LOSS: "mse"
+            LearningHyperParameters.OPTIMIZER: None,
+            LearningHyperParameters.LOSS: None
         }
 
         # paths
         self.RL_DATA = "data/rl/"
-        self.YAML_FILE = "wandb_sweep_bayesian.yaml"
 
         # how much exploration, careful to edit
         self.ZERO_TOLERANCE = 0.1     # 10% at 80% of the simulation
@@ -143,7 +164,12 @@ class Configuration:
         self.TIME_DENSITY_METRICS = 5000  # density on the X axis of AOI ratio plots
 
         self.IS_WANDB = False
+        self.WANDB_INSTANCE = None
+        self.IS_HIDE_PROGRESS_BAR = False
 
     def conf_description(self):
         return "seed={}_nd={}_nt={}_pol={}_sp={}_tolf={}".format(self.SEED, self.DRONES_NUMBER, self.TARGETS_NUMBER,
                                                                  self.DRONE_PATROLLING_POLICY.name, self.DRONE_SPEED, self.TARGETS_TOLERANCE)
+
+    def n_tot_episodes(self):
+        return self.N_EPISODES_TRAIN + self.N_EPISODES_TEST + self.N_EPISODES_VAL

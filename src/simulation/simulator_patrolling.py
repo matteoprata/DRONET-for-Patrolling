@@ -9,26 +9,31 @@ from src.evaluation.MetricsLog import MetricsLog
 from src.utilities.utilities import current_date, euclidean_distance
 from src.drawing import pp_draw
 from src.config import Configuration
+import src.constants as cst
+
 from tqdm import tqdm
 
 import numpy as np
 import time
-
+import random
 
 class PatrollingSimulator:
 
-    # sim.config.ENV_WIDTH OK
+    # sim.cf.ENV_WIDTH OK
     # sim.env_width_meters NO
 
     def __init__(self, config: Configuration):
 
-        self.config = config
+        self.cf = config
+
+        # setting randomness
+        random.seed(self.cf.SEED)
+        np.random.seed(self.cf.SEED)
+
         self.tolerance_factor = config.TARGETS_TOLERANCE
         self.log_state = config.LOG_STATE
         self.penalty_on_bs_expiration = config.PENALTY_ON_BS_EXPIRATION
-        self.n_epochs = config.N_EPOCHS
-        self.n_episodes = config.N_EPISODES
-        self.n_episodes_validation = config.N_EPISODES_VAL
+
         self.episode_duration = config.EPISODE_DURATION
         self.is_plot = config.PLOT_SIM
 
@@ -54,7 +59,6 @@ class PatrollingSimulator:
         self.grid_cell_size = 0 if config.N_GRID_CELLS <= 0 else int(config.ENV_WIDTH / config.N_GRID_CELLS)
 
         self.wandb = config.IS_WANDB
-        self.learning = config.LEARNING_PARAMETERS
 
         self.cur_step = 0
         self.cur_step_total = 0
@@ -78,11 +82,11 @@ class PatrollingSimulator:
 
     def duration_seconds(self):
         """ Last second of the Simulation. """
-        return self.config.EPISODE_DURATION * self.config.SIM_TS_DURATION
+        return self.cf.EPISODE_DURATION * self.cf.SIM_TS_DURATION
 
     def current_second(self, next=0, cur_second_tot=False):
         """ The current second of simulation, since the beginning. """
-        return (self.cur_step_total if cur_second_tot else self.cur_step) * self.config.SIM_TS_DURATION + next * self.ts_duration_sec
+        return (self.cur_step_total if cur_second_tot else self.cur_step) * self.cf.SIM_TS_DURATION + next * self.ts_duration_sec
 
     def max_distance(self):
         """ Maximum distance in the area. """
@@ -93,7 +97,7 @@ class PatrollingSimulator:
         return self.max_distance() / self.drone_speed_meters_sec
 
     def name(self):
-        return self.config.conf_description()
+        return self.cf.conf_description()
 
     def directory_simulation(self):
         pass
@@ -104,29 +108,29 @@ class PatrollingSimulator:
         """ Moves the drones freely. """
 
         if key_pressed in ['a', 'A']:  # decrease angle
-            self.selected_drone.angle -= self.config.DRONE_ANGLE_INCREMENT
+            self.selected_drone.angle -= self.cf.DRONE_ANGLE_INCREMENT
             self.selected_drone.angle = self.selected_drone.angle % 360
 
         elif key_pressed in ['d', 'D']:  # increase angle
-            self.selected_drone.angle += self.config.DRONE_ANGLE_INCREMENT
+            self.selected_drone.angle += self.cf.DRONE_ANGLE_INCREMENT
             self.selected_drone.angle = self.selected_drone.angle % 360
 
         elif key_pressed in ['w', 'W']:  # increase speed
-            self.selected_drone.speed += self.config.DRONE_SPEED_INCREMENT
+            self.selected_drone.speed += self.cf.DRONE_SPEED_INCREMENT
 
         elif key_pressed in ['s', 'S']:  # decrease speed
-            self.selected_drone.speed -= self.config.DRONE_SPEED_INCREMENT
+            self.selected_drone.speed -= self.cf.DRONE_SPEED_INCREMENT
 
     def detect_drone_click(self, position):
         """ Handles drones selection in the simulation. """
-        click_coords_to_map = (self.environment.width/self.config.DRAW_SIZE*position[0], self.environment.height/self.config.DRAW_SIZE*(self.config.DRAW_SIZE-position[1]))
+        click_coords_to_map = (self.environment.width / self.cf.DRAW_SIZE * position[0], self.environment.height / self.cf.DRAW_SIZE * (self.cf.DRAW_SIZE - position[1]))
         entities_distance = [euclidean_distance(drone.coords, click_coords_to_map) for drone in self.environment.drones]
-        clicked_drone = self.environment.drones[np.argmin(entities_distance)] # potentially clicked drone
+        clicked_drone = self.environment.drones[np.argmin(entities_distance)]  # potentially clicked drone
 
         TOLERATED_CLICK_DISTANCE = 40
 
         closest_drone_coords = clicked_drone.coords
-        dron_coords_to_screen = (closest_drone_coords[0]*self.config.DRAW_SIZE/self.environment.width, self.config.DRAW_SIZE - (closest_drone_coords[1]*self.config.DRAW_SIZE/self.environment.width))
+        dron_coords_to_screen = (closest_drone_coords[0] * self.cf.DRAW_SIZE / self.environment.width, self.cf.DRAW_SIZE - (closest_drone_coords[1] * self.cf.DRAW_SIZE / self.environment.width))
 
         if euclidean_distance(dron_coords_to_screen, position) < TOLERATED_CLICK_DISTANCE:
             # DRONE WAS CLICKED HANDLE NOW
@@ -139,8 +143,8 @@ class PatrollingSimulator:
     # ---- # OTHER # ---- #
 
     def __setup_plotting(self):
-        if self.is_plot or self.config.SAVE_PLOT:
-            self.draw_manager = pp_draw.PathPlanningDrawer(self.environment, self, borders=True, config=self.config)
+        if self.is_plot or self.cf.SAVE_PLOT:
+            self.draw_manager = pp_draw.PathPlanningDrawer(self.environment, self, borders=True, config=self.cf)
 
     def __set_randomness(self):
         """ Set the random generators. """
@@ -165,7 +169,7 @@ class PatrollingSimulator:
 
         drones = []
         for i in range(self.n_drones):
-            drone_path = [self.config.DRONE_COORDS]
+            drone_path = [self.cf.DRONE_COORDS]
             drone_speed = 0 if self.drone_mobility == src.constants.PatrollingProtocol.FREE else self.drone_speed_meters_sec
             drone = Drone(identifier=i,
                           path=drone_path,
@@ -189,16 +193,16 @@ class PatrollingSimulator:
         # self.metrics.N_FEATURES = drones[0].rl_module.N_FEATURES
 
         self.metricsV2 = MetricsLog(self)
-        self.previous_metricsV2 = self.metricsV2  # the metrics at the previous epoch
+        # self.previous_metricsV2 = self.metricsV2  # the metrics at the previous epoch
 
     def __plot(self, cur_step, max_steps):
         """ Plot the simulation """
 
-        if cur_step % self.config.SKIP_SIM_STEP != 0:
+        if cur_step % self.cf.SKIP_SIM_STEP != 0:
             return
 
-        if self.config.WAIT_SIM_STEP > 0:
-            time.sleep(self.config.WAIT_SIM_STEP)
+        if self.cf.WAIT_SIM_STEP > 0:
+            time.sleep(self.cf.WAIT_SIM_STEP)
 
         self.draw_manager.grid_plot()
         self.draw_manager.borders_plot()
@@ -215,71 +219,57 @@ class PatrollingSimulator:
         self.draw_manager.draw_simulation_info(cur_step=cur_step, max_steps=max_steps)
         self.draw_manager.draw_obstacles()
         self.draw_manager.draw_targets()
-        self.draw_manager.update(save=self.config.SAVE_PLOT, filename=self.name() + str(cur_step) + ".png")
+        self.draw_manager.update(save=self.cf.SAVE_PLOT, filename=self.name() + str(cur_step) + ".png")
 
     def print_sim_info(self):
         print("simulation starting", self.name())
         print()
 
     def reset_episode(self):
-        self.reset_episode_val = not self.reset_episode_val
+        pass
 
-    def episode_core(self, just_setup, IS_HIDE_PRO_BARS):
-        for cur_step in tqdm(range(self.episode_duration), desc='step', leave=False, disable=IS_HIDE_PRO_BARS):
+    def run_episode(self, targets_deployment_id: int, typ: cst.EpisodeType):
 
-            if self.reset_episode_val:
-                self.reset_episode()
-                break
+        self.environment.reset_simulation()
+        targets = self.environment.targets_dataset[targets_deployment_id]  # [Target1, Target2, ...]
+        self.environment.spawn_targets(targets)
 
+        self.cur_step = 0
+
+        for cur_step in tqdm(range(self.cf.EPISODE_DURATION), desc='step', leave=False, disable=self.cf.IS_HIDE_PROGRESS_BAR):
             self.cur_step = cur_step
 
-            if just_setup:
-                return
-
             for drone in self.environment.drones:
-                # self.environment.detect_collision(drone)
                 drone.move()
 
-            if self.config.SAVE_PLOT or self.is_plot:
+            if self.cf.SAVE_PLOT or self.cf.PLOT_SIM:
                 self.__plot(self.cur_step, self.episode_duration)
 
             self.cur_step_total += 1
 
-    def run(self, just_setup=False):
-        """ The method starts the simulation. """
-        self.print_sim_info()
+    # ----> RUNNING THE SIMULATION <----
 
-        IS_HIDE_PRO_BARS = False
-        for epoch in tqdm(range(self.n_epochs), desc='epoch', disable=IS_HIDE_PRO_BARS):
-            self.is_validation = False
-            self.i_epoch = epoch
-            episodes_perm = self.rstate_sample_batch_training.permutation(self.n_episodes)  # at each epoch you see the same episodes but shuffled
+    def run_training(self):
+        # self.print_sim_info()
 
-            for episode in tqdm(range(len(episodes_perm)), desc='episodes_train', leave=False, disable=IS_HIDE_PRO_BARS):
+        for _ in tqdm(range(self.cf.N_EPOCHS), desc='epoch', disable=self.cf.IS_HIDE_PROGRESS_BAR):
 
-                self.i_episode = episode
-                ie = episodes_perm[episode]
-                self.environment.reset_simulation()
+            # a permutation of the first self.n_episodes values, to sample scenarios
+            train_episodes_perm = self.rstate_sample_batch_training.permutation(self.cf.N_EPISODES_TRAIN)  # at each epoch you see the same episodes but shuffled
 
-                targets = self.environment.targets_dataset[ie]  # [Target1, Target2]
-                self.environment.spawn_targets(targets)
+            for episode in tqdm(range(self.cf.N_EPISODES_TRAIN), desc=cst.EpisodeType.TRAIN.value, leave=False, disable=self.cf.IS_HIDE_PROGRESS_BAR):
+                self.run_episode(train_episodes_perm[episode], typ=cst.EpisodeType.TRAIN)
 
-                self.cur_step = 0
-                self.episode_core(just_setup, IS_HIDE_PRO_BARS)
+            for episode in tqdm(range(self.cf.N_EPISODES_VAL), desc=cst.EpisodeType.VAL.value, leave=False, disable=self.cf.IS_HIDE_PROGRESS_BAR):
+                self.run_episode(self.cf.N_EPISODES_TRAIN + episode, typ=cst.EpisodeType.VAL)
 
-            for episode in tqdm(range(self.n_episodes_validation), desc='episodes_val', leave=False, disable=IS_HIDE_PRO_BARS):
-                self.is_validation = True
-                self.i_episode = episode
-                self.environment.reset_simulation()
-                targets = self.environment.targets_dataset[-self.n_episodes_validation:][episode]  # [Target1, Target2]
-                self.environment.spawn_targets(targets)
+        for episode in tqdm(range(self.cf.N_EPISODES_TEST), desc=cst.EpisodeType.TEST.value, leave=False, disable=self.cf.IS_HIDE_PROGRESS_BAR):
+            self.run_episode(self.cf.N_EPISODES_TRAIN + self.cf.N_EPISODES_VAL + episode, typ=cst.EpisodeType.TEST)
 
-                self.cur_step = 0
-                self.episode_core(just_setup, IS_HIDE_PRO_BARS)
+    def run_testing(self):
+        # self.print_sim_info()
 
-        is_one_shot = self.n_episodes == 1 and self.n_epochs == 1 and self.n_episodes_validation == 0
+        self.run_episode(0, typ=cst.EpisodeType.TEST)
 
-        if is_one_shot:
-            print("One shot execution, saving stats file...")
-            self.metricsV2.save_metrics()
-
+        print("Saving stats file...")
+        self.metricsV2.save_metrics()

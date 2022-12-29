@@ -1,37 +1,99 @@
 
-# def main_sweep():
-#     """ Run sweeps to monitor models performances live. """
-#     sweep_id = wandb.sweep(sweep=sweep_configuration, project=cst.PROJECT_NAME)
-#     wandb.agent(sweep_id, function=__run_sweep)
-#
-# def __run_sweep():
-#     """ the place where to run simulations and experiments. """
-#
-#     try:
-#         with wandb.init() as wandb_instance:
-#             wandb_config = wandb_instance.config
-#
-#             learning = conf.LEARNING_PARAMETERS
-#
-#             learning[cst.HyperParameters.LR.value] = wandb_config[cst.HyperParameters.LR.value]
-#             learning[cst.HyperParameters.DISCOUNT_FACTOR.value] = wandb_config[cst.HyperParameters.DISCOUNT_FACTOR.value]
-#             learning[cst.HyperParameters.SWAP_MODELS.value] = wandb_config[cst.HyperParameters.SWAP_MODELS.value]
-#
-#             learning[cst.HyperParameters.MLP_HID1.value] = wandb_config[cst.HyperParameters.MLP_HID1.value]
-#             learning[cst.HyperParameters.MLP_HID2.value] = wandb_config[cst.HyperParameters.MLP_HID2.value]
-#             learning[cst.HyperParameters.MLP_HID3.value] = wandb_config[cst.HyperParameters.MLP_HID3.value]
-#
-#             conf.IS_ALLOW_SELF_LOOP = wandb_config[cst.HyperParameters.IS_SELF_LOOP.value]
-#
-#             sim = PatrollingSimulator(learning=learning,
-#                                       drone_max_battery=wandb_config[cst.HyperParameters.BATTERY.value],
-#                                       n_epochs=wandb_config[cst.HyperParameters.N_EPOCHS.value],
-#                                       n_episodes=wandb_config[cst.HyperParameters.N_EPISODES.value],
-#                                       episode_duration=wandb_config[cst.HyperParameters.DURATION_EPISODE.value],
-#                                       wandb=wandb_instance)
-#             sim.run()
-#
-#     except Exception as e:
-#         # exit gracefully, so wandb logs the problem
-#         print(traceback.print_exc(), file=sys.stderr)
-#         exit(1)
+
+import argparse
+import src.constants as cst
+from src.simulation.simulator_patrolling import PatrollingSimulator
+from src.config import Configuration, LearningHyperParameters, DQN_LEARNING_HYPER_PARAMETERS
+import wandb
+import traceback
+import sys
+import numpy as np
+import time
+
+
+def run_sweep(configuration: Configuration):
+    """ Run sweeps to monitor models performances live. """
+
+    print(DQN_LEARNING_HYPER_PARAMETERS)
+
+    sweep_id = wandb.sweep(
+        project=configuration.PROJECT_NAME,
+        sweep={
+            'name':       configuration.conf_description(),
+            'method':     configuration.HYPER_PARAM_SEARCH_MODE,
+            'metric':     configuration.FUNCTION_TO_OPTIMIZE,
+            'parameters': DQN_LEARNING_HYPER_PARAMETERS
+        }
+    )
+    wandb.agent(sweep_id, function=run)
+
+
+# REMINDER: this function must take NO INPUT PARAMETERS
+def run():
+    try:
+        cf = Configuration()
+        parser_cl_arguments(conf)
+
+        with wandb.init() as wandb_instance:
+
+            cf.IS_WANDB = True
+            cf.WANDB_INSTANCE = wandb_instance
+
+            for param in LearningHyperParameters:
+                cf.DQN_PARAMETERS[param] = wandb_instance.config[param.value]
+
+            sim = PatrollingSimulator(cf)
+            sim.run_training()
+
+    except Exception as e:
+        # exit gracefully, so wandb logs the problem
+        print(traceback.print_exc(), file=sys.stderr)
+        exit(1)
+
+
+def parser_cl_arguments(configuration: Configuration):
+    """ Parses the arguments for the command line. """
+
+    configuration.DRONE_PATROLLING_POLICY = cst.PatrollingProtocol.RL_DECISION_TRAIN
+    configuration.N_EPOCHS = 50
+    configuration.N_EPISODES_TRAIN = 30
+    configuration.N_EPISODES_VAL = 10
+    configuration.N_EPISODES_TEST = 10
+
+    # python -m src.main_WandbTrain -seed 10 -nd 5 -nt 10 -pl 0
+    args_li = [
+            ('-seed', 'SEED', int),
+            ('-tol', 'TARGETS_TOLERANCE', float),
+            ('-nt', 'TARGETS_NUMBER', int),
+            ('-nd', 'DRONES_NUMBER', int),
+            ('-spe', 'DRONE_SPEED', float),
+            ('-bat', 'DRONE_MAX_ENERGY', float),
+            ('-ne', 'N_EPOCHS', int),
+            ('-net', 'N_EPISODES_TRAIN', int),
+            ('-neb', 'N_EPISODES_VAL', int),
+            ('-nes', 'N_EPISODES_TEST', int),
+            ('-edu', 'EPISODE_DURATION', int),
+            ('-pl', 'PLOT_SIM', int)
+    ]
+
+    parser = argparse.ArgumentParser(description='Patrolling Simulator arguments:')
+
+    for nick, name, typ in args_li:
+        parser.add_argument(nick, "--" + name, default=getattr(configuration, name), type=typ)
+
+    args = vars(parser.parse_args())
+    # parsing arguments from cli
+
+    print("Setting parameters...")
+
+    for nick, name, typ in args_li:
+        if name == "PLOT_SIM":
+            setattr(configuration, name, bool(args[name]))
+        else:
+            setattr(configuration, name, args[name])
+
+
+if __name__ == "__main__":
+    conf = Configuration()
+    parser_cl_arguments(conf)
+    run_sweep(conf)

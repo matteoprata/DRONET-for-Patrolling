@@ -25,7 +25,7 @@ class MetricsLog:
 
     def fname_generator(self):
         # independent variables
-        fname = self.simulator.config.conf_description() + ".json"
+        fname = self.simulator.cf.conf_description() + ".json"
         print("saving " + fname)
         return fname
 

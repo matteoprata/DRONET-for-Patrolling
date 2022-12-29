@@ -61,7 +61,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         """ Called at every time step. """
 
         if self.mobility == co.PatrollingProtocol.RL_DECISION_TRAIN:
-            if (self.will_reach_target_now() and self.simulator.config.IS_DECIDED_ON_TARGET) or (self.rl_module.is_decision_step() and not self.simulator.config.IS_DECIDED_ON_TARGET and self.will_reach_target_now()):
+            if (self.will_reach_target_now() and self.simulator.cf.IS_DECIDED_ON_TARGET) or (self.rl_module.is_decision_step() and not self.simulator.cf.IS_DECIDED_ON_TARGET and self.will_reach_target_now()):
                 self.coords = self.next_target_coo()  # this instruction sets the position of the drone on top of the target (useful due to discrete time)
                 self.__handle_metrics()
                 self.__update_target_time_visit_upon_reach()
@@ -69,7 +69,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 action = self.rl_module.query_policy()
                 self.__update_next_target_upon_reach(action)
 
-            elif self.rl_module.is_decision_step() and not self.simulator.config.IS_DECIDED_ON_TARGET:
+            elif self.rl_module.is_decision_step() and not self.simulator.cf.IS_DECIDED_ON_TARGET:
                 action = self.rl_module.query_policy()
                 self.__update_next_target_upon_reach(action)
 
@@ -150,7 +150,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
     def will_reach_target_now(self):
         """ Returns true if the drone will reach its target or overcome it in this step. """
-        return self.speed * self.simulator.ts_duration_sec + self.simulator.config.OK_VISIT_RADIUS >= euclidean_distance(self.coords, self.next_target_coo())
+        return self.speed * self.simulator.ts_duration_sec + self.simulator.cf.OK_VISIT_RADIUS >= euclidean_distance(self.coords, self.next_target_coo())
 
     # ------> (end) MOVEMENT routines
 
@@ -172,7 +172,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         self.prev_target.last_visit_ts_by_drone[self.identifier] = self.simulator.cur_step  # vector of times of visit
 
     def __handle_metrics(self):
-        if not self.simulator.config.IS_TRAINING_MODE or self.simulator.is_validation:
+        if not self.simulator.cf.IS_TRAINING_MODE or self.simulator.is_validation:
             self.simulator.metricsV2.visit_done(self, self.prev_target, self.simulator.cur_step)
 
     def __hash__(self):

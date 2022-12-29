@@ -1,3 +1,4 @@
+import random
 
 import numpy as np
 from src.utilities import utilities as util
@@ -45,7 +46,6 @@ class PatrollingDQN:
         self.swap_models_every_decision = swap_models_every_decision
 
         # make the simulation reproducible
-        np.random.seed(self.simulator.sim_seed)
         # tf.set_random_seed(self.simulator.sim_seed)
 
         # sess = tf.Session(graph=tf.get_default_graph())

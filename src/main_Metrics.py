@@ -179,7 +179,7 @@ if __name__ == '__main__':
     # python -m src.evaluation.metrics_main
 
     # X, Y
-    plot_stats_dep_ind_var(setup02, indv.DRONES_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False)
+    plot_stats_dep_ind_var(setup02, indv.DRONE_SPEED, depv.CUMULATIVE_DELAY_AR, is_boxplot=False)
 
     # plot_stats_dep_ind_var(setup01, indv.DRONE_SPEED, depv.CUMULATIVE_AR, is_boxplot=False)
     # plot_stats_dep_ind_var(setup01, indv.TARGETS_TOLERANCE, depv.CUMULATIVE_AR, is_boxplot=False)

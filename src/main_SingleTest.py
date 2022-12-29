@@ -9,7 +9,7 @@ def main(configuration):
 
     print("\nExecuting > {}\n".format(configuration.conf_description()))
     sim = PatrollingSimulator(configuration)
-    sim.run()
+    sim.run_testing()
 
 
 def parser_cl_arguments(configuration: Configuration):
@@ -26,11 +26,11 @@ def parser_cl_arguments(configuration: Configuration):
     parser.add_argument('-spe', '--DRONE_SPEED', default=configuration.DRONE_SPEED, type=float)
     parser.add_argument('-bat', '--DRONE_MAX_ENERGY', default=configuration.DRONE_MAX_ENERGY, type=float)
 
-    parser.add_argument('-ne',  '--N_EPISODES', default=configuration.N_EPISODES, type=int)
+    parser.add_argument('-ne',  '--N_EPISODES_TRAIN', default=configuration.N_EPISODES_TRAIN, type=int)
     parser.add_argument('-edu', '--EPISODE_DURATION', default=configuration.EPISODE_DURATION, type=int)
     parser.add_argument('-pl',  '--PLOT_SIM', default=configuration.PLOT_SIM, type=int)
 
-    # python -m src.main_single_test -seed 1 -nt 10 -nd 2 -pol BASE_01 -pl 1 -ne 1
+    # python -m src.main_SingleTest -seed 1 -nt 10 -nd 2 -pol BASE_01 -pl 1 -ne 1
     # parsing arguments from cli
     args = vars(parser.parse_args())
 
@@ -44,7 +44,7 @@ def parser_cl_arguments(configuration: Configuration):
     configuration.DRONE_SPEED = args["DRONE_SPEED"]
 
     configuration.DRONE_MAX_ENERGY = args["DRONE_MAX_ENERGY"]
-    configuration.N_EPISODES = args["N_EPISODES"]
+    configuration.N_EPISODES_TRAIN = args["N_EPISODES_TRAIN"]
     configuration.EPISODE_DURATION = args["EPISODE_DURATION"]
 
     if type(args["DRONE_PATROLLING_POLICY"]) == str:

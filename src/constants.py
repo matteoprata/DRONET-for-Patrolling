@@ -3,9 +3,16 @@ import multiprocessing
 from src.patrolling import patrolling_baselines as pbase
 from src.patrolling.Baseline01 import Baseline01
 
+
 """
 This file contains all the constants of the simulator.
 """
+
+
+class EpisodeType(Enum):
+    TRAIN = "train"
+    TEST = "test"
+    VAL = "validation"
 
 
 class PatrollingProtocol(Enum):
@@ -74,9 +81,6 @@ class JSONFields(Enum):
 
 PATH_STATS = "data/experiments/"
 N_CORES = multiprocessing.cpu_count()-1
-
-PROJECT_NAME = "uavsimulator_patrolling"
-
 
 from src.simulation_setup import setup01, setup02
 

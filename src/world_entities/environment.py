@@ -9,147 +9,13 @@ from collections import defaultdict
 from src.evaluation.MetricsLog import MetricsLog
 
 
-class Environment:
-    """ The environment is an entity that represents the area of interest."""
+class ObstacleHandler:
 
-    def __init__(self, width, height, simulator):
-
-        self.simulator = simulator
-        self.width = width
+    def __init__(self, simulator, width, height):
         self.height = height
-        self.drones = None
-        self.base_stations = None
-
-        # set events, set obstacles
-        self.events: list = []  # even expired ones
+        self.width = width
+        self.simulator = simulator
         self.obstacles = []
-        self.targets = []
-
-        self.closest_target = []
-        self.furthest_target = []
-        self.targets_dataset = []
-
-    def add_drones(self, drones: list):
-        """ add a list of drones in the env """
-        log("Added {} drones to the environment.".format(len(drones)))
-        self.drones = drones
-
-    def add_base_station(self, base_stations: list):
-        """ add depots in the env """
-        log("Added {} base stations in the environment.".format(len(base_stations)))
-        self.base_stations = base_stations
-
-    def get_expired_events(self, current_ts):
-        return [e for e in self.events if e.is_expired(current_ts)]
-
-    def get_valid_events(self, current_ts):
-        return [e for e in self.events if not e.is_expired(current_ts)]
-
-    def get_current_cell(self, drone):
-        drone_coods = drone.coords
-        cell_index = TraversedCells.coord_to_cell(size_cell=self.simulator.grid_cell_size,
-                                                  width_area=self.width,
-                                                  x_pos=drone_coods[0],
-                                                  y_pos=drone_coods[1])
-        return cell_index
-
-    def reset_simulation(self, is_end_epoch=True):
-        """ Reset the scenario after every episode. """
-
-        self.simulator.previous_metricsV2 = self.simulator.metricsV2
-        self.simulator.metricsV2 = MetricsLog(self.simulator)
-
-        for drone in self.drones:
-            drone.coords = drone.bs.coords
-            # drone.rl_module.reset_MDP_episode()
-            drone.reset()
-
-        for tar in self.targets:
-            tar.reset()
-
-    def generate_target_combinations(self, seed):
-        """
-        Assumption, file stores for each seed, up to 100 targets, up to 500 episodes
-        :param seed:
-        :return:
-        """
-        # Creates a dataset of targets to iterate over to
-
-        # loading targets list
-        # targets_fname = conf.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec)
-
-        targets_x_episode = defaultdict(list)
-        print("START: generating random episodes")
-
-        for ep in tqdm(range(self.simulator.n_episodes + self.simulator.n_episodes_validation), disable=True):
-            coordinates = []
-
-            # add coordinates of the targets
-            for i in range(self.simulator.n_targets):
-                point_coords = [self.simulator.rnd_env.randint(0, self.width),
-                                self.simulator.rnd_env.randint(0, self.height)]
-                coordinates.append(point_coords)
-
-            # tsp_path_time = self.tsp_path_time(coordinates)  # time of a TSP from the targets
-            REF_SPEED = 15  #m/s
-            diag_space = np.sqrt(self.width**2 + self.height**2) * 2
-            diag_time = diag_space / REF_SPEED
-            # add tolerances of the targets
-            sigma = 0.3 * diag_time
-            mean = diag_time * (1 + self.simulator.tolerance_factor)
-            # skew = self.simulator.tolerance_factor * diag_time
-            MIN_IDLENESS = diag_time / self.simulator.n_targets
-
-            for i in range(self.simulator.n_targets):  # set the threshold for the targets
-                # idleness = self.simulator.rnd_tolerance.normal(tsp_path_time, sigma, 1)[0]
-                idleness = self.simulator.rnd_tolerance.normal(mean, sigma, 1)[0]  # util.rand_skew_norm(alpha=0, mean=mean, std=sigma, )  # normal
-                idleness = max(idleness, MIN_IDLENESS)
-                # print("sigma", sigma, "mu", mean, "sample", idleness)
-                targets_x_episode[ep].append((i, tuple(coordinates[i]), idleness))
-
-        # assert(self.simulator.n_episodes <= MAX_N_EPISODES)
-        for ep in range(self.simulator.n_episodes + self.simulator.n_episodes_validation):
-            epoch_targets = []
-            for t_id, t_coord, t_idleness in targets_x_episode[ep][:self.simulator.n_targets]:
-
-                t = Target(identifier=len(self.base_stations) + t_id,
-                           coords=tuple(t_coord),
-                           maximum_tolerated_idleness=t_idleness,
-                           simulator=self.simulator)
-
-                epoch_targets.append(t)
-            self.targets_dataset.append(epoch_targets)
-        # print("TARGETS:", self.targets_dataset)
-        return self.targets_dataset
-
-    def spawn_targets(self, targets=None):
-
-        self.targets = []
-
-        if targets is None:
-            targets = self.generate_target_combinations(self.simulator.sim_seed)[0]
-
-        # The base station is a target
-        for i in range(self.simulator.n_base_stations):
-            battery_seconds = self.simulator.drone_max_battery * self.simulator.ts_duration_sec
-            self.targets.append(Target(i, self.base_stations[i].coords, battery_seconds, self.simulator))
-
-        self.targets += targets
-
-        # targets may be
-        # if targets is not None:
-        #     for j, (x, y, tol_del) in enumerate(targets):
-        #         self.targets.append(Target(i+j+1, (x, y), tol_del, self.simulator))
-
-        # FOR each target set the furthest and closest target
-        for tar1 in self.targets:
-            distances = [euclidean_distance(tar1.coords, tar2.coords) for tar2 in self.targets]
-            distances_min, distances_max = distances[:], distances[:]
-            distances_min[tar1.identifier] = np.inf
-            distances_max[tar1.identifier] = -np.inf
-
-            tar1.furthest_target = self.targets[np.argmax(distances_max)]
-            tar1.closest_target = self.targets[np.argmin(distances_min)]
 
     def spawn_obstacles(self, orthogonal_obs=False):
         """ Appends obstacles in the environment """
@@ -214,9 +80,152 @@ class Environment:
             distance_obstacles[en] = distance_point_segment(p1, p2, p3)
         return distance_obstacles
 
-    def __handle_collision(self, drone):
+    @staticmethod
+    def __handle_collision(drone):
         """ Takes countermeasure when drone collides. """
         drone.coords = drone.visited_targets_coordinates[0]
+
+
+class Environment(ObstacleHandler):
+    """ The environment is an entity that represents the area of interest."""
+
+    def __init__(self, width, height, simulator):
+        super().__init__(simulator, width, height)
+
+        self.simulator = simulator
+        self.width = width
+        self.height = height
+        self.drones = None
+        self.base_stations = None
+
+        # set events, set obstacles
+        self.events: list = []  # even expired ones
+        self.targets = []
+
+        self.closest_target = []
+        self.furthest_target = []
+        self.targets_dataset = []
+
+    def add_drones(self, drones: list):
+        """ add a list of drones in the env """
+        # log("Added {} drones to the environment.".format(len(drones)))
+        self.drones = drones
+
+    def add_base_station(self, base_stations: list):
+        """ add depots in the env """
+        # log("Added {} base stations in the environment.".format(len(base_stations)))
+        self.base_stations = base_stations
+
+    def get_expired_events(self, current_ts):
+        return [e for e in self.events if e.is_expired(current_ts)]
+
+    def get_valid_events(self, current_ts):
+        return [e for e in self.events if not e.is_expired(current_ts)]
+
+    def get_current_cell(self, drone):
+        drone_coods = drone.coords
+        cell_index = TraversedCells.coord_to_cell(size_cell=self.simulator.grid_cell_size,
+                                                  width_area=self.width,
+                                                  x_pos=drone_coods[0],
+                                                  y_pos=drone_coods[1])
+        return cell_index
+
+    def reset_simulation(self, is_end_epoch=True):
+        """ Reset the scenario after every episode. """
+
+        self.simulator.metricsV2 = MetricsLog(self.simulator)
+
+        for drone in self.drones:
+            drone.coords = drone.bs.coords
+            # drone.rl_module.reset_MDP_episode()
+            drone.reset()
+
+        for tar in self.targets:
+            tar.reset()
+
+    def generate_target_combinations(self, seed):
+        """
+        Assumption, file stores for each seed, up to 100 targets, up to 500 episodes
+        :param seed:
+        :return:
+        """
+        # Creates a dataset of targets to iterate over to
+
+        # loading targets list
+        # targets_fname = conf.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec)
+
+        targets_x_episode = defaultdict(list)
+        # print("START: generating random episodes")
+
+        for ep in tqdm(range(self.simulator.cf.n_tot_episodes()), disable=True):
+            coordinates = []
+
+            # add coordinates of the targets
+            for i in range(self.simulator.n_targets):
+                point_coords = [self.simulator.rnd_env.randint(0, self.width),
+                                self.simulator.rnd_env.randint(0, self.height)]
+                coordinates.append(point_coords)
+
+            # tsp_path_time = self.tsp_path_time(coordinates)  # time of a TSP from the targets
+            REF_SPEED = 15  #m/s
+            diag_space = np.sqrt(self.width**2 + self.height**2) * 2
+            diag_time = diag_space / REF_SPEED
+            # add tolerances of the targets
+            sigma = 0.3 * diag_time
+            mean = diag_time * (1 + self.simulator.tolerance_factor)
+            # skew = self.simulator.tolerance_factor * diag_time
+            MIN_IDLENESS = diag_time / self.simulator.n_targets
+
+            for i in range(self.simulator.n_targets):  # set the threshold for the targets
+                # idleness = self.simulator.rnd_tolerance.normal(tsp_path_time, sigma, 1)[0]
+                idleness = self.simulator.rnd_tolerance.normal(mean, sigma, 1)[0]  # util.rand_skew_norm(alpha=0, mean=mean, std=sigma, )  # normal
+                idleness = max(idleness, MIN_IDLENESS)
+                # print("sigma", sigma, "mu", mean, "sample", idleness)
+                targets_x_episode[ep].append((i, tuple(coordinates[i]), idleness))
+
+        # assert(self.simulator.n_episodes <= MAX_N_EPISODES)
+        for ep in range(self.simulator.cf.n_tot_episodes()):
+            epoch_targets = []
+            for t_id, t_coord, t_idleness in targets_x_episode[ep][:self.simulator.n_targets]:
+
+                t = Target(identifier=len(self.base_stations) + t_id,
+                           coords=tuple(t_coord),
+                           maximum_tolerated_idleness=t_idleness,
+                           simulator=self.simulator)
+
+                epoch_targets.append(t)
+            self.targets_dataset.append(epoch_targets)
+        # print("TARGETS:", self.targets_dataset)
+        return self.targets_dataset
+
+    def spawn_targets(self, targets=None):
+
+        self.targets = []
+
+        if targets is None:
+            targets = self.generate_target_combinations(self.simulator.sim_seed)[0]
+
+        # The base station is a target
+        for i in range(self.simulator.n_base_stations):
+            battery_seconds = self.simulator.drone_max_battery * self.simulator.ts_duration_sec
+            self.targets.append(Target(i, self.base_stations[i].coords, battery_seconds, self.simulator))
+
+        self.targets += targets
+
+        # targets may be
+        # if targets is not None:
+        #     for j, (x, y, tol_del) in enumerate(targets):
+        #         self.targets.append(Target(i+j+1, (x, y), tol_del, self.simulator))
+
+        # FOR each target set the furthest and closest target
+        for tar1 in self.targets:
+            distances = [euclidean_distance(tar1.coords, tar2.coords) for tar2 in self.targets]
+            distances_min, distances_max = distances[:], distances[:]
+            distances_min[tar1.identifier] = np.inf
+            distances_max[tar1.identifier] = -np.inf
+
+            tar1.furthest_target = self.targets[np.argmax(distances_max)]
+            tar1.closest_target = self.targets[np.argmin(distances_min)]
 
     @staticmethod
     def get_truncated_normal(mean=0, sd=1, low=0, upp=10):

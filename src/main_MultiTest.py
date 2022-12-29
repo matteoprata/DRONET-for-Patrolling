@@ -33,7 +33,7 @@ def main_multi_test(configuration: Configuration):
 
                     configuration = copy.deepcopy(configuration)
                     for var, val in stp.indv_fixed.items():
-                        # NOTICE: assumes that the keys in the setup indv_fixed dict have the same name as the values in config
+                        # NOTICE: assumes that the keys in the setup indv_fixed dict have the same name as the values in cf
                         setattr(configuration, var.name, val)
 
                     # configuration values
@@ -54,7 +54,7 @@ def main_safe_execution(configuration):
     try:
         print("\nExecuting > {}\n".format(configuration.conf_description()))
         sim = PatrollingSimulator(configuration)
-        sim.run()
+        sim.run_testing()
 
     except:
         print("Could not solve problem for {}!".format(configuration.conf_description()))

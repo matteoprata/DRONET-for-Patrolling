@@ -2,6 +2,7 @@
 from enum import Enum
 
 from src.constants import PatrollingProtocol
+from src.utilities.utilities import euclidean_distance
 
 
 class LearningHyperParameters(Enum):
@@ -20,25 +21,6 @@ class LearningHyperParameters(Enum):
 
     OPTIMIZER = "optimizer"
     LOSS = "loss"
-
-
-DQN_LEARNING_HYPER_PARAMETERS = {
-    # "set" is the chosen value
-    LearningHyperParameters.BETA.value: {'values': [1]},
-    LearningHyperParameters.REPLAY_MEMORY_DEPTH.value: {'values': [100000]},
-    LearningHyperParameters.EPSILON_DECAY.value: {'values': [1]},
-    LearningHyperParameters.LEARNING_RATE.value:  {'min': 0.0001, 'max': 0.001},
-    LearningHyperParameters.DISCOUNT_FACTOR.value: {'values': [1]},
-    LearningHyperParameters.BATCH_SIZE.value: {'values': [32, 64]},
-    LearningHyperParameters.SWAP_MODELS_EVERY_DECISION.value: {'values': [500]},
-
-    LearningHyperParameters.N_HIDDEN_1.value: {'values': [10]},
-    LearningHyperParameters.N_HIDDEN_2.value: {'values': [1]},
-    LearningHyperParameters.N_HIDDEN_3.value: {'values': [1]},
-
-    LearningHyperParameters.OPTIMIZER.value: {'values': ["sdg"]},
-    LearningHyperParameters.LOSS.value: {'values': ["mse"]},
-}
 
 
 class Configuration:
@@ -99,6 +81,7 @@ class Configuration:
         self.DRONE_SENSING_RANGE = 0       # float: meters, the sensing range of the drones.
         self.DRONE_MAX_BUFFER_SIZE = 0     # int: max number of packets in the buffer of a drone.
         self.DRONE_RADAR_RADIUS = 60       # meters
+        self.DRONE_SENSING_HOVERING = 60*5   # seconds
 
         # map
         self.PLOT_TRAJECTORY_NEXT_TARGET = True   # shows the segment from the drone to its next waypoint
@@ -160,7 +143,6 @@ class Configuration:
         self.OK_VISIT_RADIUS = 0  # radius of a target, suffices to visit it IGNORE
 
         self.IS_PARALLEL_EXECUTION = False
-        self.IS_TRAINING_MODE = False
         self.TIME_DENSITY_METRICS = 5000  # density on the X axis of AOI ratio plots
 
         self.IS_WANDB = False
@@ -173,3 +155,31 @@ class Configuration:
 
     def n_tot_episodes(self):
         return self.N_EPISODES_TRAIN + self.N_EPISODES_TEST + self.N_EPISODES_VAL
+
+    def seconds_to_ts(self, seconds):
+        return int(seconds / self.SIM_TS_DURATION)
+
+    def ts_tp_seconds(self, tss):
+        return tss * self.SIM_TS_DURATION
+
+    def max_time_distance(self):
+        return euclidean_distance(self.ENV_WIDTH, self.ENV_HEIGHT) / self.DRONE_SPEED
+
+
+DQN_LEARNING_HYPER_PARAMETERS = {
+    # "set" is the chosen value
+    LearningHyperParameters.BETA.value: {'values': [1]},
+    LearningHyperParameters.REPLAY_MEMORY_DEPTH.value: {'values': [100000]},
+    LearningHyperParameters.EPSILON_DECAY.value: {'values': [1]},
+    LearningHyperParameters.LEARNING_RATE.value:  {'min': 0.0001, 'max': 0.001},
+    LearningHyperParameters.DISCOUNT_FACTOR.value: {'values': [1]},
+    LearningHyperParameters.BATCH_SIZE.value: {'values': [32, 64]},
+    LearningHyperParameters.SWAP_MODELS_EVERY_DECISION.value: {'values': [500]},
+
+    LearningHyperParameters.N_HIDDEN_1.value: {'values': [10]},
+    LearningHyperParameters.N_HIDDEN_2.value: {'values': [1]},
+    LearningHyperParameters.N_HIDDEN_3.value: {'values': [1]},
+
+    LearningHyperParameters.OPTIMIZER.value: {'values': ["sdg"]},
+    LearningHyperParameters.LOSS.value: {'values': ["mse"]},
+}

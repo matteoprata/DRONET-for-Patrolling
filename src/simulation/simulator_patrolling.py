@@ -17,10 +17,11 @@ import numpy as np
 import time
 import random
 
-class PatrollingSimulator:
 
-    # sim.cf.ENV_WIDTH OK
-    # sim.env_width_meters NO
+from src.patrolling.RLModule2 import RLModule
+
+
+class PatrollingSimulator:
 
     def __init__(self, config: Configuration):
 
@@ -67,6 +68,8 @@ class PatrollingSimulator:
         self.current_date = current_date()
 
         self.metrics = None  # init later
+        self.rl_module = None
+
         # create the world entites
         self.__set_randomness()
         self.__create_world_entities()
@@ -75,8 +78,6 @@ class PatrollingSimulator:
         # create directory of the simulation
         # make_path(self.directory_simulation() + "-")
 
-        self.reset_episode_val = False
-        self.is_validation = False
 
     # ---- # BOUNDS and CONSTANTS # ---- #
 
@@ -182,18 +183,19 @@ class PatrollingSimulator:
                           max_buffer=self.drone_max_buffer,
                           max_battery=self.drone_max_battery,
                           simulator=self,
-                          mobility=self.drone_mobility)
+                          patrolling_protocol=self.drone_mobility)
             drones.append(drone)
 
         self.selected_drone = drones[0]
         self.environment.add_drones(drones)
 
-        self.metrics = Metrics(self)
+        # self.metrics = Metrics(self)
         # self.metrics.N_ACTIONS = drones[0].rl_module.N_ACTIONS
         # self.metrics.N_FEATURES = drones[0].rl_module.N_FEATURES
 
         self.metricsV2 = MetricsLog(self)
         # self.previous_metricsV2 = self.metricsV2  # the metrics at the previous epoch
+        self.rl_module = RLModule(self)
 
     def __plot(self, cur_step, max_steps):
         """ Plot the simulation """
@@ -250,8 +252,6 @@ class PatrollingSimulator:
     # ----> RUNNING THE SIMULATION <----
 
     def run_training(self):
-        # self.print_sim_info()
-
         for _ in tqdm(range(self.cf.N_EPOCHS), desc='epoch', disable=self.cf.IS_HIDE_PROGRESS_BAR):
 
             # a permutation of the first self.n_episodes values, to sample scenarios
@@ -267,8 +267,6 @@ class PatrollingSimulator:
             self.run_episode(self.cf.N_EPISODES_TRAIN + self.cf.N_EPISODES_VAL + episode, typ=cst.EpisodeType.TEST)
 
     def run_testing(self):
-        # self.print_sim_info()
-
         self.run_episode(0, typ=cst.EpisodeType.TEST)
 
         print("Saving stats file...")

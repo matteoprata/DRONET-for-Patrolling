@@ -161,7 +161,7 @@ def plot_stats_single_seed(setup, seed, algorithm):
         met.plot_aoi(t)
 
     print()
-    print("STATS for seed", seed, "with mobility", algorithm)
+    print("STATS for seed", seed, "with patrolling_protocol", algorithm)
     print(depv.CUMULATIVE_AR.name, "on avg vector:", dep_var_map[depv.CUMULATIVE_AR](Yavg))
     print(depv.CUMULATIVE_DELAY_AR.name, "on avg vector:", dep_var_map[depv.CUMULATIVE_DELAY_AR](Yavg))
     print(depv.WORST_DELAY.name, "on avg vector:", dep_var_map[depv.WORST_DELAY](Yavg))
@@ -176,7 +176,7 @@ if __name__ == '__main__':
     # 1. Declare independent variables and their domain
     # 2. Declare what independent variable varies at this execution and what stays fixed
 
-    # python -m src.evaluation.metrics_main
+    # python -m src.main_Metrics
 
     # X, Y
     plot_stats_dep_ind_var(setup02, indv.DRONE_SPEED, depv.CUMULATIVE_DELAY_AR, is_boxplot=False)

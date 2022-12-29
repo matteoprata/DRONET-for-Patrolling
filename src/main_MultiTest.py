@@ -70,7 +70,7 @@ def parser_cl_arguments(configuration: Configuration):
     parser.add_argument('-set', '--SETUP_NAME', type=str)
     parser.add_argument('-par', '--IS_PARALLEL_EXECUTION', default=0, type=int)
 
-    # python -m src.main_multi_test -set setup02 -par 1
+    # python -m src.main_MultiTest -set setup02 -par 1
     # parsing arguments from cli
     args = vars(parser.parse_args())
 

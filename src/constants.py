@@ -16,8 +16,8 @@ class EpisodeType(Enum):
 
 
 class PatrollingProtocol(Enum):
-    FREE = None
-    RL_DECISION_TRAIN = None
+    FREE = 1
+    RL_DECISION_TRAIN = 0
 
     RANDOM_MOVEMENT     = pbase.RandomPolicy
     GO_MAX_AOI          = pbase.MaxAOIPolicy

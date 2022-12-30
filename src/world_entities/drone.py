@@ -38,6 +38,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         self.visited_targets_coordinates = path
         self.previous_coords = self.visited_targets_coordinates[0]
         self.prev_target     = self.simulator.environment.targets[0]
+        self.prev_state = None
 
         # self.rl_module = RLModule(self)
 
@@ -84,9 +85,11 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 self.coords = self.next_target_coo()  # this instruction sets the position of the drone on top of the target (useful due to discrete time)
                 self.__handle_metrics()
                 self.__update_target_time_visit_upon_reach()
-                policy = planners.RandomPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
-                target = policy.next_visit()
-                print(self.identifier, self.simulator.rl_module.state(self))
+                # policy = planners.RandomPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
+                # target = policy.next_visit()
+                tid = self.simulator.rl_module.query_model(self)
+                target = self.simulator.environment.targets[tid]
+                # print(self.identifier, self.simulator.rl_module.state(self))
                 self.__update_next_target_upon_reach(target)
 
         elif self.patrolling_protocol == co.PatrollingProtocol.RL_DECISION_TEST:

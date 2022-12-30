@@ -3,11 +3,11 @@ from enum import Enum
 
 from src.constants import PatrollingProtocol
 from src.utilities.utilities import euclidean_distance
+import numpy as np
 
 
 class LearningHyperParameters(Enum):
 
-    BETA = "beta"
     REPLAY_MEMORY_DEPTH = "replay_memory_depth"
     EPSILON_DECAY = "epsilon_decay"
     LEARNING_RATE = "learning_rate"
@@ -18,9 +18,11 @@ class LearningHyperParameters(Enum):
     N_HIDDEN_1 = "n_hidden_neurons_lv1"
     N_HIDDEN_2 = "n_hidden_neurons_lv2"
     N_HIDDEN_3 = "n_hidden_neurons_lv3"
+    N_HIDDEN_4 = "n_hidden_neurons_lv4"
+    N_HIDDEN_5 = "n_hidden_neurons_lv5"
 
-    OPTIMIZER = "optimizer"
-    LOSS = "loss"
+    # OPTIMIZER = "optimizer"
+    # LOSS = "loss"
 
 
 class Configuration:
@@ -43,10 +45,10 @@ class Configuration:
         self.DRONES_NUMBER = 1                                                  # int: number of drones.
         self.DRONE_SPEED = 15                                              # 15 m/s = 54 km/h   # float: m/s, drone speed.
         self.DRONE_PATROLLING_POLICY = PatrollingProtocol.RANDOM_MOVEMENT  #
-        self.DRONE_MAX_ENERGY = int(10 * self.MIN)                         # int: max energy of a drone steps
+        self.DRONE_MAX_ENERGY = int(5 * self.HOUR)                         # int: max energy of a drone steps
 
         self.N_EPOCHS = 1                           # how many times you will see the same scenario
-        self.EPISODE_DURATION = int(1 * self.HOUR)  # how much time the episode lasts steps
+        self.EPISODE_DURATION = int(5 * self.HOUR)  # how much time the episode lasts steps
 
         self.N_EPISODES_TRAIN = 1  # how many times the scenario (a.k.a. episode) changes during a simulation
         self.N_EPISODES_VAL = 0    # how many times the scenario (a.k.a. episode) changes during a simulation
@@ -104,30 +106,31 @@ class Configuration:
 
         self.PROJECT_NAME = "RL_Patrolling"
         self.HYPER_PARAM_SEARCH_MODE = 'bayes'
-        self.FUNCTION_TO_OPTIMIZE = self.FUNCTION_TO_OPTIMIZE = {
+        self.FUNCTION_TO_OPTIMIZE = {
             'goal': 'maximize',
             'name': "cumulative_reward"
         }
 
         self.DQN_PARAMETERS = {
-            LearningHyperParameters.BETA: None,
-            LearningHyperParameters.REPLAY_MEMORY_DEPTH: None,
-            LearningHyperParameters.EPSILON_DECAY: None,
-            LearningHyperParameters.LEARNING_RATE: None,
-            LearningHyperParameters.DISCOUNT_FACTOR: None,
-            LearningHyperParameters.BATCH_SIZE: None,
-            LearningHyperParameters.SWAP_MODELS_EVERY_DECISION: None,
+            LearningHyperParameters.REPLAY_MEMORY_DEPTH: 100000,
+            LearningHyperParameters.EPSILON_DECAY: 0.000001,
+            LearningHyperParameters.LEARNING_RATE: 0.0001,
+            LearningHyperParameters.DISCOUNT_FACTOR: 1,
+            LearningHyperParameters.BATCH_SIZE: 3,
+            LearningHyperParameters.SWAP_MODELS_EVERY_DECISION: 1,
 
-            LearningHyperParameters.N_HIDDEN_1: None,
-            LearningHyperParameters.N_HIDDEN_2: None,
-            LearningHyperParameters.N_HIDDEN_3: None,
+            LearningHyperParameters.N_HIDDEN_1: 10,
+            LearningHyperParameters.N_HIDDEN_2: 0,
+            LearningHyperParameters.N_HIDDEN_3: 0,
+            LearningHyperParameters.N_HIDDEN_4: 0,
+            LearningHyperParameters.N_HIDDEN_5: 0,
 
-            LearningHyperParameters.OPTIMIZER: None,
-            LearningHyperParameters.LOSS: None
+            # LearningHyperParameters.OPTIMIZER: None,
+            # LearningHyperParameters.LOSS: None
         }
 
         # paths
-        self.RL_DATA = "data/rl/"
+        self.RL_BEST_MODEL_PATH = "data/rl/"
 
         # how much exploration, careful to edit
         self.ZERO_TOLERANCE = 0.1     # 10% at 80% of the simulation
@@ -163,23 +166,33 @@ class Configuration:
         return tss * self.SIM_TS_DURATION
 
     def max_time_distance(self):
-        return euclidean_distance(self.ENV_WIDTH, self.ENV_HEIGHT) / self.DRONE_SPEED
+        return np.sqrt(self.ENV_WIDTH**2 + self.ENV_HEIGHT**2) / self.DRONE_SPEED
+
+    def is_rl_training(self):
+        return self.DRONE_PATROLLING_POLICY == PatrollingProtocol.RL_DECISION_TRAIN
+
+    def is_rl_testing(self):
+        return self.DRONE_PATROLLING_POLICY == PatrollingProtocol.RL_DECISION_TEST
+
+    def max_times_violation(self):
+        return 100
 
 
 DQN_LEARNING_HYPER_PARAMETERS = {
     # "set" is the chosen value
-    LearningHyperParameters.BETA.value: {'values': [1]},
     LearningHyperParameters.REPLAY_MEMORY_DEPTH.value: {'values': [100000]},
-    LearningHyperParameters.EPSILON_DECAY.value: {'values': [1]},
+    LearningHyperParameters.EPSILON_DECAY.value: {'values': [0.000001]},
     LearningHyperParameters.LEARNING_RATE.value:  {'min': 0.0001, 'max': 0.001},
-    LearningHyperParameters.DISCOUNT_FACTOR.value: {'values': [1]},
+    LearningHyperParameters.DISCOUNT_FACTOR.value: {'values': [1, 0.8]},
     LearningHyperParameters.BATCH_SIZE.value: {'values': [32, 64]},
-    LearningHyperParameters.SWAP_MODELS_EVERY_DECISION.value: {'values': [500]},
+    LearningHyperParameters.SWAP_MODELS_EVERY_DECISION.value: {'values': [100, 500]},
 
-    LearningHyperParameters.N_HIDDEN_1.value: {'values': [10]},
-    LearningHyperParameters.N_HIDDEN_2.value: {'values': [1]},
-    LearningHyperParameters.N_HIDDEN_3.value: {'values': [1]},
+    LearningHyperParameters.N_HIDDEN_1.value: {'values': [10, 20, 30]},
+    LearningHyperParameters.N_HIDDEN_2.value: {'values': [0, 10, 20]},
+    LearningHyperParameters.N_HIDDEN_3.value: {'values': [0]},
+    LearningHyperParameters.N_HIDDEN_4.value: {'values': [0]},
+    LearningHyperParameters.N_HIDDEN_5.value: {'values': [0]},
 
-    LearningHyperParameters.OPTIMIZER.value: {'values': ["sdg"]},
-    LearningHyperParameters.LOSS.value: {'values': ["mse"]},
+    # LearningHyperParameters.OPTIMIZER.value: {'values': ["adam"]},
+    # LearningHyperParameters.LOSS.value: {'values': ["mse"]},
 }

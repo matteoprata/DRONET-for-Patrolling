@@ -15,6 +15,11 @@ import signal
 from multiprocessing import Pool
 
 
+def flip_biased_coin(p, random_gen):
+    """ Return true with probability p, false with probability 1-p. """
+    return random_gen.random() < p
+
+
 def log(message_to_log, is_to_log=True, current_ts=1, log_every=1):
     """ Logs message_to_log, if is_to_log or every log_every steps (given current_ts). """
     if not is_to_log or not (current_ts % log_every == 0):

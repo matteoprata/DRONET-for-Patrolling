@@ -1,10 +1,9 @@
 
-from src.utilities.utilities import min_max_normalizer, euclidean_distance
-from enum import Enum
+from src.patrolling.DQN_module2 import PatrollingDQN
+from src.patrolling.State2 import State, FeatureFamily, FeatureFamilyName
+import numpy as np
 
 from src.world_entities.drone import Drone
-from src.world_entities.target import Target
-
 
 class RLModule:
 
@@ -12,74 +11,40 @@ class RLModule:
         self.sim = simulator
         self.cf = self.sim.cf
 
-    def train_DQN(self):
-        pass
+        n_actions = len(self.sim.environment.targets)
+        n_state_features = 2 * n_actions
+        self.dqn_mod = PatrollingDQN(self.cf, self.sim, n_actions, n_state_features)
 
-    def test_DQN(self):
-        pass
+    def query_model(self, drone: Drone):
+
+        s_prime = self.state(drone)
+        r = self.reward(s_prime)
+        a = self.action(s_prime.vector())
+
+        s = drone.prev_state
+        s_vec = s.vector() if s is not None else None
+        drone.prev_state = s_prime
+
+        self.dqn_mod.train(s_vec, s_prime.vector(), a, r)
+        return a
+
+    # ----> MDP ahead < ----
 
     def state(self, drone):
+        # n targets features
         distances = FeatureFamily.time_distances(drone, self.sim.environment.targets)
-        distances = FeatureFamily(distances, 0, self.cf.max_time_distance())
+        distances = FeatureFamily(distances, 0, self.cf.max_time_distance(), FeatureFamilyName.TIME_DISTANCES)
 
+        # n targets features
         aoir = FeatureFamily.aoi_tol_ratio(drone, self.sim.environment.targets)
-        aoir = FeatureFamily(aoir, 0, 1)
+        aoir = FeatureFamily(aoir, 0, self.cf.max_times_violation(), FeatureFamilyName.AOIR)
 
         features = [distances, aoir]
         state = State(features)
         return state
 
-    def reward(self):
-        pass
+    def reward(self, state: State):
+        return np.sum(state.get_feature_by_name(FeatureFamilyName.AOIR).values())
 
-    def action(self):
-        return
-
-
-class State:
-    def __init__(self, features: list):
-        self.features = features
-        self.vector_value = None
-
-    def vector(self, is_normalized=True):
-        if self.vector_value is None:
-            vec = []
-            for f in self.features:
-                vec += f.values(is_normalized)
-            return vec
-        else:
-            return self.vector_value
-
-    def __repr__(self):
-        return str(self.vector(is_normalized=False))
-
-
-class FeatureFamily:
-    def __init__(self, vvalues, fmax, fmin):
-        self.fmax = fmax
-        self.fmin = fmin
-        self.vvalues = vvalues
-
-    def values(self, is_normalized=True):
-        if is_normalized:
-            return [min_max_normalizer(v, self.fmin, self.fmax) for v in self.vvalues]
-        else:
-            return self.vvalues
-
-    @staticmethod
-    def time_distances(drone:Drone, targets):
-        return [euclidean_distance(drone.coords, target.coords) / drone.speed for target in targets]
-
-    @staticmethod
-    def aoi_tol_ratio(drone:Drone, targets, next=0):
-        res = []
-        for target in targets:
-            target: Target = target
-            # set target need to 0 if this target is not necessary or is locked (OR)
-            # -- target is locked from another drone (not this drone)
-            # -- is inactive
-            # TODO CHECK IGNORE CONDITION
-            is_ignore_target = (target.lock is not None and target.lock != drone) or not target.active
-            res_val = 0 if is_ignore_target else target.AOI_ratio(next)
-            res.append(res_val)
-        return res
+    def action(self, state: State):
+        return self.dqn_mod.predict(state)

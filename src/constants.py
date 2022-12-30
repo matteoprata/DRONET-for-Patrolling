@@ -2,7 +2,7 @@ from enum import Enum
 import multiprocessing
 from src.patrolling import patrolling_baselines as pbase
 from src.patrolling.Baseline01 import Baseline01
-
+import torch
 
 """
 This file contains all the constants of the simulator.
@@ -88,3 +88,6 @@ from src.simulation_setup import setup01, setup02
 class Setups(Enum):
     SETUP01 = setup01
     SETUP02 = setup02
+
+
+TORCH_DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'

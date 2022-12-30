@@ -152,6 +152,7 @@ class PatrollingSimulator:
         self.rnd_tolerance = np.random.RandomState(self.sim_seed)
         self.rnd_env = np.random.RandomState(self.sim_seed)
         self.rnd_event = np.random.RandomState(self.sim_seed)
+        self.rnd_sample_replay = np.random.RandomState(self.sim_seed)
         self.rnd_explore = np.random.RandomState(self.sim_seed)
         self.rstate_sample_batch_training = np.random.RandomState(self.sim_seed)
 

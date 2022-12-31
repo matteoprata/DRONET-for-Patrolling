@@ -15,8 +15,9 @@ class DQN(nn.Module):
         # adding layers
         self.layers = [nn.Linear(n_observations, hidden_layers_neurons[0])]
 
-        for ih in range(len(hidden_layers_neurons)-1):
-            self.layers.append(nn.Linear(hidden_layers_neurons[ih], hidden_layers_neurons[ih+1]))
+        if len(hidden_layers_neurons) > 2:
+            for ih in range(len(hidden_layers_neurons)-2):
+                self.layers.append(nn.Linear(hidden_layers_neurons[ih], hidden_layers_neurons[ih+1]))
 
         self.layers.append(nn.Linear(hidden_layers_neurons[-1], n_actions))
         self.layers = nn.ParameterList(self.layers)

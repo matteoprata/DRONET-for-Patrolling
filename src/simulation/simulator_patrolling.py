@@ -69,6 +69,7 @@ class PatrollingSimulator:
 
         self.metrics = None  # init later
         self.rl_module = None
+        self.run_state = cst.EpisodeType.TRAIN
 
         # create the world entites
         self.__set_randomness()
@@ -78,10 +79,9 @@ class PatrollingSimulator:
         # create directory of the simulation
         # make_path(self.directory_simulation() + "-")
 
-
     # ---- # BOUNDS and CONSTANTS # ---- #
 
-    def duration_seconds(self):
+    def episode_duration_seconds(self):
         """ Last second of the Simulation. """
         return self.cf.EPISODE_DURATION * self.cf.SIM_TS_DURATION
 
@@ -233,6 +233,7 @@ class PatrollingSimulator:
 
     def run_episode(self, targets_deployment_id: int, typ: cst.EpisodeType):
 
+        self.run_state = typ
         self.environment.reset_simulation()
         targets = self.environment.targets_dataset[targets_deployment_id]  # [Target1, Target2, ...]
         self.environment.spawn_targets(targets)
@@ -255,15 +256,23 @@ class PatrollingSimulator:
     def run_training(self):
         for _ in tqdm(range(self.cf.N_EPOCHS), desc='epoch', disable=self.cf.IS_HIDE_PROGRESS_BAR):
 
+            self.epoch_loss = []
+            self.epoch_cumrew = []
+
             # a permutation of the first self.n_episodes values, to sample scenarios
             train_episodes_perm = self.rstate_sample_batch_training.permutation(self.cf.N_EPISODES_TRAIN)  # at each epoch you see the same episodes but shuffled
 
+            # sum loss and reward during the epoch
             for episode in tqdm(range(self.cf.N_EPISODES_TRAIN), desc=cst.EpisodeType.TRAIN.value, leave=False, disable=self.cf.IS_HIDE_PROGRESS_BAR):
                 self.run_episode(train_episodes_perm[episode], typ=cst.EpisodeType.TRAIN)
 
+            # measure reward and stats to average over the episodes = seeds
             for episode in tqdm(range(self.cf.N_EPISODES_VAL), desc=cst.EpisodeType.VAL.value, leave=False, disable=self.cf.IS_HIDE_PROGRESS_BAR):
                 self.run_episode(self.cf.N_EPISODES_TRAIN + episode, typ=cst.EpisodeType.VAL)
 
+            self.on_epoch_end()
+
+        # ON THE BEST MODEL measure reward and stats to average over the episodes = seeds
         for episode in tqdm(range(self.cf.N_EPISODES_TEST), desc=cst.EpisodeType.TEST.value, leave=False, disable=self.cf.IS_HIDE_PROGRESS_BAR):
             self.run_episode(self.cf.N_EPISODES_TRAIN + self.cf.N_EPISODES_VAL + episode, typ=cst.EpisodeType.TEST)
 
@@ -272,3 +281,10 @@ class PatrollingSimulator:
 
         print("Saving stats file...")
         self.metricsV2.save_metrics()
+
+    def on_epoch_end(self):
+        dic = {
+            "loss": np.sum(self.epoch_loss),
+            self.cf.FUNCTION_TO_OPTIMIZE["name"]: np.sum(self.epoch_cumrew)
+        }
+        self.cf.WANDB_INSTANCE.log(dic)

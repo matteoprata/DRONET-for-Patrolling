@@ -45,8 +45,10 @@ class FeatureFamily:
 
     def values(self, is_normalized=True):
         if is_normalized:
-            # print(self.vvalues, self.fmin, self.fmax)
-            return [min_max_normalizer(v, self.fmin, self.fmax) for v in self.vvalues]
+            try:
+                return [min_max_normalizer(v, self.fmin, self.fmax) for v in self.vvalues]
+            except:
+                print(self.vvalues, self.fmin, self.fmax)
         else:
             return self.vvalues
 

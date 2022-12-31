@@ -89,7 +89,7 @@ def parser_cl_arguments(configuration: Configuration):
 
     configuration.DRONE_PATROLLING_POLICY = cst.PatrollingProtocol.RL_DECISION_TRAIN
     configuration.N_EPOCHS = 50
-    configuration.N_EPISODES_TRAIN = 30
+    configuration.N_EPISODES_TRAIN = 20
     configuration.N_EPISODES_VAL = 0
     configuration.N_EPISODES_TEST = 0
 

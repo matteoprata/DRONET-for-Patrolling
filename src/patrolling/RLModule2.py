@@ -15,12 +15,14 @@ class RLModule:
         n_state_features = 2 * n_actions
         self.dqn_mod = PatrollingDQN(self.cf, self.sim, n_actions, n_state_features)
 
-    def query_model(self, drone: Drone):
-
+    def query_model(self, drone: Drone, is_exploit=False):
         s_prime = self.state(drone)
-        r = self.reward(s_prime)
-        a = self.action(s_prime.vector())
+        a = self.action(s_prime.vector(), is_exploit)
 
+        if is_exploit:
+            return a
+
+        r = self.reward(s_prime)
         s = drone.prev_state
         s_vec = s.vector() if s is not None else None
         drone.prev_state = s_prime
@@ -30,7 +32,7 @@ class RLModule:
 
     # ----> MDP ahead < ----
 
-    def state(self, drone):
+    def state(self, drone) -> State:
         # n targets features
         distances = FeatureFamily.time_distances(drone, self.sim.environment.targets)
         distances = FeatureFamily(distances, 0, self.cf.max_time_distance(), FeatureFamilyName.TIME_DISTANCES)
@@ -44,7 +46,7 @@ class RLModule:
         return state
 
     def reward(self, state: State):
-        return np.sum(state.get_feature_by_name(FeatureFamilyName.AOIR).values())
+        return - np.sum(state.get_feature_by_name(FeatureFamilyName.AOIR).values())
 
-    def action(self, state: State):
-        return self.dqn_mod.predict(state)
+    def action(self, state: State, is_exploit=False):
+        return self.dqn_mod.predict(state, is_allowed_explore=not is_exploit)

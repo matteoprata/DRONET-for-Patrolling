@@ -5,7 +5,7 @@ from src.patrolling.Baseline01 import Baseline01
 import torch
 
 """
-This file contains all the constants of the simulator.
+This file contains all the constants of the sim.
 """
 
 
@@ -90,4 +90,4 @@ class Setups(Enum):
     SETUP02 = setup02
 
 
-TORCH_DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+TORCH_DEVICE = 'cpu' #'cuda' if torch.cuda.is_available() else 'cpu'

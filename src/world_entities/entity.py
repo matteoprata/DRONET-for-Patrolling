@@ -19,7 +19,7 @@ class SimulatedEntity(Entity):
 
     def __init__(self, identifier: int, coords: tuple, simulator):
         super().__init__(identifier)
-        self.simulator = simulator    # the simulator
+        self.simulator = simulator    # the sim
         self.coords = coords          # the coordinates of the entity on the map
 
     def __to_json(self):

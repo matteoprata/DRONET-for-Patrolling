@@ -16,7 +16,7 @@ class PatrollingDQN:
     def __init__(self, cf: Configuration, simulator, n_actions, n_state_features):
 
         self.cf = cf
-        self.simulator = simulator
+        self.sim = simulator
         self.dqn_par = self.cf.DQN_PARAMETERS
 
         self.n_actions = n_actions
@@ -56,11 +56,8 @@ class PatrollingDQN:
             self.model = torch.load(self.cf.RL_BEST_MODEL_PATH)
             self.model_hat = torch.load(self.cf.RL_BEST_MODEL_PATH)
 
-        self.memory = ReplayMemory(self.dqn_par[LearningHyperParameters.REPLAY_MEMORY_DEPTH], self.simulator.rnd_sample_replay)
-        self.n_decision_step = 0
-
-        self.total_reward = 0
-        self.total_loss = 0
+        self.memory = ReplayMemory(self.dqn_par[LearningHyperParameters.REPLAY_MEMORY_DEPTH], self.sim.rnd_sample_replay)
+        self.n_training_step = 0
 
     def is_explore_probability(self):
         """ Returns True if it is time to explore, False if it is time to exploit. """
@@ -70,31 +67,29 @@ class PatrollingDQN:
 
         def let_exploration_decay():
             """ Probability of exploration now. """
-            explore_prob = explore_probability(self.simulator.cur_step_total, self.dqn_par[LearningHyperParameters.EPSILON_DECAY])
+            explore_prob = explore_probability(self.n_training_step, self.dqn_par[LearningHyperParameters.EPSILON_DECAY])
             return explore_prob
 
-        return util.flip_biased_coin(let_exploration_decay(), random_gen=self.simulator.rnd_explore)
+        return util.flip_biased_coin(let_exploration_decay(), random_gen=self.sim.rnd_explore)
 
     def predict(self, state, is_allowed_explore=True):
         """  Given an input state, it returns the action predicted by the model if no exploration is done
           and the model is given as an input, if the exploration goes through. """
 
-        if self.cf.is_rl_testing():
-            is_allowed_explore = False
-
         state = np.asarray(state).astype(np.float32)
         state = torch.tensor(state).to(cst.TORCH_DEVICE)
+
         with torch.no_grad():
             q_values = self.model(state)
 
-        # print("is_explore", self.is_explore_probability())
+        do_exp = self.is_explore_probability()
 
-        if self.is_explore_probability() and is_allowed_explore:
-            action_index = self.simulator.rnd_explore.randint(0, self.n_actions)
+        if do_exp and is_allowed_explore:
+            action_index = self.sim.rnd_explore.randint(0, self.n_actions)
             if state[action_index] == 0 and not self.cf.IS_ALLOW_SELF_LOOP:  # loop
                 actions_available = list(range(self.n_actions))
                 actions_available.pop(action_index)
-                action_sub_index = self.simulator.rnd_explore.randint(0, self.n_actions-1)
+                action_sub_index = self.sim.rnd_explore.randint(0, self.n_actions-1)
                 action_index = actions_available[action_sub_index]
         else:
             action_index = np.argmax(q_values)
@@ -111,21 +106,18 @@ class PatrollingDQN:
     def train(self, previous_state=None, current_state=None, action=None, reward=None, is_final=None):
         """ train the NN accumulate the experience and each X data the method actually train the network. """
 
-        if self.cf.is_rl_testing():
-            return
-
-        self.n_decision_step += 1
+        self.n_training_step += 1
 
         if None not in [previous_state, current_state, action, reward]:
             experience = (previous_state, current_state, action, reward)
             self.memory.push(*experience)
 
         if self.time_to_batch_training():
-            # print("Train", self.n_epochs, self.n_decision_step)
+            # print("Train", self.n_epochs, self.n_training_step)
             # sample at random from replay memory, batch_size elements
             random_sample_batch = self.memory.sample(self.dqn_par[LearningHyperParameters.BATCH_SIZE])
 
-            # random_sample_batch_indices = self.simulator.rstate_sample_batch_training.randint(0, len(self.replay_memory), size=self.batch_size)
+            # random_sample_batch_indices = self.sim.rstate_sample_batch_training.randint(0, len(self.replay_memory), size=self.batch_size)
             # random_sample_batch = [self.replay_memory.llist[i] for i in random_sample_batch_indices]
             # random_sample_batch = list(zip(*random_sample_batch))  # STATES, STATES, ACTIONS...
 
@@ -159,17 +151,15 @@ class PatrollingDQN:
         torch.nn.utils.clip_grad_value_(self.model.parameters(), 100)
         self.optimizer.step()
 
-        # print(self.decay(), "steps", self.simulator.cur_step, "/", self.simulator.sim_duration_ts)
-        # print('swapped', self.n_decision_step)
+        # print(self.decay(), "steps", self.sim.cur_step, "/", self.sim.sim_duration_ts)
+        # print('swapped', self.n_training_step)
         self.swap_learning_model()
 
         self.current_loss = loss.item()
 
-        self.total_reward += np.sum(rewards_v.numpy())
-        self.total_loss += self.current_loss
+        self.sim.epoch_loss += [np.sum(rewards_v.numpy())]
+        self.sim.epoch_cumrew += [self.current_loss]
 
-        self.cf.WANDB_INSTANCE.log({"loss": self.total_loss,
-                                    "cumulative_reward": self.total_reward})
         return self.current_loss
 
     def swap_learning_model(self, tau=0.005):
@@ -192,6 +182,4 @@ class PatrollingDQN:
         return len(self.memory) > k * self.dqn_par[LearningHyperParameters.BATCH_SIZE]
 
     def time_to_swap_models(self):
-        return self.n_decision_step % self.dqn_par[LearningHyperParameters.SWAP_MODELS_EVERY_DECISION] == 0
-
-
+        return self.n_training_step % self.dqn_par[LearningHyperParameters.SWAP_MODELS_EVERY_DECISION] == 0

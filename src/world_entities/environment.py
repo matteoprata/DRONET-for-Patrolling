@@ -47,22 +47,22 @@ class ObstacleHandler:
                     return
 
         # # drone - drone collision to fix
-        # if drone.coords != self.simulator.drone_coo:
+        # if drone.coords != self.sim.drone_coo:
         #     u1p1, u1p2 = drone.previous_coords, drone.coords
         #
         #     path_u1p1 = [0, u1p1[0], u1p1[1]]
-        #     path_u1p2 = [self.simulator.ts_duration_sec,
-        #                  self.simulator.ts_duration_sec * drone.speed + u1p1[0],
-        #                  self.simulator.ts_duration_sec * drone.speed + u1p1[1]]
+        #     path_u1p2 = [self.sim.ts_duration_sec,
+        #                  self.sim.ts_duration_sec * drone.speed + u1p1[0],
+        #                  self.sim.ts_duration_sec * drone.speed + u1p1[1]]
         #
         #     for other_drone in self.drones:
         #         if drone.identifier > other_drone.identifier:
         #             u2p1, u2p2 = other_drone.previous_coords, other_drone.coords
         #
         #             path_u2p1 = [0, u2p1[0], u2p1[1]]
-        #             path_u2p2 = [self.simulator.ts_duration_sec,
-        #                          self.simulator.ts_duration_sec * drone.speed + u2p1[0],
-        #                          self.simulator.ts_duration_sec * drone.speed + u2p1[1]]
+        #             path_u2p2 = [self.sim.ts_duration_sec,
+        #                          self.sim.ts_duration_sec * drone.speed + u2p1[0],
+        #                          self.sim.ts_duration_sec * drone.speed + u2p1[1]]
         #
         #             if is_segments_intersect(path_u1p1, path_u1p2, path_u2p1, path_u2p2) \
         #                     or euclidean_distance(u1p2, u2p2) < 1:
@@ -152,7 +152,7 @@ class Environment(ObstacleHandler):
         # Creates a dataset of targets to iterate over to
 
         # loading targets list
-        # targets_fname = conf.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.simulator.n_targets, self.simulator.drone_speed_meters_sec)
+        # targets_fname = conf.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.sim.n_targets, self.sim.drone_speed_meters_sec)
 
         targets_x_episode = defaultdict(list)
         # print("START: generating random episodes")
@@ -173,17 +173,17 @@ class Environment(ObstacleHandler):
             # add tolerances of the targets
             sigma = 0.3 * diag_time
             mean = diag_time * (1 + self.simulator.tolerance_factor)
-            # skew = self.simulator.tolerance_factor * diag_time
+            # skew = self.sim.tolerance_factor * diag_time
             MIN_IDLENESS = diag_time / self.simulator.n_targets
 
             for i in range(self.simulator.n_targets):  # set the threshold for the targets
-                # idleness = self.simulator.rnd_tolerance.normal(tsp_path_time, sigma, 1)[0]
+                # idleness = self.sim.rnd_tolerance.normal(tsp_path_time, sigma, 1)[0]
                 idleness = self.simulator.rnd_tolerance.normal(mean, sigma, 1)[0]  # util.rand_skew_norm(alpha=0, mean=mean, std=sigma, )  # normal
                 idleness = max(idleness, MIN_IDLENESS)
                 # print("sigma", sigma, "mu", mean, "sample", idleness)
                 targets_x_episode[ep].append((i, tuple(coordinates[i]), idleness))
 
-        # assert(self.simulator.n_episodes <= MAX_N_EPISODES)
+        # assert(self.sim.n_episodes <= MAX_N_EPISODES)
         for ep in range(self.simulator.cf.n_tot_episodes()):
             epoch_targets = []
             for t_id, t_coord, t_idleness in targets_x_episode[ep][:self.simulator.n_targets]:
@@ -215,7 +215,7 @@ class Environment(ObstacleHandler):
         # targets may be
         # if targets is not None:
         #     for j, (x, y, tol_del) in enumerate(targets):
-        #         self.targets.append(Target(i+j+1, (x, y), tol_del, self.simulator))
+        #         self.targets.append(Target(i+j+1, (x, y), tol_del, self.sim))
 
         # FOR each target set the furthest and closest target
         for tar1 in self.targets:

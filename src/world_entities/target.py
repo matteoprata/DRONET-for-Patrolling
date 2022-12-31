@@ -9,7 +9,7 @@ class Target(SimulatedEntity):
         SimulatedEntity.__init__(self, identifier, coords, simulator)
         self.maximum_tolerated_idleness = maximum_tolerated_idleness  # how much time until next visit tolerated SECONDS
 
-        self.last_visit_ts = 0  # - maximum_tolerated_idleness / self.simulator.ts_duration_sec
+        self.last_visit_ts = 0  # - maximum_tolerated_idleness / self.sim.ts_duration_sec
         self.last_visit_ts_by_drone = np.zeros(simulator.n_drones)  # NEW: every target knows the last time since every drone visisted it
 
         self.lock = None    # drone

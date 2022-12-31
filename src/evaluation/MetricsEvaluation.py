@@ -73,7 +73,7 @@ class MetricsEvaluation:
         return X, Y_avg
 
     def __AOI_func_PH1(self, target_id, drone_id=None, is_absolute=False):
-        # careful adding [self.simulator.episode_duration] adds the last visit even if it did not happen
+        # careful adding [self.sim.episode_duration] adds the last visit even if it did not happen
 
         def times_visit_map(target_id, drone_id=None):
             """ Times of visit of input target from particular drone (if not none). """

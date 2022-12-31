@@ -1,19 +1,19 @@
 
-from src.patrolling.patrolling_DQN_TORCH import PatrollingDQN
-from src.patrolling.StateMDP import State
-
-from src.evaluation.MetricsEvaluation import MetricsEvaluation
-from src.utilities.utilities import euclidean_distance, min_max_normalizer
-from src import config
-import numpy as np
-import time
-from src.constants import JSONFields
-
+# from src.patrolling.patrolling_DQN_TORCH import PatrollingDQN
+# from src.patrolling.StateMDP import State
+#
+# from src.evaluation.MetricsEvaluation import MetricsEvaluation
+# from src.utilities.utilities import euclidean_distance, min_max_normalizer
+# from src import config
+# import numpy as np
+# import time
+# from src.constants import JSONFields
+#
 
 class RLModule:
     def __init__(self, drone):
         self.drone = drone
-        self.simulator = self.drone.simulator
+        self.simulator = self.drone.sim
 
         self.previous_state = None
         self.previous_action = None
@@ -41,11 +41,11 @@ class RLModule:
                                  swap_models_every_decision=self.simulator.learning["swap_models_every_decision"],
                                  )
 
-        self.AOI_NORM = self.TARGET_VIOLATION_FACTOR  # self.simulator.duration_seconds() / min_threshold
+        self.AOI_NORM = self.TARGET_VIOLATION_FACTOR  # self.sim.duration_seconds() / min_threshold
         self.TIME_NORM = self.simulator.max_travel_time()
 
-        # min_threshold = min([t.maximum_tolerated_idleness for t in self.simulator.environment.targets])
-        # self.AOI_FUTURE_NORM = 1  # self.simulator.duration_seconds() / min_threshold
+        # min_threshold = min([t.maximum_tolerated_idleness for t in self.sim.environment.targets])
+        # self.AOI_FUTURE_NORM = 1  # self.sim.duration_seconds() / min_threshold
         # self.ACTION_NORM = self.N_ACTIONS
 
         self.cumulative_reward = 0
@@ -74,7 +74,7 @@ class RLModule:
 
     def __get_current_time_distances(self):
         """ TIME of TRANSIT """
-        return [euclidean_distance(self.drone.coords, target.coords)/self.drone.speed for target in self.drone.simulator.environment.targets]
+        return [euclidean_distance(self.drone.coords, target.coords) / self.drone.speed for target in self.drone.sim.environment.targets]
 
     def __evaluate_state(self):
         # pa = self.previous_action if self.previous_action is not None else 0
@@ -90,7 +90,7 @@ class RLModule:
 
     def __rew_on_flight(self, s, a, s_prime):
         # if conf.IS_RESIDUAL_REWARD:
-        #     rew = self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
+        #     rew = self.sim.penalty_on_bs_expiration if s_prime.is_final else 0
         #     pos = 0
         #     neg = rew
         #     for tar_i in s_prime.aoi_idleness_ratio(False):
@@ -103,7 +103,7 @@ class RLModule:
         #     # normalize negative rewards
         #     rew = min_max_normalizer(neg,
         #                              startLB=(-(self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS)
-        #                                       + self.simulator.penalty_on_bs_expiration),
+        #                                       + self.sim.penalty_on_bs_expiration),
         #                              startUB=0,
         #                              endLB=-1,
         #                              endUB=0)
@@ -117,30 +117,30 @@ class RLModule:
         #
         # else:
         #     sum_exp_res = - sum([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False) if i >= 1])
-        #     rew = sum_exp_res + (self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0)
+        #     rew = sum_exp_res + (self.sim.penalty_on_bs_expiration if s_prime.is_final else 0)
         #     rew = min_max_normalizer(rew,
-        #                              startLB=(- (self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS) + self.simulator.penalty_on_bs_expiration),
+        #                              startLB=(- (self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS) + self.sim.penalty_on_bs_expiration),
         #                              startUB=0,
         #                              endLB=-1,
         #                              endUB=0
 
         # # REWARD TEST ATP01
         # rew = - max([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
-        # rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
+        # rew += self.sim.penalty_on_bs_expiration if s_prime.is_final else 0
         #
         # rew = min_max_normalizer(rew,
         #                          startUB=0,
-        #                          startLB=(-(self.TARGET_VIOLATION_FACTOR - self.simulator.penalty_on_bs_expiration)),
+        #                          startLB=(-(self.TARGET_VIOLATION_FACTOR - self.sim.penalty_on_bs_expiration)),
         #                          endUB=0,
         #                          endLB=-1)
 
         # # REWARD TEST ATP02
         # rew = - sum([min(i, self.TARGET_VIOLATION_FACTOR) for i in s_prime.aoi_idleness_ratio(False)])
-        # rew += self.simulator.penalty_on_bs_expiration if s_prime.is_final else 0
+        # rew += self.sim.penalty_on_bs_expiration if s_prime.is_final else 0
         #
         # rew = min_max_normalizer(rew,
         #                          startUB=0,
-        #                          startLB=(-(self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS - self.simulator.penalty_on_bs_expiration)),
+        #                          startLB=(-(self.TARGET_VIOLATION_FACTOR * self.N_ACTIONS - self.sim.penalty_on_bs_expiration)),
         #                          endUB=0,
         #                          endLB=-1)
 
@@ -192,7 +192,7 @@ class RLModule:
         if self.previous_state is None or self.previous_action is None:
             return 0, self.previous_epsilon, self.previous_loss, False, None, None
 
-        self.DQN.n_decision_step += 1
+        self.DQN.n_training_step += 1
 
         s = self.previous_state
         a = self.previous_action
@@ -205,8 +205,8 @@ class RLModule:
 
         self.previous_learning_tuple = s.vector(False, True), a, s_prime.vector(False, True), r  # for visualization
 
-        # if self.simulator.log_state >= 0:
-        #     self.log_transition(s, s_prime, a, r, every=self.simulator.log_state)
+        # if self.sim.log_state >= 0:
+        #     self.log_transition(s, s_prime, a, r, every=self.sim.log_state)
 
         # print(s.position(False), a, s_prime.position(False), r)
         self.previous_epsilon = self.DQN.let_exploration_decay()
@@ -237,7 +237,7 @@ class RLModule:
         self.previous_action = action_index
 
         # set the lock for the other not to pick this action
-        # self.simulator.environment.targets[action_index].lock = self.drone
+        # self.sim.environment.targets[action_index].lock = self.drone
         return action_index, q[0]
 
     def reset_MDP_episode(self):
@@ -274,19 +274,19 @@ class RLModule:
         return
 
         if logger is not None:
-            if self.simulator.is_validation:
+            if self.sim.is_validation:
                 if self.is_new_episode():
-                    met = self.simulator.previous_metricsV2
+                    met = self.sim.previous_metricsV2
                     print(met.to_store_dictionary)
                     exit()
-                    for t in range(1, self.simulator.n_targets):
+                    for t in range(1, self.sim.n_targets):
                         _, y = MetricsEvaluation.AOI_func(t,
                                                           met.to_store_dictionary[JSONFields.VISIT_TIMES.value],
-                                                          self.simulator.n_drones,
-                                                          self.simulator.episode_duration,
-                                                          self.simulator.ts_duration_sec,
+                                                          self.sim.n_drones,
+                                                          self.sim.episode_duration,
+                                                          self.sim.ts_duration_sec,
                                                           met.to_store_dictionary[JSONFields.SIMULATION_INFO.value][JSONFields.TOLERANCE.value])
-                        self.validation_stats[:, t, self.simulator.i_episode-1] = y
+                        self.validation_stats[:, t, self.sim.i_episode - 1] = y
                 if self.is_last_validation_episode():
                     print("Last episode")
                     print(self.validation_stats.shape)

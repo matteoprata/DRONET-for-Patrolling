@@ -38,7 +38,7 @@ The project has the following structure:
     ├── experiments
     ├── main_MultiTest.py
     ├── simulation
-    │   └── simulator.py
+    │   └── sim.py
     ├── utilities
     │   ├── conf.py
     │   └── utilities.py

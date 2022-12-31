@@ -45,10 +45,10 @@ class Configuration:
         self.DRONES_NUMBER = 1                                                  # int: number of drones.
         self.DRONE_SPEED = 15                                              # 15 m/s = 54 km/h   # float: m/s, drone speed.
         self.DRONE_PATROLLING_POLICY = PatrollingProtocol.RANDOM_MOVEMENT  #
-        self.DRONE_MAX_ENERGY = int(5 * self.HOUR)                         # int: max energy of a drone steps
+        self.DRONE_MAX_ENERGY = int(1 * self.HOUR)                         # int: max energy of a drone steps
 
         self.N_EPOCHS = 1                           # how many times you will see the same scenario
-        self.EPISODE_DURATION = int(5 * self.HOUR)  # how much time the episode lasts steps
+        self.EPISODE_DURATION = int(2 * self.HOUR)  # how much time the episode lasts steps
 
         self.N_EPISODES_TRAIN = 1  # how many times the scenario (a.k.a. episode) changes during a simulation
         self.N_EPISODES_VAL = 0    # how many times the scenario (a.k.a. episode) changes during a simulation
@@ -56,7 +56,7 @@ class Configuration:
 
         self.DELTA_DEC = 5                 # after how many seconds a new decision must take place
         self.IS_DECIDED_ON_TARGET = False  # the decision step happens on target visited (non uniformity of the decision step), or every DELTA_DEC
-        self.IS_ALLOW_SELF_LOOP = True     # drone can decide to visit the same target in two consecutive decisions or not
+        self.IS_ALLOW_SELF_LOOP = False     # drone can decide to visit the same target in two consecutive decisions or not
 
         # ----------------------------- SIMULATION PARAMS ---------------------------- #
 
@@ -113,11 +113,11 @@ class Configuration:
 
         self.DQN_PARAMETERS = {
             LearningHyperParameters.REPLAY_MEMORY_DEPTH: 100000,
-            LearningHyperParameters.EPSILON_DECAY: 0.000001,
+            LearningHyperParameters.EPSILON_DECAY: 0.0001,
             LearningHyperParameters.LEARNING_RATE: 0.0001,
             LearningHyperParameters.DISCOUNT_FACTOR: 1,
-            LearningHyperParameters.BATCH_SIZE: 3,
-            LearningHyperParameters.SWAP_MODELS_EVERY_DECISION: 1,
+            LearningHyperParameters.BATCH_SIZE: 30,
+            LearningHyperParameters.SWAP_MODELS_EVERY_DECISION: 100,
 
             LearningHyperParameters.N_HIDDEN_1: 10,
             LearningHyperParameters.N_HIDDEN_2: 0,
@@ -175,20 +175,20 @@ class Configuration:
         return self.DRONE_PATROLLING_POLICY == PatrollingProtocol.RL_DECISION_TEST
 
     def max_times_violation(self):
-        return 100
+        return 1000
 
 
 DQN_LEARNING_HYPER_PARAMETERS = {
     # "set" is the chosen value
     LearningHyperParameters.REPLAY_MEMORY_DEPTH.value: {'values': [100000]},
-    LearningHyperParameters.EPSILON_DECAY.value: {'values': [0.000001]},
+    LearningHyperParameters.EPSILON_DECAY.value: {'min': 0.00001, 'max': 0.001},
     LearningHyperParameters.LEARNING_RATE.value:  {'min': 0.0001, 'max': 0.001},
     LearningHyperParameters.DISCOUNT_FACTOR.value: {'values': [1, 0.8]},
     LearningHyperParameters.BATCH_SIZE.value: {'values': [32, 64]},
     LearningHyperParameters.SWAP_MODELS_EVERY_DECISION.value: {'values': [100, 500]},
 
     LearningHyperParameters.N_HIDDEN_1.value: {'values': [10, 20, 30]},
-    LearningHyperParameters.N_HIDDEN_2.value: {'values': [0, 10, 20]},
+    LearningHyperParameters.N_HIDDEN_2.value: {'values': [0, 5, 10]},
     LearningHyperParameters.N_HIDDEN_3.value: {'values': [0]},
     LearningHyperParameters.N_HIDDEN_4.value: {'values': [0]},
     LearningHyperParameters.N_HIDDEN_5.value: {'values': [0]},

@@ -142,12 +142,12 @@ class EventGenerator:
 
     def __init__(self, simulator):
         """
-        :param simulator: the main simulator object
+        :param simulator: the main sim object
         """
         self.simulator = simulator
         self.rnd_drones = np.random.RandomState(self.simulator.seed)
         # for now no random on number of event generated
-        # self.rnd_event = np.random.RandomState(self.simulator.seed)
+        # self.rnd_event = np.random.RandomState(self.sim.seed)
 
     def handle_events_generation(self, cur_step : int, drones : list):
         """

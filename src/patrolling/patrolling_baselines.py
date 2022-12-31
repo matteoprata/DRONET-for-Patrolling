@@ -47,8 +47,8 @@ class RandomPolicy(PatrollingPolicy):
 
     def next_visit(self):
         """ Returns a random target. """
-        target_id = self.patrol_drone.simulator.rnd_explore.randint(0, len(self.patrol_drone.simulator.environment.targets))
-        target = self.patrol_drone.simulator.environment.targets[target_id]
+        target_id = self.patrol_drone.sim.rnd_explore.randint(0, len(self.patrol_drone.sim.environment.targets))
+        target = self.patrol_drone.sim.environment.targets[target_id]
         return target
 
 
@@ -114,11 +114,11 @@ class MaxSumResidualPolicy(PatrollingPolicy):
                 continue
 
             rel_time_arrival = euclidean_distance(target_1.coords, self.patrol_drone.current_target().coords) / self.patrol_drone.speed
-            sec_arrival = self.patrol_drone.simulator.cur_step * self.patrol_drone.simulator.ts_duration_sec + rel_time_arrival
+            sec_arrival = self.patrol_drone.sim.cur_step * self.patrol_drone.sim.ts_duration_sec + rel_time_arrival
 
             min_res_list = []
             for target_2 in self.set_targets:
-                ls_visit = target_2.last_visit_ts * self.patrol_drone.simulator.ts_duration_sec if target_1.identifier != target_2.identifier else sec_arrival
+                ls_visit = target_2.last_visit_ts * self.patrol_drone.sim.ts_duration_sec if target_1.identifier != target_2.identifier else sec_arrival
                 RES = (sec_arrival - ls_visit) / target_2.maximum_tolerated_idleness
                 min_res_list.append(RES)
 

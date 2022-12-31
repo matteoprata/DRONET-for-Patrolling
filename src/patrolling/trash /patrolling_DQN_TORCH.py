@@ -1,10 +1,10 @@
-
-import numpy as np
-from src.utilities import utilities as util
-from src import config
-
-import torch
-from pytorch_lightning import LightningModule
+#
+# import numpy as np
+# from src.utilities import utilities as util
+# from src import config
+#
+# import torch
+# from pytorch_lightning import LightningModule
 
 
 class PatrollingDQN:
@@ -47,7 +47,7 @@ class PatrollingDQN:
 
         # make the simulation reproducible
         np.random.seed(self.simulator.sim_seed)
-        # tf.set_random_seed(self.simulator.sim_seed)
+        # tf.set_random_seed(self.sim.sim_seed)
         self.is_load_model = is_load_model
         self.current_loss = None
 
@@ -135,7 +135,7 @@ class PatrollingDQN:
             self.replay_memory.append(experience)
 
         if self.time_to_batch_training():
-            # print("Train", self.n_epochs, self.n_decision_step)
+            # print("Train", self.n_epochs, self.n_training_step)
             # sample at random from replay memory, batch_size elements
             random_sample_batch_indices = self.simulator.rstate_sample_batch_training.randint(0, len(self.replay_memory), size=self.batch_size)
             random_sample_batch = [self.replay_memory.llist[i] for i in random_sample_batch_indices]
@@ -169,8 +169,8 @@ class PatrollingDQN:
         self.optimizer.step()
 
         if self.time_to_swap_models():
-            # print(self.decay(), "steps", self.simulator.cur_step, "/", self.simulator.sim_duration_ts)
-            # print('swapped', self.n_decision_step)
+            # print(self.decay(), "steps", self.sim.cur_step, "/", self.sim.sim_duration_ts)
+            # print('swapped', self.n_training_step)
             self.swap_learning_model()
 
         self.current_loss = loss.item()

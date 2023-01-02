@@ -27,6 +27,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         SimulatedEntity.__init__(self, identifier, path[0], simulator)
         AntennaEquippedDevice.__init__(self)
 
+        self.sim = simulator
         self.cf: Configuration = self.simulator.cf
         self.patrolling_protocol = patrolling_protocol
         self.angle, self.speed = angle, speed
@@ -62,7 +63,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
     def current_target(self):
         return self.simulator.environment.targets[self.prev_target.identifier]
 
-    def move(self):
+    def move(self, protocol):
         """ Called at every step. """
 
         # # HOVERING
@@ -80,23 +81,24 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
             self.__movement(self.angle)
             return
 
-        if self.patrolling_protocol == co.PatrollingProtocol.RL_DECISION_TRAIN:
+        if protocol == co.PatrollingProtocol.RL_DECISION_TRAIN:
             if self.will_reach_target_now():
                 self.coords = self.next_target_coo()  # this instruction sets the position of the drone on top of the target (useful due to discrete time)
+
+                is_exploit = self.simulator.run_state in [co.EpisodeType.VAL, co.EpisodeType.TEST]
                 self.__handle_metrics()
                 self.__update_target_time_visit_upon_reach()
-                # policy = planners.RandomPolicy(self, self.sim.environment.drones, self.sim.environment.targets)
-                # target = policy.next_visit()
-                is_exploit = self.simulator.run_state in [co.EpisodeType.VAL, co.EpisodeType.TEST]
+
                 tid = self.simulator.rl_module.query_model(self, is_exploit)
                 target = self.simulator.environment.targets[tid]
+
                 # print(self.identifier, self.sim.rl_module.state(self))
                 self.__update_next_target_upon_reach(target)
 
-        elif self.patrolling_protocol == co.PatrollingProtocol.RL_DECISION_TEST:
+        elif protocol == co.PatrollingProtocol.RL_DECISION_TEST:
             pass
 
-        elif self.patrolling_protocol == co.PatrollingProtocol.RANDOM_MOVEMENT:
+        elif protocol == co.PatrollingProtocol.RANDOM_MOVEMENT:
             if self.will_reach_target_now():
                 self.coords = self.next_target_coo()  # this instruction sets the position of the drone on top of the target (useful due to discrete time)
                 self.__handle_metrics()
@@ -105,7 +107,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 target = policy.next_visit()
                 self.__update_next_target_upon_reach(target)
 
-        elif self.patrolling_protocol == co.PatrollingProtocol.GO_MAX_AOI:
+        elif protocol == co.PatrollingProtocol.GO_MAX_AOI:
             if self.will_reach_target_now():
                 self.coords = self.next_target_coo()
                 self.__handle_metrics()
@@ -115,7 +117,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 target = policy.next_visit()
                 self.__update_next_target_upon_reach(target)
 
-        elif self.patrolling_protocol == co.PatrollingProtocol.GO_MIN_RESIDUAL:
+        elif protocol == co.PatrollingProtocol.GO_MIN_RESIDUAL:
             if self.will_reach_target_now():
                 self.coords = self.next_target_coo()
                 self.__handle_metrics()
@@ -125,7 +127,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 target = policy.next_visit()
                 self.__update_next_target_upon_reach(target)
 
-        elif self.patrolling_protocol == co.PatrollingProtocol.GO_MIN_SUM_RESIDUAL:
+        elif protocol == co.PatrollingProtocol.GO_MIN_SUM_RESIDUAL:
             if self.will_reach_target_now():
                 self.coords = self.next_target_coo()
                 self.__handle_metrics()
@@ -135,12 +137,12 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 target = policy.next_visit()
                 self.__update_next_target_upon_reach(target)
 
-        elif self.patrolling_protocol == co.PatrollingProtocol.FREE:
+        elif protocol == co.PatrollingProtocol.FREE:
             if self.will_reach_target_now():
                 self.__update_target_time_visit_upon_reach()
 
         else:
-            print(self.patrolling_protocol.name, "is not yet handled.")
+            print(protocol, "is not yet handled.")
             exit()
 
     def __set_next_target_angle(self):

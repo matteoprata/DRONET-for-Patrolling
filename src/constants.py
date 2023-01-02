@@ -9,6 +9,11 @@ This file contains all the constants of the sim.
 """
 
 
+class ErrorType(Enum):
+    STD = "std"
+    STD_ERROR = "stde"
+
+
 class EpisodeType(Enum):
     TRAIN = "train"
     TEST = "test"
@@ -77,6 +82,13 @@ class JSONFields(Enum):
     TOLERANCE = "targets_tolerance"
     EPISODE_DURATION = "episode_duration"
     TS_DURATION = "ts_duration_sec"
+
+    VAL_EPISODE_ID = "VAL_EPISODE_ID"
+    VAL_EPISODE_ALGO = "VAL_EPISODE_ALGO"
+    DRONE_NUMBER = "DRONE_NUMBER"
+    TARGET_NUMBER = "TARGET_NUMBER"
+    DRONE_SPEED = "DRONE_SPEED"
+    TOLERANCE_FACTOR = "TOLERANCE_FACTOR"
 
 
 PATH_STATS = "data/experiments/"

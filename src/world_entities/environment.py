@@ -7,6 +7,7 @@ from scipy.stats import truncnorm
 import numpy as np
 from collections import defaultdict
 from src.evaluation.MetricsLog import MetricsLog
+from src.constants import EpisodeType
 
 
 class ObstacleHandler:
@@ -104,7 +105,7 @@ class Environment(ObstacleHandler):
 
         self.closest_target = []
         self.furthest_target = []
-        self.targets_dataset = []
+        self.targets_dataset = defaultdict(list)
 
     def add_drones(self, drones: list):
         """ add a list of drones in the env """
@@ -132,8 +133,6 @@ class Environment(ObstacleHandler):
 
     def reset_simulation(self, is_end_epoch=True):
         """ Reset the scenario after every episode. """
-
-        self.simulator.metricsV2 = MetricsLog(self.simulator)
 
         for drone in self.drones:
             drone.coords = drone.bs.coords
@@ -184,17 +183,23 @@ class Environment(ObstacleHandler):
                 targets_x_episode[ep].append((i, tuple(coordinates[i]), idleness))
 
         # assert(self.sim.n_episodes <= MAX_N_EPISODES)
-        for ep in range(self.simulator.cf.n_tot_episodes()):
-            epoch_targets = []
-            for t_id, t_coord, t_idleness in targets_x_episode[ep][:self.simulator.n_targets]:
+        epi_type = [(EpisodeType.TRAIN, self.simulator.cf.N_EPISODES_TRAIN),
+                    (EpisodeType.VAL, self.simulator.cf.N_EPISODES_VAL),
+                    (EpisodeType.TEST, self.simulator.cf.N_EPISODES_TEST)]
 
-                t = Target(identifier=len(self.base_stations) + t_id,
-                           coords=tuple(t_coord),
-                           maximum_tolerated_idleness=t_idleness,
-                           simulator=self.simulator)
+        for et, en in epi_type:
+            for ep in range(en):
+                epoch_targets = []
+                for t_id, t_coord, t_idleness in targets_x_episode[ep][:self.simulator.n_targets]:
 
-                epoch_targets.append(t)
-            self.targets_dataset.append(epoch_targets)
+                    t = Target(identifier=len(self.base_stations) + t_id,
+                               coords=tuple(t_coord),
+                               maximum_tolerated_idleness=t_idleness,
+                               simulator=self.simulator)
+
+                    epoch_targets.append(t)
+                self.targets_dataset[et].append(epoch_targets)
+
         # print("TARGETS:", self.targets_dataset)
         return self.targets_dataset
 

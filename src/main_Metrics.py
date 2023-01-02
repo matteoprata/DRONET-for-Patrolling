@@ -3,16 +3,11 @@ import matplotlib.pyplot as plt
 
 from src.utilities import utilities as util
 
-from enum import Enum
 from src.simulation_setup import setup01, setup02
 from src.constants import IndependentVariable as indv
 from src.constants import DependentVariable as depv
+from src.constants import ErrorType
 from src.evaluation.MetricsEvaluation import MetricsEvaluation
-
-
-class ErrorType(Enum):
-    STD = "std"
-    STD_ERROR = "stde"
 
 
 dep_var_map = {depv.CUMULATIVE_AR: MetricsEvaluation.AOI1_integral_func,

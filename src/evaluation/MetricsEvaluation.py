@@ -8,25 +8,44 @@ from src.utilities import utilities as util
 from src.constants import PATH_STATS
 from src.constants import JSONFields
 
+from src.evaluation.MetricsLog import MetricsLog
+
 
 class MetricsEvaluation:
     """ This class is used to evaluate the stats of the simulation, logged on files. """
 
-    def __init__(self, sim_seed, n_drones, n_targets, drone_mobility, drone_speed_meters_sec, tolerance_factor):
+    def __init__(self, sim_seed=None, n_drones=None, n_targets=None, drone_mobility=None, drone_speed_meters_sec=None, tolerance_factor=None,
+                 metrics_log: dict = None):
 
-        self.sim_seed               = sim_seed
-        self.n_drones               = n_drones
-        self.n_targets              = n_targets
-        self.drone_mobility         = drone_mobility
-        self.drone_speed_meters_sec = drone_speed_meters_sec
-        self.tolerance_factor       = tolerance_factor
+        if metrics_log is None:
+            self.sim_seed = sim_seed
+            self.n_drones = n_drones
+            self.n_targets = n_targets
+            self.drone_mobility = drone_mobility
+            self.drone_speed_meters_sec = drone_speed_meters_sec
+            self.tolerance_factor = tolerance_factor
 
-        simulation_visits_info = self.load_metrics()
-        self.times_visit = simulation_visits_info[JSONFields.VISIT_TIMES.value]
+            simulation_visits_info = self.load_metrics()
+            self.times_visit = simulation_visits_info[JSONFields.VISIT_TIMES.value]
 
-        self.targets_tolerance = simulation_visits_info[JSONFields.SIMULATION_INFO.value][JSONFields.TOLERANCE.value]
-        self.episode_duration  = simulation_visits_info[JSONFields.SIMULATION_INFO.value][JSONFields.EPISODE_DURATION.value]
-        self.ts_duration_sec   = simulation_visits_info[JSONFields.SIMULATION_INFO.value][JSONFields.TS_DURATION.value]
+            self.targets_tolerance = simulation_visits_info[JSONFields.SIMULATION_INFO.value][JSONFields.TOLERANCE.value]
+            self.episode_duration = simulation_visits_info[JSONFields.SIMULATION_INFO.value][JSONFields.EPISODE_DURATION.value]
+            self.ts_duration_sec = simulation_visits_info[JSONFields.SIMULATION_INFO.value][JSONFields.TS_DURATION.value]
+
+        else:
+            # for the validation
+            self.sim_seed = metrics_log[JSONFields.SIMULATION_INFO.value][JSONFields.VAL_EPISODE_ID.value]
+            self.drone_mobility = metrics_log[JSONFields.SIMULATION_INFO.value][JSONFields.VAL_EPISODE_ALGO.value]
+
+            self.n_drones = metrics_log[JSONFields.SIMULATION_INFO.value][JSONFields.DRONE_NUMBER.value]
+            self.n_targets = metrics_log[JSONFields.SIMULATION_INFO.value][JSONFields.TARGET_NUMBER.value]
+            self.drone_speed_meters_sec = metrics_log[JSONFields.SIMULATION_INFO.value][JSONFields.DRONE_SPEED.value]
+            self.tolerance_factor = metrics_log[JSONFields.SIMULATION_INFO.value][JSONFields.TOLERANCE_FACTOR.value]
+
+            self.times_visit = metrics_log[JSONFields.VISIT_TIMES.value]
+            self.targets_tolerance = metrics_log[JSONFields.SIMULATION_INFO.value][JSONFields.TOLERANCE.value]
+            self.episode_duration = metrics_log[JSONFields.SIMULATION_INFO.value][JSONFields.EPISODE_DURATION.value]
+            self.ts_duration_sec = metrics_log[JSONFields.SIMULATION_INFO.value][JSONFields.TS_DURATION.value]
 
     def fname_generator(self):
         # independent variables
@@ -78,11 +97,11 @@ class MetricsEvaluation:
         def times_visit_map(target_id, drone_id=None):
             """ Times of visit of input target from particular drone (if not none). """
             if drone_id is not None:
-                return self.times_visit[str(target_id)][str(drone_id)]
+                return self.times_visit[target_id][drone_id]
             else:
                 times = []
                 for didx in range(self.n_drones):
-                    times += self.times_visit[str(target_id)][str(didx)]
+                    times += self.times_visit[target_id][didx]
                 return sorted(times)
 
         def visit_AOI_map(time_visit, target_tolerance):
@@ -112,7 +131,7 @@ class MetricsEvaluation:
 
         time_visit = [0] + times_visit_map(target_id, drone_id) + [self.episode_duration]
         time_visit = np.asarray(time_visit) * self.ts_duration_sec  # seconds
-        target_tolerance = self.targets_tolerance[str(target_id)]
+        target_tolerance = self.targets_tolerance[target_id]  # str
 
         X, Y = visit_AOI_map(time_visit, target_tolerance)
         lines = AOI_progressions(X, Y)

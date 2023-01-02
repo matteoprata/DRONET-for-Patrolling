@@ -1,7 +1,7 @@
 
 from enum import Enum
 
-from src.constants import PatrollingProtocol
+from src.constants import PatrollingProtocol, DependentVariable
 from src.utilities.utilities import euclidean_distance
 import numpy as np
 
@@ -45,18 +45,34 @@ class Configuration:
         self.DRONES_NUMBER = 1                                                  # int: number of drones.
         self.DRONE_SPEED = 15                                              # 15 m/s = 54 km/h   # float: m/s, drone speed.
         self.DRONE_PATROLLING_POLICY = PatrollingProtocol.RANDOM_MOVEMENT  #
-        self.DRONE_MAX_ENERGY = int(1 * self.HOUR)                         # int: max energy of a drone steps
+        self.DRONE_MAX_ENERGY = int(2 * self.HOUR)                         # int: max energy of a drone steps
 
         self.N_EPOCHS = 1                           # how many times you will see the same scenario
-        self.EPISODE_DURATION = int(2 * self.HOUR)  # how much time the episode lasts steps
+        self.EPISODE_DURATION = int(1 * self.HOUR)  # how much time the episode lasts steps
 
-        self.N_EPISODES_TRAIN = 1  # how many times the scenario (a.k.a. episode) changes during a simulation
+        self.N_EPISODES_TRAIN = 0  # how many times the scenario (a.k.a. episode) changes during a simulation
         self.N_EPISODES_VAL = 0    # how many times the scenario (a.k.a. episode) changes during a simulation
-        self.N_EPISODES_TEST = 0  # how many times the scenario (a.k.a. episode) changes during a simulation
+        self.N_EPISODES_TEST = 1  # how many times the scenario (a.k.a. episode) changes during a simulation
 
         self.DELTA_DEC = 5                 # after how many seconds a new decision must take place
         self.IS_DECIDED_ON_TARGET = False  # the decision step happens on target visited (non uniformity of the decision step), or every DELTA_DEC
         self.IS_ALLOW_SELF_LOOP = False     # drone can decide to visit the same target in two consecutive decisions or not
+
+        # algorithms to play with
+        self.VALIDATION_ALGORITHMS = [
+            PatrollingProtocol.GO_MIN_SUM_RESIDUAL,
+            PatrollingProtocol.RANDOM_MOVEMENT,
+            PatrollingProtocol.GO_MIN_RESIDUAL,
+            PatrollingProtocol.GO_MAX_AOI
+                                      ]
+
+        self.VALIDATION_VARS = [
+            DependentVariable.CUMULATIVE_AR,
+            DependentVariable.CUMULATIVE_DELAY_AR,
+            DependentVariable.WORST_DELAY,
+            DependentVariable.WORST_AGE,
+            DependentVariable.VIOLATION_NUMBER
+        ]
 
         # ----------------------------- SIMULATION PARAMS ---------------------------- #
 
@@ -111,6 +127,7 @@ class Configuration:
             'name': "cumulative_reward"
         }
 
+        # ASSIGNED for a run
         self.DQN_PARAMETERS = {
             LearningHyperParameters.REPLAY_MEMORY_DEPTH: 100000,
             LearningHyperParameters.EPSILON_DECAY: 0.0001,
@@ -178,6 +195,7 @@ class Configuration:
         return 1000
 
 
+# SWEEP
 DQN_LEARNING_HYPER_PARAMETERS = {
     # "set" is the chosen value
     LearningHyperParameters.REPLAY_MEMORY_DEPTH.value: {'values': [100000]},

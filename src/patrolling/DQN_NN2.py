@@ -13,12 +13,14 @@ class DQN(nn.Module):
         assert len(hidden_layers_neurons) > 0, "ERROR: hidden_layers_neurons len was not > 0."
 
         # adding layers
+        # layer 0
         self.layers = [nn.Linear(n_observations, hidden_layers_neurons[0])]
 
-        if len(hidden_layers_neurons) > 2:
-            for ih in range(len(hidden_layers_neurons)-2):
-                self.layers.append(nn.Linear(hidden_layers_neurons[ih], hidden_layers_neurons[ih+1]))
+        # intermediate layers if any
+        for ih in range(len(hidden_layers_neurons)-1):
+            self.layers.append(nn.Linear(hidden_layers_neurons[ih], hidden_layers_neurons[ih+1]))
 
+        # layer -1
         self.layers.append(nn.Linear(hidden_layers_neurons[-1], n_actions))
         self.layers = nn.ParameterList(self.layers)
 

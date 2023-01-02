@@ -191,7 +191,7 @@ def json_to_paths(json_file_path):
     return out_data
 
 
-def box_plot(data, pos, edge_color=None, fill_color="white"):
+def box_plot(data, pos, edge_color="red", fill_color="white"):
     bp = plt.boxplot(data, positions=pos, patch_artist=True, widths=0.5, showmeans=True)
 
     for element in ['boxes', 'whiskers', 'fliers', 'means', 'medians', 'caps']:

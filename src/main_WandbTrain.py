@@ -55,6 +55,12 @@ def run():
 def parser_cl_arguments(configuration: Configuration):
     """ Parses the arguments for the command line. """
 
+    configuration.DRONE_PATROLLING_POLICY = cst.PatrollingProtocol.RL_DECISION_TRAIN
+    configuration.N_EPOCHS = 50
+    configuration.N_EPISODES_TRAIN = 20
+    configuration.N_EPISODES_VAL = 10
+    configuration.N_EPISODES_TEST = 0
+
     # python -m src.main_WandbTrain -seed 10 -nd 1 -nt 10 -pl 0
     args_li = [
             ('-seed', 'SEED', int),
@@ -65,7 +71,7 @@ def parser_cl_arguments(configuration: Configuration):
             ('-bat', 'DRONE_MAX_ENERGY', float),
             ('-ne', 'N_EPOCHS', int),
             ('-net', 'N_EPISODES_TRAIN', int),
-            ('-neb', 'N_EPISODES_VAL', int),
+            ('-nev', 'N_EPISODES_VAL', int),
             ('-nes', 'N_EPISODES_TEST', int),
             ('-edu', 'EPISODE_DURATION', int),
             ('-pl', 'PLOT_SIM', int)
@@ -86,12 +92,6 @@ def parser_cl_arguments(configuration: Configuration):
             setattr(configuration, name, bool(args[name]))
         else:
             setattr(configuration, name, args[name])
-
-    configuration.DRONE_PATROLLING_POLICY = cst.PatrollingProtocol.RL_DECISION_TRAIN
-    configuration.N_EPOCHS = 50
-    configuration.N_EPISODES_TRAIN = 20
-    configuration.N_EPISODES_VAL = 0
-    configuration.N_EPISODES_TEST = 0
 
 
 if __name__ == "__main__":

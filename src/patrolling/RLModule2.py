@@ -11,7 +11,7 @@ class RLModule:
         self.sim = simulator
         self.cf = self.sim.cf
 
-        n_actions = len(self.sim.environment.targets)
+        n_actions = self.sim.cf.TARGETS_NUMBER + 1
         n_state_features = 2 * n_actions
         self.dqn_mod = PatrollingDQN(self.cf, self.sim, n_actions, n_state_features)
 

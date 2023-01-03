@@ -33,13 +33,13 @@ class Configuration:
 
         # Frequently used parameters
         self.SIM_TS_DURATION = 0.150       # float: seconds duration of a step in seconds.
-        self.SEED = 100                # int: seed of this simulation
+        self.SEED = 10                     # int: seed of this simulation
 
         self.DAY = int(60 * 60 * 24 / self.SIM_TS_DURATION)
         self.HOUR = int(60 * 60 / self.SIM_TS_DURATION)
         self.MIN = int(60 / self.SIM_TS_DURATION)
 
-        self.TARGETS_NUMBER = 5       # number of random targets in the map
+        self.TARGETS_NUMBER = 10       # number of random targets in the map
         self.TARGETS_TOLERANCE = 0.1  # std % distance of tolerance generation
 
         self.DRONES_NUMBER = 1                                                  # int: number of drones.
@@ -73,6 +73,9 @@ class Configuration:
             DependentVariable.WORST_AGE,
             DependentVariable.VIOLATION_NUMBER
         ]
+
+        self.VALIDATE_EVERY = 10  # epochs
+        self.LOSS_EARLY_STOP_EPOCHS = 10  # epochs
 
         # ----------------------------- SIMULATION PARAMS ---------------------------- #
 

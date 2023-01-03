@@ -9,7 +9,7 @@ def main(configuration):
 
     print("\nExecuting > {}\n".format(configuration.conf_description()))
     sim = PatrollingSimulator(configuration)
-    sim.run_testing()
+    sim.run_testing_loop()
     # sim.run_training()
 
 

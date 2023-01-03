@@ -54,7 +54,7 @@ def main_safe_execution(configuration):
     try:
         print("\nExecuting > {}\n".format(configuration.conf_description()))
         sim = PatrollingSimulator(configuration)
-        sim.run_testing()
+        sim.run_testing_loop()
 
     except:
         print("Could not solve problem for {}!".format(configuration.conf_description()))

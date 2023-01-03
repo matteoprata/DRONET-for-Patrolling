@@ -34,7 +34,7 @@ class PatrollingDQN:
                  self.dqn_par[LearningHyperParameters.N_HIDDEN_3],
                  self.dqn_par[LearningHyperParameters.N_HIDDEN_4],
                  self.dqn_par[LearningHyperParameters.N_HIDDEN_5]]
-            )
+            ).to(cst.TORCH_DEVICE)
             
             # MODEL 2
             self.model_hat = DQN(
@@ -45,7 +45,7 @@ class PatrollingDQN:
                  self.dqn_par[LearningHyperParameters.N_HIDDEN_3],
                  self.dqn_par[LearningHyperParameters.N_HIDDEN_4],
                  self.dqn_par[LearningHyperParameters.N_HIDDEN_5]]
-            )
+            ).to(cst.TORCH_DEVICE)
 
             self.model_hat.load_state_dict(self.model.state_dict())
             print(self.dqn_par[LearningHyperParameters.LEARNING_RATE])
@@ -92,6 +92,7 @@ class PatrollingDQN:
                 action_sub_index = self.sim.rnd_explore.randint(0, self.n_actions-1)
                 action_index = actions_available[action_sub_index]
         else:
+            q_values = q_values.cpu()
             action_index = np.argmax(q_values)
             action_index = int(action_index)  # ?
 
@@ -157,7 +158,7 @@ class PatrollingDQN:
 
         self.current_loss = loss.item()
 
-        self.sim.epoch_loss += [np.sum(rewards_v.numpy())]
+        self.sim.epoch_loss += [np.sum(rewards_v.cpu().numpy())]
         self.sim.epoch_cumrew += [self.current_loss]
 
         return self.current_loss

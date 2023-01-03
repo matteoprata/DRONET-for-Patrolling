@@ -102,4 +102,4 @@ class Setups(Enum):
     SETUP02 = setup02
 
 
-TORCH_DEVICE = 'cpu' #'cuda' if torch.cuda.is_available() else 'cpu'
+TORCH_DEVICE = 'cpu'  # 'cuda' if torch.cuda.is_available() else 'cpu'

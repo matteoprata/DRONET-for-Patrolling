@@ -1,4 +1,9 @@
 
+import os
+import sys
+module_path = os.path.abspath(os.getcwd())
+if module_path not in sys.path:
+    sys.path.append(module_path)
 
 import argparse
 import src.constants as cst
@@ -19,6 +24,8 @@ def run_sweep(configuration: Configuration):
     sweep_id = wandb.sweep(
         project=configuration.PROJECT_NAME,
         sweep={
+            'command':    ["${env}", "python3", "${program}", "${args}"],
+            'program':    "src/main_WandbTrain.py",
             'name':       configuration.conf_description(),
             'method':     configuration.HYPER_PARAM_SEARCH_MODE,
             'metric':     configuration.FUNCTION_TO_OPTIMIZE,
@@ -43,7 +50,7 @@ def run():
                 cf.DQN_PARAMETERS[param] = wandb_instance.config[param.value]
 
             sim = PatrollingSimulator(cf)
-            sim.run_training()
+            sim.run_training_loop()
             print("DONE")
 
     except Exception as e:
@@ -56,9 +63,9 @@ def parser_cl_arguments(configuration: Configuration):
     """ Parses the arguments for the command line. """
 
     configuration.DRONE_PATROLLING_POLICY = cst.PatrollingProtocol.RL_DECISION_TRAIN
-    configuration.N_EPOCHS = 50
-    configuration.N_EPISODES_TRAIN = 20
-    configuration.N_EPISODES_VAL = 10
+    configuration.N_EPOCHS = 200
+    configuration.N_EPISODES_TRAIN = 30
+    configuration.N_EPISODES_VAL = 20
     configuration.N_EPISODES_TEST = 0
 
     # python -m src.main_WandbTrain -seed 10 -nd 1 -nt 10 -pl 0
@@ -77,21 +84,39 @@ def parser_cl_arguments(configuration: Configuration):
             ('-pl', 'PLOT_SIM', int)
     ]
 
+    args_li_learning = [
+        ('-bas', 'batch_size', int),
+        ('-dis', 'discount_factor', float),
+        ('-ede', 'epsilon_decay', float),
+        ('-lr', 'learning_rate', float),
+        ('-nh1', 'n_hidden_neurons_lv1', int),
+        ('-nh2', 'n_hidden_neurons_lv2', int),
+        ('-nh3', 'n_hidden_neurons_lv3', int),
+        ('-nh4', 'n_hidden_neurons_lv4', int),
+        ('-nh5', 'n_hidden_neurons_lv5', int),
+        ('-rmd', 'replay_memory_depth', int),
+        ('-swa', 'swap_models_every_decision', int),
+    ]
+
     parser = argparse.ArgumentParser(description='Patrolling Simulator arguments:')
 
     for nick, name, typ in args_li:
         parser.add_argument(nick, "--" + name, default=getattr(configuration, name), type=typ)
+
+    for nick, name, typ in args_li_learning:
+        parser.add_argument(nick, "--" + name, type=typ)
 
     args = vars(parser.parse_args())
     # parsing arguments from cli
 
     print("Setting parameters...")
 
+    setattr(configuration, "PLOT_SIM", bool(args["PLOT_SIM"]))
     for nick, name, typ in args_li:
-        if name == "PLOT_SIM":
-            setattr(configuration, name, bool(args[name]))
-        else:
-            setattr(configuration, name, args[name])
+        setattr(configuration, name, args[name])
+
+    for nick, name, typ in args_li_learning:
+        configuration.DQN_PARAMETERS[name] = args[name]
 
 
 if __name__ == "__main__":

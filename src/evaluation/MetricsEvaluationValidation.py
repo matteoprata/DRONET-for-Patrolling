@@ -67,12 +67,15 @@ def plot_validation_stats(n_episodes, val_algos, metrics_logs, dep_var, error_ty
     # removes temporal dimensions, becomes: [(TIME) X EPISODE x ALGORITHM x TARGETS]
     metrics_aoi = dep_var_map[dep_var](data)
 
+    plt.close('all')
+
     fig, ax = plt.subplots()
     # BOXPLOT
 
     if is_boxplot:
         boxes = [metrics_aoi[:, i, :].ravel() for i, _ in enumerate(val_algos)]
-        ax.boxplot(boxes, labels=[v.name for v in val_algos], showmeans=True)
+        ax.boxplot(boxes, showmeans=True)
+        ax.set_xticklabels(labels=[v.name for v in val_algos], rotation=20, fontsize=8)
 
     plt.xlabel("Algorithms")
     plt.ylabel(dep_var.value["NAME"])

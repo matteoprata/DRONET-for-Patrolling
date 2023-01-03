@@ -81,6 +81,10 @@ class PatrollingSimulator:
         # create directory of the simulation
         # make_path(self.directory_simulation() + "-")
 
+        self.prev_loss = np.inf
+        self.worst_epoch_counter = 0
+        self.epoch_loss = []
+
     # ---- # BOUNDS and CONSTANTS # ---- #
 
     def episode_duration_seconds(self):
@@ -251,43 +255,62 @@ class PatrollingSimulator:
                     self.__plot(self.cur_step, self.episode_duration)
 
                 self.cur_step_total += 1
-            self.metrics_logs[protocol].append(self.metricsV2.to_json())
+
+            if typ in [cst.EpisodeType.VAL, cst.EpisodeType.TEST]:
+                self.metrics_logs[protocol].append(self.metricsV2.to_json())
 
     # ----> RUNNING THE SIMULATION <----
 
-    def run_training(self):
-        for _ in tqdm(range(self.cf.N_EPOCHS), desc='epoch', disable=self.cf.IS_HIDE_PROGRESS_BAR):
+    def run_training_loop(self):
+        self.metrics_logs = defaultdict(list)
+        for epo in tqdm(range(self.cf.N_EPOCHS), desc='epoch', disable=self.cf.IS_HIDE_PROGRESS_BAR):
+
+            if self.early_stop_check(self.epoch_loss):
+                break
 
             self.epoch_loss = []
             self.epoch_cumrew = []
-            self.metrics_logs = defaultdict(list)
 
-            # sum loss and reward during the epoch
-            episodes_id = self.rstate_sample_batch_training.permutation(self.cf.N_EPISODES_TRAIN)
-            self.run_episodes(episodes_id, typ=cst.EpisodeType.TRAIN, protocol=self.cf.DRONE_PATROLLING_POLICY)
-            self.on_train_epoch_end(is_log=self.cf.IS_WANDB)
+            self.training()
+            self.validation(epo)
 
-            # measure reward and stats to average over the episodes = seeds
-            self.metrics_logs = defaultdict(list)
-            for al in [self.cf.DRONE_PATROLLING_POLICY] + self.cf.VALIDATION_ALGORITHMS:
-                print("Validating algorithm:", al)
-                self.run_episodes(range(self.cf.N_EPISODES_VAL), typ=cst.EpisodeType.VAL, protocol=al)
-            self.on_validation_epoch_end(is_log=self.cf.IS_WANDB)
+        self.testing()
 
-        # # ON THE BEST MODEL measure reward and stats to average over the episodes = seeds
-        # self.metrics_logs = defaultdict(list)
-        # for al in [self.cf.DRONE_PATROLLING_POLICY] + self.cf.VALIDATION_ALGORITHMS:
-        #     print("Testing algorithm:", al)
-        #     self.run_episodes(range(self.cf.N_EPISODES_TEST), typ=cst.EpisodeType.TEST, protocol=al)
-        # self.on_test_epoch_end(is_log=self.cf.IS_WANDB)
-
-    def run_testing(self):
+    def run_testing_loop(self):
         self.run_episodes(range(self.cf.N_EPISODES_TEST), typ=cst.EpisodeType.TEST, protocol=self.cf.DRONE_PATROLLING_POLICY)
 
         print("Saving stats file...")
         self.metricsV2.save_metrics()
 
     #
+
+    def training(self):
+        # sum loss and reward during the epoch
+        episodes_id = self.rstate_sample_batch_training.permutation(self.cf.N_EPISODES_TRAIN)
+        self.run_episodes(episodes_id, typ=cst.EpisodeType.TRAIN, protocol=self.cf.DRONE_PATROLLING_POLICY)
+        self.on_train_epoch_end(is_log=self.cf.IS_WANDB)
+
+    def validation(self, epo):
+        """ Validation of the RL protocol"""
+        if epo % self.cf.VALIDATE_EVERY == 0:
+            val_algos = [self.cf.DRONE_PATROLLING_POLICY]
+            if epo > 0:
+                self.metrics_logs[self.cf.DRONE_PATROLLING_POLICY] = list()  # reset validation metrics
+            else:
+                # compute validation only once, for all the algorithms except RL
+                val_algos += self.cf.VALIDATION_ALGORITHMS
+
+            for al in val_algos:
+                print("Validating algorithm:", al)
+                self.run_episodes(range(self.cf.N_EPISODES_VAL), typ=cst.EpisodeType.VAL, protocol=al)
+            self.on_validation_epoch_end(is_log=self.cf.IS_WANDB)
+
+    def testing(self):
+        self.metrics_logs = defaultdict(list)
+        for al in [self.cf.DRONE_PATROLLING_POLICY] + self.cf.VALIDATION_ALGORITHMS:
+            print("Testing algorithm:", al)
+            self.run_episodes(range(self.cf.N_EPISODES_TEST), typ=cst.EpisodeType.TEST, protocol=al)
+        self.on_test_epoch_end(is_log=self.cf.IS_WANDB)
 
     def on_train_epoch_end(self, is_log=True):
         if is_log:
@@ -308,3 +331,17 @@ class PatrollingSimulator:
             algos = [self.cf.DRONE_PATROLLING_POLICY] + self.cf.VALIDATION_ALGORITHMS
             dic_plt = {v.name: plot_validation_stats(self.cf.N_EPISODES_TEST, algos, self.metrics_logs, v) for v in self.cf.VALIDATION_VARS}
             self.cf.WANDB_INSTANCE.log(dic_plt)
+
+    def early_stop_check(self, loss):
+        prev_loss = self.prev_loss
+        cur_loss = np.sum(loss)
+
+        if prev_loss <= prev_loss:
+            # NO IMPROVEMENT
+            print("Loss increased", self.worst_epoch_counter)
+            self.worst_epoch_counter += 1
+        else:
+            self.worst_epoch_counter = 0
+
+        self.prev_loss = cur_loss if cur_loss < self.prev_loss else self.prev_loss
+        return self.worst_epoch_counter >= self.cf.LOSS_EARLY_STOP_EPOCHS

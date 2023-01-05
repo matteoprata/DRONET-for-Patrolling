@@ -1,7 +1,13 @@
 
+import os
+import sys
+module_path = os.path.abspath(os.getcwd())
+if module_path not in sys.path:
+    sys.path.append(module_path)
+
 import argparse
 import src.constants as cst
-from src.simulation.simulator_patrolling import PatrollingSimulator
+from src.world_entities.simulator_patrolling import PatrollingSimulator
 from src.config import Configuration
 
 
@@ -10,7 +16,7 @@ def main(configuration):
     print("\nExecuting > {}\n".format(configuration.conf_description()))
     sim = PatrollingSimulator(configuration)
     sim.run_testing_loop()
-    # sim.run_training()
+    # sim.run_training_loop()
 
 
 def parser_cl_arguments(configuration: Configuration):
@@ -27,14 +33,10 @@ def parser_cl_arguments(configuration: Configuration):
     parser.add_argument('-spe', '--DRONE_SPEED', default=configuration.DRONE_SPEED, type=float)
     parser.add_argument('-bat', '--DRONE_MAX_ENERGY', default=configuration.DRONE_MAX_ENERGY, type=float)
 
-    parser.add_argument('-net',  '--N_EPISODES_TRAIN', default=configuration.N_EPISODES_TRAIN, type=int)
-    parser.add_argument('-nev',  '--N_EPISODES_VAL', default=configuration.N_EPISODES_VAL, type=int)
-    parser.add_argument('-nes',  '--N_EPISODES_TEST', default=configuration.N_EPISODES_TEST, type=int)
-
     parser.add_argument('-edu', '--EPISODE_DURATION', default=configuration.EPISODE_DURATION, type=int)
     parser.add_argument('-pl',  '--PLOT_SIM', default=configuration.PLOT_SIM, type=int)
 
-    # python -m src.main_SingleTest -seed 1 -nt 10 -nd 2 -pol BASE_01 -pl 1 -ne 1
+    # python src/main_SingleTest.py -pl 1 -nd 1 -nt 5 -seed 103 -tol .1 -pol GO_MIN_RESIDUAL
     # parsing arguments from cli
     args = vars(parser.parse_args())
 
@@ -48,11 +50,6 @@ def parser_cl_arguments(configuration: Configuration):
     configuration.DRONE_SPEED = args["DRONE_SPEED"]
 
     configuration.DRONE_MAX_ENERGY = args["DRONE_MAX_ENERGY"]
-
-    configuration.N_EPISODES_TRAIN = args["N_EPISODES_TRAIN"]
-    configuration.N_EPISODES_VAL = args["N_EPISODES_VAL"]
-    configuration.N_EPISODES_TEST = args["N_EPISODES_TEST"]
-
     configuration.EPISODE_DURATION = args["EPISODE_DURATION"]
 
     if type(args["DRONE_PATROLLING_POLICY"]) == str:

@@ -4,7 +4,7 @@ import traceback
 
 import src.constants as cst
 import src.utilities.utilities as util
-from src.simulation.simulator_patrolling import PatrollingSimulator
+from src.world_entities.simulator_patrolling import PatrollingSimulator
 from src.config import Configuration
 from src.constants import IndependentVariable as indv
 

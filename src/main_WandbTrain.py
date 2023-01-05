@@ -7,19 +7,17 @@ if module_path not in sys.path:
 
 import argparse
 import src.constants as cst
-from src.simulation.simulator_patrolling import PatrollingSimulator
+from src.world_entities.simulator_patrolling import PatrollingSimulator
 from src.config import Configuration, LearningHyperParameters, DQN_LEARNING_HYPER_PARAMETERS
 import wandb
 import traceback
 import sys
-import numpy as np
-import time
 
 
 def run_sweep(configuration: Configuration):
     """ Run sweeps to monitor models performances live. """
 
-    print(DQN_LEARNING_HYPER_PARAMETERS)
+    # print(DQN_LEARNING_HYPER_PARAMETERS)
 
     sweep_id = wandb.sweep(
         project=configuration.PROJECT_NAME,
@@ -63,26 +61,14 @@ def parser_cl_arguments(configuration: Configuration):
     """ Parses the arguments for the command line. """
 
     configuration.DRONE_PATROLLING_POLICY = cst.PatrollingProtocol.RL_DECISION_TRAIN
-    configuration.N_EPOCHS = 200
+
+    configuration.N_EPOCHS = 100
     configuration.N_EPISODES_TRAIN = 30
     configuration.N_EPISODES_VAL = 20
     configuration.N_EPISODES_TEST = 0
 
-    # python -m src.main_WandbTrain -seed 10 -nd 1 -nt 10 -pl 0
-    args_li = [
-            ('-seed', 'SEED', int),
-            ('-tol', 'TARGETS_TOLERANCE', float),
-            ('-nt', 'TARGETS_NUMBER', int),
-            ('-nd', 'DRONES_NUMBER', int),
-            ('-spe', 'DRONE_SPEED', float),
-            ('-bat', 'DRONE_MAX_ENERGY', float),
-            ('-ne', 'N_EPOCHS', int),
-            ('-net', 'N_EPISODES_TRAIN', int),
-            ('-nev', 'N_EPISODES_VAL', int),
-            ('-nes', 'N_EPISODES_TEST', int),
-            ('-edu', 'EPISODE_DURATION', int),
-            ('-pl', 'PLOT_SIM', int)
-    ]
+    configuration.DRONES_NUMBER = 1
+    configuration.TARGETS_NUMBER = 5
 
     args_li_learning = [
         ('-bas', 'batch_size', int),
@@ -100,9 +86,6 @@ def parser_cl_arguments(configuration: Configuration):
 
     parser = argparse.ArgumentParser(description='Patrolling Simulator arguments:')
 
-    for nick, name, typ in args_li:
-        parser.add_argument(nick, "--" + name, default=getattr(configuration, name), type=typ)
-
     for nick, name, typ in args_li_learning:
         parser.add_argument(nick, "--" + name, type=typ)
 
@@ -110,10 +93,6 @@ def parser_cl_arguments(configuration: Configuration):
     # parsing arguments from cli
 
     print("Setting parameters...")
-
-    setattr(configuration, "PLOT_SIM", bool(args["PLOT_SIM"]))
-    for nick, name, typ in args_li:
-        setattr(configuration, name, args[name])
 
     for nick, name, typ in args_li_learning:
         configuration.DQN_PARAMETERS[name] = args[name]

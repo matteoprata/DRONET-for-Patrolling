@@ -8,7 +8,7 @@ from src.utilities.utilities import euclidean_distance, angle_between_three_poin
 import numpy as np
 import src.constants as co
 
-import src.patrolling.patrolling_baselines as planners
+import src.patrolling.Baselines as planners
 from src.config import Configuration
 
 
@@ -40,6 +40,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         self.previous_coords = self.visited_targets_coordinates[0]
         self.prev_target     = self.simulator.environment.targets[0]
         self.prev_state = None
+        self.prev_action = None
 
         # self.rl_module = RLModule(self)
 

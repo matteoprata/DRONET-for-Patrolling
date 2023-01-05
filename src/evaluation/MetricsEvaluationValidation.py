@@ -57,30 +57,50 @@ def data_matrix_multiple_episodes(n_episodes, val_algos, metrics_logs):
     return TOT_MAT
 
 
-def plot_validation_stats(n_episodes, val_algos, metrics_logs, dep_var, error_type=ErrorType.STD_ERROR, targets_aggregator=np.average, is_boxplot=True):
+def plot_validation_stats(n_episodes, val_algos, metrics_logs, dep_vars, error_type=ErrorType.STD_ERROR, targets_aggregator=np.average, is_boxplot=True):
     """ Given a matrix of data, plots an XY chart """
-
     print("Plotting the stats...")
     data = data_matrix_multiple_episodes(n_episodes, val_algos, metrics_logs)
     print("Done filling up the matrix.")
 
-    # removes temporal dimensions, becomes: [(TIME) X EPISODE x ALGORITHM x TARGETS]
-    metrics_aoi = dep_var_map[dep_var](data)
+    metrics = {}
+    for dep_var in dep_vars:
+        # removes temporal dimensions, becomes: [(TIME) X EPISODE x ALGORITHM x TARGETS]
+        metrics_aoi = dep_var_map[dep_var](data)
 
-    plt.close('all')
+        metrics_aoi_2d = metrics_aoi.transpose((0, 2, 1)).reshape((-1, metrics_aoi.shape[1]))
+        metrics_aoi_df = pd.DataFrame(metrics_aoi_2d, columns=[v.name for v in val_algos])
+        metrics_aoi_df = metrics_aoi_df.describe()
 
-    fig, ax = plt.subplots()
-    # BOXPLOT
+        for al in [v.name for v in val_algos]:
+            metrics[dep_var.name + "_mean_" + al] = metrics_aoi_df.loc["mean", al]
+            metrics[dep_var.name + "_std_" + al] = metrics_aoi_df.loc["std", al]
+            metrics[dep_var.name + "_min_" + al] = metrics_aoi_df.loc["min", al]
+            metrics[dep_var.name + "_25%_" + al] = metrics_aoi_df.loc["25%", al]
+            metrics[dep_var.name + "_50%_" + al] = metrics_aoi_df.loc["50%", al]
+            metrics[dep_var.name + "_75%_" + al] = metrics_aoi_df.loc["75%", al]
+            metrics[dep_var.name + "_max_" + al] = metrics_aoi_df.loc["max", al]
 
-    if is_boxplot:
-        boxes = [metrics_aoi[:, i, :].ravel() for i, _ in enumerate(val_algos)]
-        ax.boxplot(boxes, showmeans=True)
-        ax.set_xticklabels(labels=[v.name for v in val_algos], rotation=20, fontsize=8)
+    return metrics
 
-    plt.xlabel("Algorithms")
-    plt.ylabel(dep_var.value["NAME"])
-    plt.tight_layout()
-    ofig = wandb.Image(copy.deepcopy(fig))
-    plt.clf()
-    return ofig
+    # wandb.Table(dataframe=metrics_aoi_df)
+
+    # plt.close('all')
+    #
+    # fig, ax = plt.subplots()
+    # # BOXPLOT
+    # if is_boxplot:
+    #     boxes = [metrics_aoi[:, i, :].ravel() for i, _ in enumerate(val_algos)]
+    #     ax.boxplot(boxes, showmeans=True)
+    #     ax.set_xticklabels(labels=[v.name for v in val_algos], rotation=20, fontsize=8)
+    #
+    # plt.xlabel("Algorithms")
+    # plt.ylabel(dep_var.value["NAME"])
+    # plt.tight_layout()
+    # ofig = wandb.Image(fig)
+    # plt.clf()
+    #
+    # to_log.append(ofig)
+    # return to_log
+
 

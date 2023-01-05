@@ -1,15 +1,14 @@
 
 import numpy as np
 from src.utilities import utilities as util
-from src import config
 
 import torch
 from src.config import Configuration, LearningHyperParameters
-from src.constants import PatrollingProtocol
 
-from src.patrolling.DQN_NN2 import DQN
-from src.patrolling.ReplayMemory2 import ReplayMemory, Transition
+from src.RL.DQN import DQN
 import src.constants as cst
+from collections import namedtuple, deque
+import random
 
 
 class PatrollingDQN:
@@ -48,7 +47,6 @@ class PatrollingDQN:
             ).to(cst.TORCH_DEVICE)
 
             self.model_hat.load_state_dict(self.model.state_dict())
-            print(self.dqn_par[LearningHyperParameters.LEARNING_RATE])
             self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.dqn_par[LearningHyperParameters.LEARNING_RATE], amsgrad=True)
 
         elif self.cf.is_rl_testing():
@@ -76,15 +74,12 @@ class PatrollingDQN:
         """  Given an input state, it returns the action predicted by the model if no exploration is done
           and the model is given as an input, if the exploration goes through. """
 
-        state = np.asarray(state).astype(np.float32)
-        state = torch.tensor(state).to(cst.TORCH_DEVICE)
+        is_do_explore = self.is_explore_probability()
 
-        with torch.no_grad():
-            q_values = self.model(state)
+        # TODO epsilon must not decay when validating or testing
 
-        do_exp = self.is_explore_probability()
-
-        if do_exp and is_allowed_explore:
+        if is_do_explore and is_allowed_explore:
+            # EXPLORE
             action_index = self.sim.rnd_explore.randint(0, self.n_actions)
             if state[action_index] == 0 and not self.cf.IS_ALLOW_SELF_LOOP:  # loop
                 actions_available = list(range(self.n_actions))
@@ -92,6 +87,11 @@ class PatrollingDQN:
                 action_sub_index = self.sim.rnd_explore.randint(0, self.n_actions-1)
                 action_index = actions_available[action_sub_index]
         else:
+            # EXPLOIT
+            state = torch.tensor(np.asarray(state).astype(np.float32)).to(cst.TORCH_DEVICE)
+            with torch.no_grad():
+                q_values = self.model(state)
+
             q_values = q_values.cpu()
             action_index = np.argmax(q_values)
             action_index = int(action_index)  # ?
@@ -122,7 +122,7 @@ class PatrollingDQN:
             # random_sample_batch = [self.replay_memory.llist[i] for i in random_sample_batch_indices]
             # random_sample_batch = list(zip(*random_sample_batch))  # STATES, STATES, ACTIONS...
 
-            return self.__train_model_batched(random_sample_batch)
+            self.__train_model_batched(random_sample_batch)
 
     def __train_model_batched(self, random_sample_batch):
         """ Given an input batch, it trains the model. """
@@ -156,12 +156,11 @@ class PatrollingDQN:
         # print('swapped', self.n_training_step)
         self.swap_learning_model()
 
-        self.current_loss = loss.item()
+        current_loss = loss.item()
 
-        self.sim.epoch_loss += [np.sum(rewards_v.cpu().numpy())]
-        self.sim.epoch_cumrew += [self.current_loss]
-
-        return self.current_loss
+        self.sim.epoch_loss += [current_loss]
+        self.sim.epoch_cumrew += [np.sum(rewards_v.cpu().numpy())]
+        self.epoch_model = self.model
 
     def swap_learning_model(self, tau=0.005):
         """ Updates the knowledge of the two """
@@ -184,3 +183,23 @@ class PatrollingDQN:
 
     def time_to_swap_models(self):
         return self.n_training_step % self.dqn_par[LearningHyperParameters.SWAP_MODELS_EVERY_DECISION] == 0
+
+
+Transition = namedtuple('Transition', ("previous_states", "current_states", "actions", "rewards"))
+
+
+class ReplayMemory(object):
+
+    def __init__(self, capacity, random_state):
+        self.memory = deque([], maxlen=capacity)
+        self.random_state = random_state
+
+    def push(self, *args):
+        """Save a transition"""
+        self.memory.append(Transition(*args))
+
+    def sample(self, batch_size):
+        return random.sample(self.memory, batch_size)
+
+    def __len__(self):
+        return len(self.memory)

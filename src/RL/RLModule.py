@@ -1,9 +1,10 @@
 
-from src.patrolling.DQN_module2 import PatrollingDQN
-from src.patrolling.State2 import State, FeatureFamily, FeatureFamilyName
+from src.RL.DQNTraining import PatrollingDQN
+from src.RL.RLSate import State, FeatureFamily, FeatureFamilyName
 import numpy as np
-
+from src.utilities.utilities import min_max_normalizer
 from src.world_entities.drone import Drone
+
 
 class RLModule:
 
@@ -17,21 +18,28 @@ class RLModule:
 
     def query_model(self, drone: Drone, is_exploit=False):
         s_prime = self.state(drone)
-        a = self.action(s_prime.vector(), is_exploit)
+        a_prime = self.action(s_prime.vector(), is_exploit)
 
         if is_exploit:
-            return a
+            return a_prime
 
         r = self.reward(s_prime)
-        s = drone.prev_state
-        s_vec = s.vector() if s is not None else None
-        drone.prev_state = s_prime
 
-        self.dqn_mod.train(s_vec, s_prime.vector(), a, r)
-        return a
+        # s_prev -> a_prev -> s_prime (from here will execute, a_prime)
+        s_prev = drone.prev_state
+        s_prev_vec = s_prev.vector() if s_prev is not None else None
+        a_prev = drone.prev_action
+
+        # s_prev, s_prime, a_prev, r
+        self.dqn_mod.train(s_prev_vec, s_prime.vector(), a_prev, r)
+
+        drone.prev_state = s_prime
+        drone.prev_action = a_prime
+        return a_prime
 
     # ----> MDP ahead < ----
 
+    # RESEARCH HERE
     def state(self, drone) -> State:
         # n targets features
         distances = FeatureFamily.time_distances(drone, self.sim.environment.targets)
@@ -45,8 +53,14 @@ class RLModule:
         state = State(features)
         return state
 
+    # RESEARCH HERE
     def reward(self, state: State):
-        return - np.sum(state.get_feature_by_name(FeatureFamilyName.AOIR).values())
+        # r1 = - np.sum(state.get_feature_by_name(FeatureFamilyName.AOIR).values()) # - SUM AOIR  [50%, 150%] -> 200%
+
+        r2_vals = np.array(state.get_feature_by_name(FeatureFamilyName.AOIR).values(is_normalized=False))  # - SUM AOIR > 100%  [50%, 150%] -> 150%
+        r2 = - np.sum(r2_vals[r2_vals >= 1])
+        r2_norm = min_max_normalizer(r2, self.sim.rmin, 0, -1, 0, soft=True)
+        return r2_norm
 
     def action(self, state: State, is_exploit=False):
         return self.dqn_mod.predict(state, is_allowed_explore=not is_exploit)

@@ -156,36 +156,38 @@ class Environment(ObstacleHandler):
         targets_x_episode = defaultdict(list)
         # print("START: generating random episodes")
 
-        for ep in tqdm(range(self.simulator.cf.n_tot_episodes()), disable=True):
-            coordinates = []
-
-            # add coordinates of the targets
-            for i in range(self.simulator.n_targets):
-                point_coords = [self.simulator.rnd_env.randint(0, self.width),
-                                self.simulator.rnd_env.randint(0, self.height)]
-                coordinates.append(point_coords)
-
-            # tsp_path_time = self.tsp_path_time(coordinates)  # time of a TSP from the targets
-            REF_SPEED = 15  #m/s
-            diag_space = np.sqrt(self.width**2 + self.height**2) * 2
-            diag_time = diag_space / REF_SPEED
-            # add tolerances of the targets
-            sigma = 0.3 * diag_time
-            mean = diag_time * (1 + self.simulator.tolerance_factor)
-            # skew = self.sim.tolerance_factor * diag_time
-            MIN_IDLENESS = diag_time / self.simulator.n_targets
-
-            for i in range(self.simulator.n_targets):  # set the threshold for the targets
-                # idleness = self.sim.rnd_tolerance.normal(tsp_path_time, sigma, 1)[0]
-                idleness = self.simulator.rnd_tolerance.normal(mean, sigma, 1)[0]  # util.rand_skew_norm(alpha=0, mean=mean, std=sigma, )  # normal
-                idleness = max(idleness, MIN_IDLENESS)
-                # print("sigma", sigma, "mu", mean, "sample", idleness)
-                targets_x_episode[ep].append((i, tuple(coordinates[i]), idleness))
-
         # assert(self.sim.n_episodes <= MAX_N_EPISODES)
-        epi_type = [(EpisodeType.TRAIN, self.simulator.cf.N_EPISODES_TRAIN),
+        epi = self.simulator.cf.N_EPISODES_TRAIN_UPPER if self.simulator.cf.N_EPISODES_TRAIN_UPPER is not None else self.simulator.cf.N_EPISODES_TRAIN
+        epi_type = [(EpisodeType.TRAIN, epi),
                     (EpisodeType.VAL, self.simulator.cf.N_EPISODES_VAL),
                     (EpisodeType.TEST, self.simulator.cf.N_EPISODES_TEST)]
+
+        for et, en in epi_type:
+            for ep in range(en):
+                coordinates = []
+
+                # add coordinates of the targets
+                for i in range(self.simulator.n_targets):
+                    point_coords = [self.simulator.rnd_env.randint(0, self.width),
+                                    self.simulator.rnd_env.randint(0, self.height)]
+                    coordinates.append(point_coords)
+
+                # tsp_path_time = self.tsp_path_time(coordinates)  # time of a TSP from the targets
+                REF_SPEED = 15
+                diag_space = np.sqrt(self.width**2 + self.height**2) * 2
+                diag_time = diag_space / REF_SPEED
+                # add tolerances of the targets
+                sigma = 0.3 * diag_time
+                mean = diag_time * (1 + self.simulator.tolerance_factor)
+                # skew = self.sim.tolerance_factor * diag_time
+                MIN_IDLENESS = diag_time / self.simulator.n_targets
+
+                for i in range(self.simulator.n_targets):  # set the threshold for the targets
+                    # idleness = self.sim.rnd_tolerance.normal(tsp_path_time, sigma, 1)[0]
+                    idleness = self.simulator.rnd_tolerance.normal(mean, sigma, 1)[0]  # util.rand_skew_norm(alpha=0, mean=mean, std=sigma, )  # normal
+                    idleness = max(idleness, MIN_IDLENESS)
+                    # print("sigma", sigma, "mu", mean, "sample", idleness)
+                    targets_x_episode[ep].append((i, tuple(coordinates[i]), idleness))
 
         for et, en in epi_type:
             for ep in range(en):

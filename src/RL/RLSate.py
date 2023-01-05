@@ -48,6 +48,7 @@ class FeatureFamily:
             try:
                 return [min_max_normalizer(v, self.fmin, self.fmax) for v in self.vvalues]
             except:
+                print("ERROR here, the value is out of domain.")
                 print(self.vvalues, self.fmin, self.fmax)
         else:
             return self.vvalues

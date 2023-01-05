@@ -4,6 +4,7 @@ from enum import Enum
 from src.constants import PatrollingProtocol, DependentVariable
 from src.utilities.utilities import euclidean_distance
 import numpy as np
+import os
 
 
 class LearningHyperParameters(Enum):
@@ -29,6 +30,8 @@ class Configuration:
     """ This class represent all the constants of a simulation, they vary from one run to another. """
     def __init__(self):
 
+        self.setup_all_directories()
+
         self.SETUP_NAME = None
 
         # Frequently used parameters
@@ -40,7 +43,7 @@ class Configuration:
         self.MIN = int(60 / self.SIM_TS_DURATION)
 
         self.TARGETS_NUMBER = 10       # number of random targets in the map
-        self.TARGETS_TOLERANCE = 0.1  # std % distance of tolerance generation
+        self.TARGETS_TOLERANCE = 0.1   # std % distance of tolerance generation
 
         self.DRONES_NUMBER = 1                                                  # int: number of drones.
         self.DRONE_SPEED = 15                                              # 15 m/s = 54 km/h   # float: m/s, drone speed.
@@ -51,6 +54,7 @@ class Configuration:
         self.EPISODE_DURATION = int(1 * self.HOUR)  # how much time the episode lasts steps
 
         self.N_EPISODES_TRAIN = 0  # how many times the scenario (a.k.a. episode) changes during a simulation
+        self.N_EPISODES_TRAIN_UPPER = None   # it will sample random N_EPISODES_TRAIN episodes from 1000, do not actually repeat
         self.N_EPISODES_VAL = 0    # how many times the scenario (a.k.a. episode) changes during a simulation
         self.N_EPISODES_TEST = 1  # how many times the scenario (a.k.a. episode) changes during a simulation
 
@@ -64,9 +68,9 @@ class Configuration:
             PatrollingProtocol.RANDOM_MOVEMENT,
             PatrollingProtocol.GO_MIN_RESIDUAL,
             PatrollingProtocol.GO_MAX_AOI
-                                      ]
+        ]
 
-        self.VALIDATION_VARS = [
+        self.VALIDATION_DEP_VARS = [
             DependentVariable.CUMULATIVE_AR,
             DependentVariable.CUMULATIVE_DELAY_AR,
             DependentVariable.WORST_DELAY,
@@ -123,7 +127,7 @@ class Configuration:
 
         # ------------------------------- WANDB ------------------------------- #
 
-        self.PROJECT_NAME = "RL_Patrolling"
+        self.PROJECT_NAME = "Patrolling RL"
         self.HYPER_PARAM_SEARCH_MODE = 'bayes'
         self.FUNCTION_TO_OPTIMIZE = {
             'goal': 'maximize',
@@ -197,19 +201,25 @@ class Configuration:
     def max_times_violation(self):
         return 1000
 
+    def setup_all_directories(self):
+        paths = ["data", "data/model", "data/experiments"]
+        for p in paths:
+            if not os.path.exists(p):
+                os.makedirs(p)
+
 
 # SWEEP
 DQN_LEARNING_HYPER_PARAMETERS = {
     # "set" is the chosen value
     LearningHyperParameters.REPLAY_MEMORY_DEPTH.value: {'values': [100000]},
     LearningHyperParameters.EPSILON_DECAY.value: {'min': 0.00001, 'max': 0.001},
-    LearningHyperParameters.LEARNING_RATE.value:  {'min': 0.0001, 'max': 0.001},
-    LearningHyperParameters.DISCOUNT_FACTOR.value: {'values': [1, 0.8]},
+    LearningHyperParameters.LEARNING_RATE.value:  {'min': 0.00001, 'max': 0.001},
+    LearningHyperParameters.DISCOUNT_FACTOR.value: {'values': [1, 0.95, 0.8]},
     LearningHyperParameters.BATCH_SIZE.value: {'values': [32, 64]},
     LearningHyperParameters.SWAP_MODELS_EVERY_DECISION.value: {'values': [100, 500]},
 
-    LearningHyperParameters.N_HIDDEN_1.value: {'values': [10, 20, 30]},
-    LearningHyperParameters.N_HIDDEN_2.value: {'values': [0, 5, 10]},
+    LearningHyperParameters.N_HIDDEN_1.value: {'values': [8]},
+    LearningHyperParameters.N_HIDDEN_2.value: {'values': [0]},
     LearningHyperParameters.N_HIDDEN_3.value: {'values': [0]},
     LearningHyperParameters.N_HIDDEN_4.value: {'values': [0]},
     LearningHyperParameters.N_HIDDEN_5.value: {'values': [0]},

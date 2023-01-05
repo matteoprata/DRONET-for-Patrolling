@@ -1,7 +1,7 @@
 from enum import Enum
 import multiprocessing
-from src.patrolling import patrolling_baselines as pbase
-from src.patrolling.Baseline01 import Baseline01
+from src.patrolling import Baselines as pbase
+from src.patrolling.SOABaseline1 import Baseline01
 import torch
 
 """

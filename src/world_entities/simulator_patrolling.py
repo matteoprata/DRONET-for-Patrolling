@@ -80,6 +80,7 @@ class PatrollingSimulator:
         # create directory of the simulation
         # make_path(self.directory_simulation() + "-")
 
+        # RL stuff
         self.prev_loss = np.inf
         self.prev_reward = -np.inf
         self.worst_epoch_counter = 0
@@ -87,10 +88,12 @@ class PatrollingSimulator:
         self.epoch_loss = []
         self.epoch_cumrew = []
 
+        self.epoch = 0
         self.metrics_logs = defaultdict(list)
         self.rmean = 0
         self.rstd = 1
         self.rmin = -50
+        self.rmax = 50
 
     # ---- # BOUNDS and CONSTANTS # ---- #
 
@@ -298,6 +301,7 @@ class PatrollingSimulator:
             self.rmean = np.mean(self.epoch_cumrew)
             self.rstd = np.std(self.epoch_cumrew)
             self.rmin = np.min(self.epoch_cumrew)
+            self.rmin = np.max(self.epoch_cumrew)
 
         self.epoch_loss = []
         self.epoch_cumrew = []
@@ -329,18 +333,12 @@ class PatrollingSimulator:
                 self.run_episodes(range(self.cf.N_EPISODES_VAL), typ=cst.EpisodeType.VAL, protocol=al)
             self.on_validation_epoch_end(tot_episodes=self.cf.N_EPISODES_VAL, is_log=self.cf.IS_WANDB)
 
-    def testing(self):
-        self.metrics_logs = defaultdict(list)  # ?
-        for al in [self.cf.DRONE_PATROLLING_POLICY] + self.cf.VALIDATION_ALGORITHMS:
-            print("Testing algorithm:", al)
-            self.run_episodes(range(self.cf.N_EPISODES_TEST), typ=cst.EpisodeType.TEST, protocol=al)
-        self.on_test_epoch_end(tot_episodes=self.cf.N_EPISODES_TEST, is_log=self.cf.IS_WANDB)
-
     def on_train_epoch_end(self, is_log=True):
         if is_log:
             dic = {
                 "loss": np.sum(self.epoch_loss),
-                self.cf.FUNCTION_TO_OPTIMIZE["name"]: np.sum(self.epoch_cumrew)
+                "explore-prob": self.rl_module.dqn_mod.explore_prob,
+                self.cf.FUNCTION_TO_OPTIMIZE["name"]: np.sum(self.epoch_cumrew),
             }
             self.cf.WANDB_INSTANCE.log(dic)
 

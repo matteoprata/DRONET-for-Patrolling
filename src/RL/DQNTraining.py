@@ -55,6 +55,7 @@ class PatrollingDQN:
 
         self.memory = ReplayMemory(self.dqn_par[LearningHyperParameters.REPLAY_MEMORY_DEPTH], self.sim.rnd_sample_replay)
         self.n_training_step = 0
+        self.explore_prob = 1
 
     def is_explore_probability(self):
         """ Returns True if it is time to explore, False if it is time to exploit. """
@@ -64,10 +65,10 @@ class PatrollingDQN:
 
         def let_exploration_decay():
             """ Probability of exploration now. """
-            explore_prob = explore_probability(self.n_training_step, self.dqn_par[LearningHyperParameters.EPSILON_DECAY])
-            return explore_prob
+            self.explore_prob = explore_probability(self.sim.epoch, self.dqn_par[LearningHyperParameters.EPSILON_DECAY])
+            return self.explore_prob
 
-        return util.flip_biased_coin(let_exploration_decay(), random_gen=self.sim.rnd_explore)
+        return util.flip_biased_coin(p=let_exploration_decay(), random_gen=self.sim.rnd_explore)
 
     def predict(self, state, is_allowed_explore=True):
         """  Given an input state_prime, it returns the action predicted by the model if no exploration is done
@@ -196,6 +197,7 @@ class ReplayMemory(object):
         self.memory.append(Transition(*args))
 
     def sample(self, batch_size):
+        """ Sampling is not sequential."""
         return random.sample(self.memory, batch_size)
 
     def __len__(self):

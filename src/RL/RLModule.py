@@ -66,9 +66,12 @@ class RLModule:
         st_prev_aoi = np.array(state_prev.get_feature_by_name(FeatureFamilyName.AOIR).values(is_normalized=False))
         st_prev_dis = np.array(state_prev.get_feature_by_name(FeatureFamilyName.TIME_DISTANCES).values(is_normalized=True))
 
-        r3 = (- st_prev_aoi[a_prev] - st_prev_dis[a_prev] + WEIGHT * r2) if st_prev_aoi[a_prev] >= 1 else 0
-        r3_norm = min_max_normalizer(r3, self.sim.rmin, 0, -1, 0, soft=True)
-        return r3_norm
+        # r3 = (- st_prev_aoi[a_prev] - st_prev_dis[a_prev] + WEIGHT * r2) if st_prev_aoi[a_prev] >= 1 else 0
+        # r3_norm = min_max_normalizer(r3, self.sim.rmin, 0, -1, 0, soft=True)
+
+        r4 = 1 / (st_prev_aoi[a_prev] + st_prev_dis[a_prev]) + WEIGHT * r2 if st_prev_aoi[a_prev] >= 1 else 0
+        r4_norm = min_max_normalizer(r4, self.sim.rmin, self.sim.rmax, -1, 1, soft=True)
+        return r4_norm
 
     def action(self, state: State, is_exploit=False):
         return self.dqn_mod.predict(state, is_allowed_explore=not is_exploit)

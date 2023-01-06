@@ -23,12 +23,12 @@ class EpisodeType(Enum):
 class PatrollingProtocol(Enum):
     FREE = 1
     RL_DECISION_TRAIN = 0
+    RL_DECISION_TEST    = 2
 
     RANDOM_MOVEMENT     = pbase.RandomPolicy
     GO_MAX_AOI          = pbase.MaxAOIPolicy
     GO_MIN_RESIDUAL     = pbase.MaxAOIRatioPolicy
     GO_MIN_SUM_RESIDUAL = pbase.MaxSumResidualPolicy
-    RL_DECISION_TEST    = pbase.RLPolicy
 
     BASE_01 = Baseline01
 

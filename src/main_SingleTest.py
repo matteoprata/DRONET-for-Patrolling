@@ -9,10 +9,10 @@ import argparse
 import src.constants as cst
 from src.world_entities.simulator_patrolling import PatrollingSimulator
 from src.config import Configuration
+import wandb
 
 
 def main(configuration):
-
     print("\nExecuting > {}\n".format(configuration.conf_description()))
     sim = PatrollingSimulator(configuration)
     sim.run_testing_loop()
@@ -35,6 +35,7 @@ def parser_cl_arguments(configuration: Configuration):
 
     parser.add_argument('-edu', '--EPISODE_DURATION', default=configuration.EPISODE_DURATION, type=int)
     parser.add_argument('-pl',  '--PLOT_SIM', default=configuration.PLOT_SIM, type=int)
+    parser.add_argument('-mpa', '--MODEL_PATH', default='none', type=str)
 
     # python src/main_SingleTest.py -pl 1 -nd 1 -nt 5 -seed 103 -tol .1 -pol GO_MIN_RESIDUAL
     # parsing arguments from cli
@@ -56,6 +57,13 @@ def parser_cl_arguments(configuration: Configuration):
         configuration.DRONE_PATROLLING_POLICY = cst.PatrollingProtocol[args["DRONE_PATROLLING_POLICY"]]
     else:
         configuration.DRONE_PATROLLING_POLICY = args["DRONE_PATROLLING_POLICY"]
+
+    if configuration.DRONE_PATROLLING_POLICY == cst.PatrollingProtocol.RL_DECISION_TEST:
+        if os.path.exists(args["MODEL_PATH"]):
+            configuration.RL_BEST_MODEL_PATH = args["MODEL_PATH"]
+        else:
+            print("Path {} is invalid for testing a pretrained RL model.".format(args["MODEL_PATH"]))
+            exit(1)
 
 
 if __name__ == "__main__":

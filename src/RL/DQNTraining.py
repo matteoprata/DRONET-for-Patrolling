@@ -22,35 +22,34 @@ class PatrollingDQN:
         self.n_state_features = n_state_features
 
         # build neural models
-        if self.cf.is_rl_training():
 
-            # MODEL 1
-            self.model = DQN(
-                n_state_features,
-                n_actions,
-                [self.dqn_par[LearningHyperParameters.N_HIDDEN_1],
-                 self.dqn_par[LearningHyperParameters.N_HIDDEN_2],
-                 self.dqn_par[LearningHyperParameters.N_HIDDEN_3],
-                 self.dqn_par[LearningHyperParameters.N_HIDDEN_4],
-                 self.dqn_par[LearningHyperParameters.N_HIDDEN_5]]
-            ).to(cst.TORCH_DEVICE)
-            
-            # MODEL 2
-            self.model_hat = DQN(
-                n_state_features,
-                n_actions,
-                [self.dqn_par[LearningHyperParameters.N_HIDDEN_1],
-                 self.dqn_par[LearningHyperParameters.N_HIDDEN_2],
-                 self.dqn_par[LearningHyperParameters.N_HIDDEN_3],
-                 self.dqn_par[LearningHyperParameters.N_HIDDEN_4],
-                 self.dqn_par[LearningHyperParameters.N_HIDDEN_5]]
-            ).to(cst.TORCH_DEVICE)
+        # MODEL 1
+        self.model = DQN(
+            n_state_features,
+            n_actions,
+            [self.dqn_par[LearningHyperParameters.N_HIDDEN_1],
+             self.dqn_par[LearningHyperParameters.N_HIDDEN_2],
+             self.dqn_par[LearningHyperParameters.N_HIDDEN_3],
+             self.dqn_par[LearningHyperParameters.N_HIDDEN_4],
+             self.dqn_par[LearningHyperParameters.N_HIDDEN_5]]
+        ).to(cst.TORCH_DEVICE)
 
-            self.model_hat.load_state_dict(self.model.state_dict())
-            self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.dqn_par[LearningHyperParameters.LEARNING_RATE], amsgrad=True)
+        # MODEL 2
+        self.model_hat = DQN(
+            n_state_features,
+            n_actions,
+            [self.dqn_par[LearningHyperParameters.N_HIDDEN_1],
+             self.dqn_par[LearningHyperParameters.N_HIDDEN_2],
+             self.dqn_par[LearningHyperParameters.N_HIDDEN_3],
+             self.dqn_par[LearningHyperParameters.N_HIDDEN_4],
+             self.dqn_par[LearningHyperParameters.N_HIDDEN_5]]
+        ).to(cst.TORCH_DEVICE)
 
-        elif self.cf.is_rl_testing():
+        self.model_hat.load_state_dict(self.model.state_dict())
+        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.dqn_par[LearningHyperParameters.LEARNING_RATE], amsgrad=True)
 
+        if self.cf.is_rl_testing():
+            print("Loading pretrained model at path", self.cf.RL_BEST_MODEL_PATH)
             self.model = torch.load(self.cf.RL_BEST_MODEL_PATH)
             self.model_hat = torch.load(self.cf.RL_BEST_MODEL_PATH)
 
@@ -71,12 +70,10 @@ class PatrollingDQN:
         return util.flip_biased_coin(let_exploration_decay(), random_gen=self.sim.rnd_explore)
 
     def predict(self, state, is_allowed_explore=True):
-        """  Given an input state, it returns the action predicted by the model if no exploration is done
+        """  Given an input state_prime, it returns the action predicted by the model if no exploration is done
           and the model is given as an input, if the exploration goes through. """
 
         is_do_explore = self.is_explore_probability()
-
-        # TODO epsilon must not decay when validating or testing
 
         if is_do_explore and is_allowed_explore:
             # EXPLORE

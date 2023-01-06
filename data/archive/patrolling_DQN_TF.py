@@ -107,7 +107,7 @@ class PatrollingDQN:
         return model
 
     def predict(self, state, is_explore=True):
-        """  Given an input state, it returns the action predicted by the model if no exploration is done
+        """  Given an input state_prime, it returns the action predicted by the model if no exploration is done
           and the model is given as an input, if the exploration goes through. """
 
         if self.load_model:
@@ -120,7 +120,7 @@ class PatrollingDQN:
             # q_values[action_index] = np.inf
             # print("random", action_index)
         else:
-            # q_values = self.model.predict(np.array([state]))  # q-values for the input state
+            # q_values = self.model.predict(np.array([state_prime]))  # q-values for the input state_prime
             action_index = np.argmax(q_values[0])
             # print("q", action_index)
         return action_index, q_values

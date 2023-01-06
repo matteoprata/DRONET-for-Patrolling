@@ -69,7 +69,7 @@ class PatrollingSimulator:
         self.current_date = current_date()
 
         self.metrics = None  # init later
-        self.rl_module = None
+        self.rl_module: RLModule = None
         self.run_state = cst.EpisodeType.TRAIN
 
         # create the world entites
@@ -259,32 +259,38 @@ class PatrollingSimulator:
 
                 self.cur_step_total += 1
 
-            if typ in [cst.EpisodeType.VAL, cst.EpisodeType.TEST]:
+            if typ in [cst.EpisodeType.VAL]:
                 self.metrics_logs[protocol].append(self.metricsV2.to_json())
 
     # ----> RUNNING THE SIMULATION <----
 
     def run_training_loop(self):
 
-        for epo in tqdm(range(self.cf.N_EPOCHS), desc='epoch', disable=self.cf.IS_HIDE_PROGRESS_BAR):
+        if self.cf.DRONE_PATROLLING_POLICY == cst.PatrollingProtocol.RL_DECISION_TRAIN:
+            for epo in tqdm(range(self.cf.N_EPOCHS), desc='epoch', disable=self.cf.IS_HIDE_PROGRESS_BAR):
+                self.epoch = epo
 
-            if self.early_stop_check(self.epoch_loss, epo):
-                break
-            self.on_epoch_start(epo)
+                if self.early_stop_check(self.epoch_loss, epo):
+                    break
+                self.on_epoch_start(epo)
 
-            self.training()
-            self.validation(epo)
+                self.training()
+                self.validation(epo)
 
-            self.save_best_model(self.epoch_cumrew)
-
-        # self.testing()
+                self.save_best_model(self.epoch_cumrew)
+        else:
+            print("Unhandled protocol for training.")
+            exit(1)
 
     def run_testing_loop(self):
-        self.run_episodes([0], typ=cst.EpisodeType.TEST, protocol=self.cf.DRONE_PATROLLING_POLICY)
+        if self.cf.DRONE_PATROLLING_POLICY in [e for e in cst.PatrollingProtocol if e != cst.PatrollingProtocol.RL_DECISION_TRAIN]:
+            self.run_episodes([0], typ=cst.EpisodeType.TEST, protocol=self.cf.DRONE_PATROLLING_POLICY)
 
-        print("Saving stats file...")
-        self.metricsV2.save_metrics()
-
+            print("Saving stats file...")
+            self.metricsV2.save_metrics()
+        else:
+            print("Unhandled protocol for testing.")
+            exit(1)
     #
 
     def on_epoch_start(self, epo):
@@ -295,8 +301,6 @@ class PatrollingSimulator:
 
         self.epoch_loss = []
         self.epoch_cumrew = []
-        self.epoch_model = None
-
 
     def training(self):
         # sum loss and reward during the epoch
@@ -350,7 +354,7 @@ class PatrollingSimulator:
         self.on_validation_epoch_end(tot_episodes, is_log)
 
     def early_stop_check(self, loss_vector, epoch):
-        if epoch <= 50:
+        if epoch <= self.cf.N_EPOCHS * .5:
             # otherwise at the beginning the loss is 0
             return False
 
@@ -377,7 +381,7 @@ class PatrollingSimulator:
         this_model_name = "model-{}.pt".format(self.cf.WANDB_INSTANCE.id)
         this_model_path_root = "data/model"
         this_model_path_full = "{}/{}".format(this_model_path_root, this_model_name)
-        torch.save(self.epoch_model, this_model_path_full)
+        torch.save(self.rl_module.dqn_mod.model, this_model_path_full)
 
         art = wandb.Artifact(this_model_name, type="model")
         art.add_file(this_model_path_full, this_model_name)

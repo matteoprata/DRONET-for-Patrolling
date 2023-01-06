@@ -267,7 +267,7 @@ class PathPlanningDrawer:
 
         # index
         stddraw.text(drone.coords[0], drone.coords[1] + (drone.com_range / 2.0), "id: " + str(drone.identifier))
-        # state action
+        # state_prime action
         # if self.sim.drone_mobility == src.constants.PatrollingProtocol.RL_DECISION_TRAIN:
         #     lt = self.sim.environment.drones[0].rl_module.previous_learning_tuple
         #     if lt is not None:

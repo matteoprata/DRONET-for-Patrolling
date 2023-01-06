@@ -161,7 +161,7 @@ class Configuration:
         self.EXPLORE_PORTION = 0.7    # what portion of time of the simulation is spent exploring
 
         # variables from here
-        self.LOG_STATE = False                       # print the state or not
+        self.LOG_STATE = False                       # print the state_prime or not
 
         self.TARGET_VIOLATION_FACTOR = 100  # ?
 

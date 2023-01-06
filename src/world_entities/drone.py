@@ -93,11 +93,21 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 tid = self.simulator.rl_module.query_model(self, is_exploit)
                 target = self.simulator.environment.targets[tid]
 
-                # print(self.identifier, self.sim.rl_module.state(self))
+                # print(self.identifier, self.sim.rl_module.state_prime(self))
                 self.__update_next_target_upon_reach(target)
 
         elif protocol == co.PatrollingProtocol.RL_DECISION_TEST:
-            pass
+            if self.will_reach_target_now():
+                self.coords = self.next_target_coo()  # this instruction sets the position of the drone on top of the target (useful due to discrete time)
+
+                self.__handle_metrics()
+                self.__update_target_time_visit_upon_reach()
+
+                tid = self.simulator.rl_module.query_model(self, is_exploit=True)
+                target = self.simulator.environment.targets[tid]
+
+                # print(self.identifier, self.sim.rl_module.state_prime(self))
+                self.__update_next_target_upon_reach(target)
 
         elif protocol == co.PatrollingProtocol.RANDOM_MOVEMENT:
             if self.will_reach_target_now():

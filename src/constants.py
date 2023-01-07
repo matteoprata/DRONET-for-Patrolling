@@ -9,6 +9,25 @@ This file contains all the constants of the sim.
 """
 
 
+class LearningHyperParameters(Enum):
+
+    REPLAY_MEMORY_DEPTH = "replay_memory_depth"
+    EPSILON_DECAY = "epsilon_decay"
+    LEARNING_RATE = "learning_rate"
+    DISCOUNT_FACTOR = "discount_factor"
+    BATCH_SIZE = "batch_size"
+    SWAP_MODELS_EVERY_DECISION = "swap_models_every_decision"
+
+    N_HIDDEN_1 = "n_hidden_neurons_lv1"
+    N_HIDDEN_2 = "n_hidden_neurons_lv2"
+    N_HIDDEN_3 = "n_hidden_neurons_lv3"
+    N_HIDDEN_4 = "n_hidden_neurons_lv4"
+    N_HIDDEN_5 = "n_hidden_neurons_lv5"
+
+    # OPTIMIZER = "optimizer"
+    # LOSS = "loss"
+
+
 class ErrorType(Enum):
     STD = "std"
     STD_ERROR = "stde"
@@ -89,6 +108,13 @@ class JSONFields(Enum):
     TARGET_NUMBER = "TARGET_NUMBER"
     DRONE_SPEED = "DRONE_SPEED"
     TOLERANCE_FACTOR = "TOLERANCE_FACTOR"
+
+
+class RLRewardType(Enum):
+    REW0 = 1
+    REW1 = 2
+    REW2 = 3
+    REW3 = 4
 
 
 PATH_STATS = "data/experiments/"

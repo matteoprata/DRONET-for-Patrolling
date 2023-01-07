@@ -2,8 +2,8 @@
 from src.RL.DQNTraining import PatrollingDQN
 from src.RL.RLSate import State, FeatureFamily, FeatureFamilyName
 import numpy as np
-from src.utilities.utilities import min_max_normalizer
 from src.world_entities.drone import Drone
+from src.RL.RLRewards import reward_map
 
 
 class RLModule:
@@ -39,7 +39,6 @@ class RLModule:
 
     # ----> MDP ahead < ----
 
-    # RESEARCH HERE
     def state(self, drone) -> State:
         # n targets features
         distances = FeatureFamily.time_distances(drone, self.sim.environment.targets)
@@ -53,25 +52,8 @@ class RLModule:
         state = State(features)
         return state
 
-    # RESEARCH HERE
     def reward(self, state_prev: State, state_prime: State, a_prev: int):
-        # r1 = - np.sum(state_prime.get_feature_by_name(FeatureFamilyName.AOIR).values()) # - SUM AOIR  [50%, 150%] -> 200%
-        WEIGHT = 0.3
-        r2_vals = np.array(state_prime.get_feature_by_name(FeatureFamilyName.AOIR).values(is_normalized=False))  # - SUM AOIR > 100%  [50%, 150%] -> 150%
-        r2 = - np.sum(r2_vals[r2_vals >= 1])
-
-        if None in [state_prev, state_prime, a_prev]:
-            return 0
-
-        st_prev_aoi = np.array(state_prev.get_feature_by_name(FeatureFamilyName.AOIR).values(is_normalized=False))
-        st_prev_dis = np.array(state_prev.get_feature_by_name(FeatureFamilyName.TIME_DISTANCES).values(is_normalized=True))
-
-        # r3 = (- st_prev_aoi[a_prev] - st_prev_dis[a_prev] + WEIGHT * r2) if st_prev_aoi[a_prev] >= 1 else 0
-        # r3_norm = min_max_normalizer(r3, self.sim.rmin, 0, -1, 0, soft=True)
-
-        r4 = 1 / (st_prev_aoi[a_prev] + st_prev_dis[a_prev]) + WEIGHT * r2 if st_prev_aoi[a_prev] >= 1 else 0
-        r4_norm = min_max_normalizer(r4, self.sim.rmin, self.sim.rmax, -1, 1, soft=True)
-        return r4_norm
+        return reward_map(self.cf.REWARD_TYPE, self.sim, state_prev, state_prime, a_prev)
 
     def action(self, state: State, is_exploit=False):
         return self.dqn_mod.predict(state, is_allowed_explore=not is_exploit)

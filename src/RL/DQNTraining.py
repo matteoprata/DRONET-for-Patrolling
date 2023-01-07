@@ -3,10 +3,11 @@ import numpy as np
 from src.utilities import utilities as util
 
 import torch
-from src.config import Configuration, LearningHyperParameters
+from src.config import Configuration
 
 from src.RL.DQN import DQN
 import src.constants as cst
+from src.constants import LearningHyperParameters
 from collections import namedtuple, deque
 import random
 

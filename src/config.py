@@ -1,29 +1,7 @@
 
-from enum import Enum
-
-from src.constants import PatrollingProtocol, DependentVariable
-from src.utilities.utilities import euclidean_distance
+from src.constants import PatrollingProtocol, DependentVariable, LearningHyperParameters, RLRewardType
 import numpy as np
 import os
-
-
-class LearningHyperParameters(Enum):
-
-    REPLAY_MEMORY_DEPTH = "replay_memory_depth"
-    EPSILON_DECAY = "epsilon_decay"
-    LEARNING_RATE = "learning_rate"
-    DISCOUNT_FACTOR = "discount_factor"
-    BATCH_SIZE = "batch_size"
-    SWAP_MODELS_EVERY_DECISION = "swap_models_every_decision"
-
-    N_HIDDEN_1 = "n_hidden_neurons_lv1"
-    N_HIDDEN_2 = "n_hidden_neurons_lv2"
-    N_HIDDEN_3 = "n_hidden_neurons_lv3"
-    N_HIDDEN_4 = "n_hidden_neurons_lv4"
-    N_HIDDEN_5 = "n_hidden_neurons_lv5"
-
-    # OPTIMIZER = "optimizer"
-    # LOSS = "loss"
 
 
 class Configuration:
@@ -134,6 +112,8 @@ class Configuration:
             'name': "cumulative_reward"
         }
 
+        self.REWARD_TYPE = RLRewardType.REW1
+
         # ASSIGNED for a run
         self.DQN_PARAMETERS = {
             LearningHyperParameters.REPLAY_MEMORY_DEPTH: 100000,
@@ -206,24 +186,3 @@ class Configuration:
         for p in paths:
             if not os.path.exists(p):
                 os.makedirs(p)
-
-
-# SWEEP
-DQN_LEARNING_HYPER_PARAMETERS = {
-    # "set" is the chosen value
-    LearningHyperParameters.REPLAY_MEMORY_DEPTH.value: {'values': [100000]},
-    LearningHyperParameters.EPSILON_DECAY.value: {"values": [0.01, 0.03, 0.05, 0.08]},  # best for 200 epochs, 0.01 and 0.08
-    LearningHyperParameters.LEARNING_RATE.value:  {'min': 0.00001, 'max': 0.001},
-    LearningHyperParameters.DISCOUNT_FACTOR.value: {'values': [1, 0.95, 0.8]},
-    LearningHyperParameters.BATCH_SIZE.value: {'values': [32, 64]},
-    LearningHyperParameters.SWAP_MODELS_EVERY_DECISION.value: {'values': [100, 500]},
-
-    LearningHyperParameters.N_HIDDEN_1.value: {'values': [8]},
-    LearningHyperParameters.N_HIDDEN_2.value: {'values': [0]},
-    LearningHyperParameters.N_HIDDEN_3.value: {'values': [0]},
-    LearningHyperParameters.N_HIDDEN_4.value: {'values': [0]},
-    LearningHyperParameters.N_HIDDEN_5.value: {'values': [0]},
-
-    # LearningHyperParameters.OPTIMIZER.value: {'values': ["adam"]},
-    # LearningHyperParameters.LOSS.value: {'values': ["mse"]},
-}

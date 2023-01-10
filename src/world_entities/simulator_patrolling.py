@@ -63,7 +63,6 @@ class PatrollingSimulator:
         self.wandb = config.IS_WANDB
 
         self.cur_step = 0
-        self.cur_step_total = 0
 
         self.selected_drone = None
         self.current_date = current_date()
@@ -95,15 +94,13 @@ class PatrollingSimulator:
         self.rmin = -50
         self.rmax = 50
 
+        self.do_break_episode = False
+
     # ---- # BOUNDS and CONSTANTS # ---- #
 
     def episode_duration_seconds(self):
         """ Last second of the Simulation. """
         return self.cf.EPISODE_DURATION * self.cf.SIM_TS_DURATION
-
-    def current_second(self, next=0, cur_second_tot=False):
-        """ The current second of simulation, since the beginning. """
-        return (self.cur_step_total if cur_second_tot else self.cur_step) * self.cf.SIM_TS_DURATION + next * self.ts_duration_sec
 
     def max_distance(self):
         """ Maximum distance in the area. """
@@ -252,6 +249,11 @@ class PatrollingSimulator:
 
             self.cur_step = 0
             for cur_step in tqdm(range(self.cf.EPISODE_DURATION), desc='step', leave=False, disable=self.cf.IS_HIDE_PROGRESS_BAR):
+
+                if self.do_break_episode:
+                    self.do_break_episode = False
+                    break
+
                 self.cur_step = cur_step
 
                 for drone in self.environment.drones:
@@ -259,8 +261,6 @@ class PatrollingSimulator:
 
                 if self.cf.SAVE_PLOT or self.cf.PLOT_SIM:
                     self.__plot(self.cur_step, self.episode_duration)
-
-                self.cur_step_total += 1
 
             if typ in [cst.EpisodeType.VAL]:
                 self.metrics_logs[protocol].append(self.metricsV2.to_json())
@@ -390,3 +390,15 @@ class PatrollingSimulator:
             self.prev_reward = reward
         else:
             self.cf.WANDB_INSTANCE.log_artifact(art)
+
+    def is_final_state(self):
+        """ Next transition will happen in the next seconds. """
+        steps_to_end = self.cf.EPISODE_DURATION - self.cur_step
+        steps_to_max = self.cf.max_time_distance() / self.cf.SIM_TS_DURATION
+        is_not_enough = steps_to_max >= steps_to_end
+
+        # print(steps_to_end, steps_to_max, self.cf.max_time_distance(), self.cf.SIM_TS_DURATION, is_not_enough)
+        if is_not_enough:
+            self.do_break_episode = True
+            return True
+        return False

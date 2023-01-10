@@ -18,11 +18,13 @@ import sys
 DQN_LEARNING_HYPER_PARAMETERS = {
     # "set" is the chosen value
     LearningHyperParameters.REPLAY_MEMORY_DEPTH.value: {'values': [100000]},
-    LearningHyperParameters.EPSILON_DECAY.value: {"values": [0.01, 0.03, 0.05, 0.08]},  # best for 200 epochs, 0.01 and 0.08
+    LearningHyperParameters.EPSILON_DECAY.value: {"values": [0.15, 0.01, 0.03, 0.05, 0.08]},  # best for 200 epochs, 0.01 and 0.08
     LearningHyperParameters.LEARNING_RATE.value:  {'min': 0.00001, 'max': 0.001},
     LearningHyperParameters.DISCOUNT_FACTOR.value: {'values': [1, 0.95, 0.8]},
     LearningHyperParameters.BATCH_SIZE.value: {'values': [32, 64]},
-    LearningHyperParameters.SWAP_MODELS_EVERY_DECISION.value: {'values': [100, 500]},
+
+    LearningHyperParameters.SWAP_MODELS_EVERY_DECISION.value: {'min': 500, 'max': 8000},
+    LearningHyperParameters.PERCENTAGE_SWAP.value: {'min': 0.005, 'max': 1.0},
 
     LearningHyperParameters.N_HIDDEN_1.value: {'values': [8]},
     LearningHyperParameters.N_HIDDEN_2.value: {'values': [0]},

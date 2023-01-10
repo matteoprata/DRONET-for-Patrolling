@@ -10,6 +10,7 @@ class State:
     def __init__(self, features: list):
         self.features = features
         self.vector_value = None
+        self.is_final = None
 
         self.features_dict = dict()
         for f in features:

@@ -9,7 +9,6 @@ import argparse
 import src.constants as cst
 from src.world_entities.simulator_patrolling import PatrollingSimulator
 from src.config import Configuration
-import wandb
 
 
 def main(configuration):

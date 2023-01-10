@@ -24,6 +24,7 @@ class LearningHyperParameters(Enum):
     N_HIDDEN_4 = "n_hidden_neurons_lv4"
     N_HIDDEN_5 = "n_hidden_neurons_lv5"
 
+    PERCENTAGE_SWAP = "percentage_swap"
     # OPTIMIZER = "optimizer"
     # LOSS = "loss"
 

@@ -103,47 +103,43 @@ class PatrollingDQN:
 
         return action_index
 
-    def train(self, previous_state=None, current_state=None, action=None, reward=None, is_final=None):
+    def train(self, previous_state, current_state, action, reward, is_NON_final):
         """ train the NN accumulate the experience and each X data the method actually train the network. """
 
-        self.n_training_step += 1
-
         if None not in [previous_state, current_state, action, reward]:
-            experience = (previous_state, current_state, action, reward)
+            experience = (previous_state, current_state, action, reward, is_NON_final)
             self.memory.push(*experience)
 
         if self.time_to_batch_training():
             # print("Train", self.n_epochs, self.n_training_step)
             # sample at random from replay memory, batch_size elements
             random_sample_batch = self.memory.sample(self.dqn_par[LearningHyperParameters.BATCH_SIZE])
-
-            # random_sample_batch_indices = self.sim.rstate_sample_batch_training.randint(0, len(self.replay_memory), size=self.batch_size)
-            # random_sample_batch = [self.replay_memory.llist[i] for i in random_sample_batch_indices]
-            # random_sample_batch = list(zip(*random_sample_batch))  # STATES, STATES, ACTIONS...
-
             self.__train_model_batched(random_sample_batch)
 
     def __train_model_batched(self, random_sample_batch):
         """ Given an input batch, it trains the model. """
+        self.n_training_step += 1
         batch = Transition(*zip(*random_sample_batch))
 
         previous_states_v = torch.tensor(np.asarray(batch.previous_states).astype(np.float32)).to(cst.TORCH_DEVICE)
-        current_states_v = torch.tensor(np.asarray(batch.current_states)  .astype(np.float32)).to(cst.TORCH_DEVICE)
-        actions_v = torch.tensor(np.asarray(batch.actions)                .astype(np.int64))  .to(cst.TORCH_DEVICE)
-        rewards_v = torch.tensor(np.asarray(batch.rewards)                .astype(np.float32)).to(cst.TORCH_DEVICE)
-        # is_finals_mask = torch.BoolTensor(is_finals).to(cst.TORCH_DEVICE)
+        current_states_v = torch.tensor(np.asarray(batch.current_states).astype(np.float32)).to(cst.TORCH_DEVICE)
+        is_non_finals_mask = torch.BoolTensor(np.asarray(batch.is_NON_final)).to(cst.TORCH_DEVICE)
+
+        non_final_current_states_v = current_states_v[is_non_finals_mask]
+
+        actions_v = torch.tensor(np.asarray(batch.actions).astype(np.int64))  .to(cst.TORCH_DEVICE)
+        rewards_v = torch.tensor(np.asarray(batch.rewards).astype(np.float32)).to(cst.TORCH_DEVICE)
 
         # Q-VALUES for all the actions of the batch
         actions_r = actions_v.reshape(len(actions_v), 1)  # BATCH x 1
         old_out = self.model(previous_states_v).gather(1, actions_r)
         old_out = old_out.reshape(1, len(old_out))[0]
 
+        current_states_values = torch.zeros(self.cf.DQN_PARAMETERS[LearningHyperParameters.BATCH_SIZE]).to(cst.TORCH_DEVICE)
         with torch.no_grad():
-            cur_out = self.model_hat(current_states_v).max(1)[0]
-            # cur_out[is_finals_mask] = 0.0
-            # cur_out = cur_out.detach()
+            current_states_values[is_non_finals_mask] = self.model_hat(non_final_current_states_v).max(1)[0]
 
-        expected_q = rewards_v + self.dqn_par[LearningHyperParameters.DISCOUNT_FACTOR] * cur_out
+        expected_q = rewards_v + self.dqn_par[LearningHyperParameters.DISCOUNT_FACTOR] * current_states_values
         loss = torch.nn.SmoothL1Loss()(old_out, expected_q)
 
         self.optimizer.zero_grad()
@@ -161,7 +157,7 @@ class PatrollingDQN:
         self.sim.epoch_cumrew += [np.sum(rewards_v.cpu().numpy())]
         self.epoch_model = self.model
 
-    def swap_learning_model(self, tau=0.005):
+    def swap_learning_model(self):
         """ Updates the knowledge of the two """
 
         if self.time_to_swap_models():
@@ -169,6 +165,7 @@ class PatrollingDQN:
             model_hat_param = self.model_hat.state_dict()
 
             for key in model_param:
+                tau = self.dqn_par[LearningHyperParameters.PERCENTAGE_SWAP]
                 model_hat_param[key] = model_param[key] * tau + model_hat_param[key] * (1 - tau)
 
             self.model_hat.load_state_dict(model_hat_param)
@@ -184,7 +181,7 @@ class PatrollingDQN:
         return self.n_training_step % self.dqn_par[LearningHyperParameters.SWAP_MODELS_EVERY_DECISION] == 0
 
 
-Transition = namedtuple('Transition', ("previous_states", "current_states", "actions", "rewards"))
+Transition = namedtuple('Transition', ("previous_states", "current_states", "actions", "rewards", "is_NON_final"))
 
 
 class ReplayMemory(object):

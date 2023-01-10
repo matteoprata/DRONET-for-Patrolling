@@ -19,6 +19,7 @@ class RLModule:
     def query_model(self, drone: Drone, is_exploit=False):
         s_prime = self.state(drone)
         a_prime = self.action(s_prime.vector(), is_exploit)
+        s_prime.is_final = self.sim.is_final_state()
 
         if is_exploit:
             return a_prime
@@ -31,7 +32,7 @@ class RLModule:
         r = self.reward(s_prev, s_prime, a_prime)
 
         # s_prev, s_prime, a_prev, r
-        self.dqn_mod.train(s_prev_vec, s_prime.vector(), a_prev, r)
+        self.dqn_mod.train(s_prev_vec, s_prime.vector(), a_prev, r, not s_prime.is_final)
 
         drone.prev_state = s_prime
         drone.prev_action = a_prime

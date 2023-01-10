@@ -23,13 +23,13 @@ class Configuration:
         self.TARGETS_NUMBER = 10       # number of random targets in the map
         self.TARGETS_TOLERANCE = 0.1   # std % distance of tolerance generation
 
-        self.DRONES_NUMBER = 1                                                  # int: number of drones.
+        self.DRONES_NUMBER = 1                                             # int: number of drones.
         self.DRONE_SPEED = 15                                              # 15 m/s = 54 km/h   # float: m/s, drone speed.
         self.DRONE_PATROLLING_POLICY = PatrollingProtocol.RANDOM_MOVEMENT  #
         self.DRONE_MAX_ENERGY = int(2 * self.HOUR)                         # int: max energy of a drone steps
 
         self.N_EPOCHS = 1                           # how many times you will see the same scenario
-        self.EPISODE_DURATION = int(1 * self.HOUR)  # how much time the episode lasts steps
+        self.EPISODE_DURATION = int(1.5 * self.HOUR)  # how much time the episode lasts steps
 
         self.N_EPISODES_TRAIN = 0  # how many times the scenario (a.k.a. episode) changes during a simulation
         self.N_EPISODES_TRAIN_UPPER = None   # it will sample random N_EPISODES_TRAIN episodes from 1000, do not actually repeat
@@ -122,6 +122,7 @@ class Configuration:
             LearningHyperParameters.DISCOUNT_FACTOR: 1,
             LearningHyperParameters.BATCH_SIZE: 30,
             LearningHyperParameters.SWAP_MODELS_EVERY_DECISION: 100,
+            LearningHyperParameters.PERCENTAGE_SWAP: 0.05,
 
             LearningHyperParameters.N_HIDDEN_1: 10,
             LearningHyperParameters.N_HIDDEN_2: 0,

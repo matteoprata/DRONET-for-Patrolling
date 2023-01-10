@@ -12,6 +12,7 @@ from src.config import Configuration
 
 
 def main(configuration):
+    configuration.run_parameters_sanity_check()
     print("\nExecuting > {}\n".format(configuration.conf_description()))
     sim = PatrollingSimulator(configuration)
     sim.run_testing_loop()

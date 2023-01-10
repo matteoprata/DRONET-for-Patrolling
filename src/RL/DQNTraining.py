@@ -76,7 +76,6 @@ class PatrollingDQN:
           and the model is given as an input, if the exploration goes through. """
 
         is_do_explore = self.is_explore_probability()
-
         if is_do_explore and is_allowed_explore:
             # EXPLORE
             action_index = self.sim.rnd_explore.randint(0, self.n_actions)
@@ -184,7 +183,7 @@ class PatrollingDQN:
 Transition = namedtuple('Transition', ("previous_states", "current_states", "actions", "rewards", "is_NON_final"))
 
 
-class ReplayMemory(object):
+class ReplayMemory:
 
     def __init__(self, capacity, random_state):
         self.memory = deque([], maxlen=capacity)

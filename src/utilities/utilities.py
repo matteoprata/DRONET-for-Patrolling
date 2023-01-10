@@ -36,6 +36,10 @@ def euclidean_distance(p1, p2):
     return np.linalg.norm(np.array(p1)-np.array(p2))
 
 
+def xor(a, b):
+    return (a and not b) or (not a and b)
+
+
 def min_max_normalizer(value, startLB, startUB, endLB=0, endUB=1, soft=False):
     # Figure out how 'wide' each range is
     value = np.asarray(value)

@@ -56,5 +56,5 @@ class RLModule:
     def reward(self, state_prev: State, state_prime: State, a_prev: int):
         return reward_map(self.cf.REWARD_TYPE, self.sim, state_prev, state_prime, a_prev)
 
-    def action(self, state: State, is_exploit=False):
+    def action(self, state, is_exploit=False):
         return self.dqn_mod.predict(state, is_allowed_explore=not is_exploit)

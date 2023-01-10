@@ -52,6 +52,7 @@ def main_multi_test(configuration: Configuration):
 def main_safe_execution(configuration):
 
     try:
+        configuration.run_parameters_sanity_check()
         print("\nExecuting > {}\n".format(configuration.conf_description()))
         sim = PatrollingSimulator(configuration)
         sim.run_testing_loop()

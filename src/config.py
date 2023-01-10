@@ -1,8 +1,14 @@
 
+from src.utilities.utilities import xor
 from src.constants import PatrollingProtocol, DependentVariable, LearningHyperParameters, RLRewardType
 import numpy as np
 import os
 
+
+# TODO:
+#   - REWARDS epoch to tune the scalars for normalization, no training
+#   - DECISION on fly, no limitation of the action space
+#   - ASSOCIATE the exploration to the decision step
 
 class Configuration:
     """ This class represent all the constants of a simulation, they vary from one run to another. """
@@ -37,7 +43,7 @@ class Configuration:
         self.N_EPISODES_TEST = 1  # how many times the scenario (a.k.a. episode) changes during a simulation
 
         self.DELTA_DEC = 5                 # after how many seconds a new decision must take place
-        self.IS_DECIDED_ON_TARGET = False  # the decision step happens on target visited (non uniformity of the decision step), or every DELTA_DEC
+        self.IS_DECIDED_ON_TARGET = True  # the decision step happens on target visited (non uniformity of the decision step), or every DELTA_DEC
         self.IS_ALLOW_SELF_LOOP = False     # drone can decide to visit the same target in two consecutive decisions or not
 
         # algorithms to play with
@@ -187,3 +193,17 @@ class Configuration:
         for p in paths:
             if not os.path.exists(p):
                 os.makedirs(p)
+
+    def run_parameters_sanity_check(self):
+        """Checks parameters constraints """
+        checks  = [xor(self.IS_DECIDED_ON_TARGET, self.IS_ALLOW_SELF_LOOP)]
+        checks += []  # add conditions here
+
+        checks = np.array(checks)
+
+        if not all(checks):
+            id_fails = list(np.where(checks == False)[0])
+            print("Check on condition(s) {} did not pass.".format(id_fails))
+            exit()
+
+        print("🫡✅ All sanity checks of the configurations passed.")

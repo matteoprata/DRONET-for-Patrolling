@@ -70,6 +70,7 @@ def run():
             for param in LearningHyperParameters:
                 cf.DQN_PARAMETERS[param] = wandb_instance.config[param.value]
 
+            cf.run_parameters_sanity_check()
             sim = PatrollingSimulator(cf)
             sim.run_training_loop()
             print("DONE")

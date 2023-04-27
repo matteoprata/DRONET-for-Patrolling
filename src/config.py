@@ -6,9 +6,9 @@ import os
 
 
 # TODO:
-#   - REWARDS epoch to tune the scalars for normalization, no training
-#   - DECISION on fly, no limitation of the action space
-#   - ASSOCIATE the exploration to the decision step
+#   - do a REWARDS epoch or episode to tune the scalars for reward normalization, no training during that epoch
+#   - do DECISION on fly, no limitation of the action space, bad reward (K-times the worst reward)
+#   - ASSOCIATE the exploration decay to the decision step, and not to the epoch
 
 class Configuration:
     """ This class represent all the constants of a simulation, they vary from one run to another. """

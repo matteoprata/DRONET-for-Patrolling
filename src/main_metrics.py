@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from src.utilities import utilities as util
 
-from src.simulation_setup import setup01, setup02
+from src.simulation_setup import setup01, setup02, progetto_iot_setup
 from src.constants import IndependentVariable as indv
 from src.constants import DependentVariable as depv
 from src.constants import ErrorType
@@ -43,7 +43,7 @@ def __data_matrix_multiple_exps(setup_file, independent_variable):
                                             n_drones               = stp.indv_fixed[indv.DRONES_NUMBER],
                                             n_targets              = stp.indv_fixed[indv.TARGETS_NUMBER],
                                             drone_speed_meters_sec = stp.indv_fixed[indv.DRONE_SPEED],
-                                            tolerance_factor       = stp.indv_fixed[indv.TARGETS_TOLERANCE])
+                                            tolerance_factor       = stp.indv_fixed[indv.TARGETS_TOLERANCE_FIXED])
 
                     met.load_metrics()
 
@@ -52,7 +52,7 @@ def __data_matrix_multiple_exps(setup_file, independent_variable):
                     times = []  # for each target
                     for t_id in met.targets_tolerance:
                         if t_id != str(0):
-                            _, timee = met.AOI_func(t_id, is_absolute=False)
+                            _, timee = met.AOI_func(t_id)
                             times.append(timee)
 
                     times_array = np.asarray(times).T  # rows is time, column are targets
@@ -72,7 +72,7 @@ def __data_matrix_multiple_exps(setup_file, independent_variable):
     return TOT_MAT
 
 
-def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD_ERROR, targets_aggregator=np.average, is_boxplot=True):
+def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD, targets_aggregator=np.average, is_boxplot=True):
     """ Given a matrix of data, plots an XY chart """
     print("Plotting the stats...")
     data = __data_matrix_multiple_exps(setup, indep_var)
@@ -147,7 +147,7 @@ def plot_stats_single_seed(setup, seed, algorithm):
                             n_drones=setup.indv_fixed[indv.DRONES_NUMBER],
                             n_targets=setup.indv_fixed[indv.TARGETS_NUMBER],
                             drone_speed_meters_sec=setup.indv_fixed[indv.DRONE_SPEED],
-                            tolerance_factor=setup.indv_fixed[indv.TARGETS_TOLERANCE])
+                            tolerance_factor=setup.indv_fixed[indv.TARGETS_TOLERANCE_SCALE])
     # N 1
     X, Yavg = met.plot_avg_aoi()
 
@@ -171,38 +171,8 @@ if __name__ == '__main__':
     # 1. Declare independent variables and their domain
     # 2. Declare what independent variable varies at this execution and what stays fixed
 
-    # python -m src.main_Metrics
+    # python -m src.main_metrics
 
     # X, Y
-    plot_stats_dep_ind_var(setup02, indv.DRONE_SPEED, depv.CUMULATIVE_DELAY_AR, is_boxplot=False)
-
-    # plot_stats_dep_ind_var(setup01, indv.DRONE_SPEED, depv.CUMULATIVE_AR, is_boxplot=False)
-    # plot_stats_dep_ind_var(setup01, indv.TARGETS_TOLERANCE, depv.CUMULATIVE_AR, is_boxplot=False)
-    # plot_stats_dep_ind_var(setup01, indv.TARGETS_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False)
-
-    # plot_stats_single_seed(setup01, seed=0, algorithm=mo.RANDOM_MOVEMENT)
-
-    # plot_stats_dep_ind_var(setup01, indv.TARGETS_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False)
-    # plot_stats_dep_ind_var(setup01, indv.TARGETS_NUMBER, depv.VIOLATION_NUMBER, is_boxplot=False)
-    # plot_stats_dep_ind_var(setup01, indv.TARGETS_NUMBER, depv.WORST_DELAY, is_boxplot=False)
-    # plot_stats_dep_ind_var(setup01, indv.TARGETS_NUMBER, depv.WORST_AGE, is_boxplot=False)
-    # plot_stats_dep_ind_var(setup01, indv.TARGETS_NUMBER, depv.CUMULATIVE_DELAY_AR, is_boxplot=False)
-    #
-    # plot_stats_dep_ind_var(setup01, indv.DRONES_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False)
-    # plot_stats_dep_ind_var(setup01, indv.DRONES_NUMBER, depv.VIOLATION_NUMBER, is_boxplot=False)
-    # plot_stats_dep_ind_var(setup01, indv.DRONES_NUMBER, depv.WORST_DELAY, is_boxplot=False)
-    # plot_stats_dep_ind_var(setup01, indv.DRONES_NUMBER, depv.WORST_AGE, is_boxplot=False)
-    # plot_stats_dep_ind_var(setup01, indv.DRONES_NUMBER, depv.CUMULATIVE_DELAY_AR, is_boxplot=False)
-    # #
-    # plot_stats_dep_ind_var(setup01, indv.DRONE_SPEED, depv.CUMULATIVE_AR, is_boxplot=False)
-    # plot_stats_dep_ind_var(setup01, indv.DRONE_SPEED, depv.VIOLATION_NUMBER, is_boxplot=False)
-    # plot_stats_dep_ind_var(setup01, indv.DRONE_SPEED, depv.WORST_DELAY, is_boxplot=False)
-    # plot_stats_dep_ind_var(setup01, indv.DRONE_SPEED, depv.WORST_AGE, is_boxplot=False)
-    # plot_stats_dep_ind_var(setup01, indv.DRONE_SPEED, depv.CUMULATIVE_DELAY_AR, is_boxplot=False)
-    # #
-    # plot_stats_dep_ind_var(setup01, indv.TARGETS_TOLERANCE, depv.CUMULATIVE_AR, is_boxplot=False)
-    # # plot_stats_dep_ind_var(setup01, indv.TARGETS_TOLERANCE, depv.VIOLATION_NUMBER, is_boxplot=False)
-    # plot_stats_dep_ind_var(setup01, indv.TARGETS_TOLERANCE, depv.WORST_DELAY, is_boxplot=False)
-    # plot_stats_dep_ind_var(setup01, indv.TARGETS_TOLERANCE, depv.WORST_AGE, is_boxplot=False)
-    # plot_stats_dep_ind_var(setup01, indv.TARGETS_TOLERANCE, depv.CUMULATIVE_DELAY_AR, is_boxplot=False)
-
+    plot_stats_dep_ind_var(progetto_iot_setup, indv.DRONES_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)
+    plot_stats_dep_ind_var(progetto_iot_setup, indv.DRONES_NUMBER, depv.CUMULATIVE_DELAY_AR, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)

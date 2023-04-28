@@ -1,4 +1,4 @@
-
+import os
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,7 +9,7 @@ from src.constants import PATH_STATS
 from src.constants import JSONFields
 
 from src.evaluation.MetricsLog import MetricsLog
-
+import logging
 
 class MetricsEvaluation:
     """ This class is used to evaluate the stats of the simulation, logged on files. """
@@ -62,8 +62,14 @@ class MetricsEvaluation:
 
     def load_metrics(self):
         # print("Looking for file", self.fname_generator())
-        json_dict = util.read_json(PATH_STATS + self.fname_generator())
+
+        path = PATH_STATS + self.fname_generator()
+        json_dict = util.read_json(path)
+
+        if not os.path.exists(path):
+            raise Exception("File {} you are trying to load does not exist. Run a simulation first.".format(path))
         return json_dict
+
 
     def plot_aoi(self, target_id, drone_id=None):
         X, Y = self.AOI_func(target_id, drone_id)
@@ -91,75 +97,76 @@ class MetricsEvaluation:
         plt.show()
         return X, Y_avg
 
-    def __AOI_func_PH1(self, target_id, drone_id=None, is_absolute=False):
-        # careful adding [self.sim.episode_duration] adds the last visit even if it did not happen
-
-        def times_visit_map(target_id, drone_id=None):
-            """ Times of visit of input target from particular drone (if not none). """
-            if drone_id is not None:
-                return self.times_visit[target_id][drone_id]
-            else:
-                times = []
-                for didx in range(self.n_drones):
-                    times += self.times_visit[target_id][didx]
-                return sorted(times)
-
-        def visit_AOI_map(time_visit, target_tolerance):
-            # age of information on the Y, X is the time of the visit
-            difs = np.roll(time_visit, -1) - np.array(time_visit)
-            difs = np.roll(difs, 1)
-
-            Y = difs / (target_tolerance if not is_absolute else 1)
-            Y[0] = 0
-            X = time_visit
-            return X, Y
-
-        def AOI_progressions(X, Y):
-            """ returns a dictionary of line objects one for each segment"""
-            funcs_dic = dict()
-            for i in range(len(X) - 1):
-                xs = [X[i], X[i + 1]]
-                ys = [0, Y[i + 1]]
-                dx = xs[1] - xs[0]
-                if dx > 0:
-                    coefficients = [(ys[1] - ys[0]) / (xs[1] - xs[0]), (xs[1]*ys[0] - xs[0]*ys[1]) / (xs[1] - xs[0])]  # C
-                    funcs_dic[i + 1] = np.poly1d(coefficients)
-                else:
-                    # line is parallel to Y axis as dx = 0
-                    funcs_dic[i + 1] = None
-            return funcs_dic
-
-        time_visit = [0] + times_visit_map(target_id, drone_id) + [self.episode_duration]
-        time_visit = np.asarray(time_visit) * self.ts_duration_sec  # seconds
-        target_tolerance = self.targets_tolerance[target_id]  # str
-
-        X, Y = visit_AOI_map(time_visit, target_tolerance)
-        lines = AOI_progressions(X, Y)
-        return X, Y, lines
-
-    @staticmethod
-    def __AOI_func_PH2(x, X, lines):
-        """ Given x it returns the associated normalized (by tolerance) AOI """
-        assert 0 <= x <= X[-1]
-        if x in X:
-            return 0
-        else:
-            id_function = np.digitize(np.array([x]), X)[0]
-            func = lines[id_function]
-            return func(x) if func is not None else 0
-
-    # ------------ FUNCTIONS ------------
-
     # AOI
-    def AOI_func(self, target_id, drone_id=None, density=1000, is_absolute=False):
-        MAX_TIME = self.episode_duration * self.ts_duration_sec
-        x_axis = np.linspace(0, MAX_TIME, density)
+    def AOI_func(self, target_id, is_absolute=False):
+        # self.episode_duration seconds
+        target_tolerance = self.targets_tolerance[str(target_id)]
+        MAX_TIME = int(self.episode_duration * self.ts_duration_sec)  # seconds
+        print(MAX_TIME)
+        exit()
+        x_axis = np.linspace(0, MAX_TIME, MAX_TIME)
 
-        X, _, lines = self.__AOI_func_PH1(target_id, drone_id, is_absolute)
-        y_axis = np.array([self.__AOI_func_PH2(i, X, lines) for i in x_axis])
+        times = []
+        for didx in range(self.n_drones):  # steps
+            target_id, didx = str(target_id), str(didx)
+            times += self.times_visit[target_id][didx]
+
+        times = np.array(times) * self.ts_duration_sec
+        times = [int(t) for t in times]
+        times = sorted(times)  # time of the visits [199, 2334, 55566]
+
+        if len(times) > 0:
+            assert max(times) <= MAX_TIME
+
+        i = 0
+        y_axis = []
+        for visit_time in times + [MAX_TIME]:
+            y_axis += list(np.arange(visit_time-i))
+            i = visit_time
+        y_axis = np.array(y_axis)
+
+        y_axis = y_axis / (target_tolerance if not is_absolute else 1)
+
+        # THETA = target_tolerance if is_absolute else 1
+        # self.plot_x_y(x_axis, y_axis, MAX_TIME, THETA=THETA, is_show_threshold=True)
+
+        assert(len(y_axis) == len(x_axis))
         return x_axis, y_axis
 
     # ------------ FUNCTIONS ------------
+    def plot_x_y(self, x_axis, y_axis, MAX_TIME, THETA, is_show_threshold=True, is_absolute=False):
+
+        print(self.AOI1_integral_func(y_axis))
+        print(self.AOI2_max_func(y_axis))
+        print(self.AOI3_max_delay_func(y_axis, THETA))
+        print(self.AOI4_n_violations_func(y_axis, THETA))
+        print(self.AOI5_violation_time_func(y_axis, THETA))
+
+        plt.figure(figsize=(6.7, 6))
+        plt.rcParams.update({'font.size': 15})
+
+        if not is_show_threshold:
+            plt.fill_between(x_axis, y_axis, 0, color='yellow', alpha=.2)
+            if is_absolute:
+                plt.yticks([int(i) for i in range(MAX_TIME) if i % 10000 == 0] + [MAX_TIME],
+                           [int(i) for i in range(MAX_TIME) if i % 10000 == 0] + ["M"])  # "$\\theta(p_1)$"
+        else:
+            plt.fill_between(x_axis, y_axis, THETA, where=y_axis>THETA, color='red', alpha=.2)
+            plt.axhline(THETA, color='red')
+            if is_absolute:
+                plt.yticks([int(i) for i in range(MAX_TIME) if i % 10000 == 0]+[MAX_TIME, THETA], [int(i) for i in range(MAX_TIME) if i % 10000 == 0]+["M", "$\\theta(p_1)$"])  # "$\\theta(p_1)$"
+
+        plt.plot(x_axis, y_axis, color='blue', label="$a_{p1}(t)$")
+        plt.xlabel('Time $(s)$')
+        plt.xticks([int(i) for i in range(MAX_TIME) if i % 10000 == 0]+[MAX_TIME], [int(i) for i in range(MAX_TIME) if i % 10000 == 0]+["M"])
+        plt.axvline(MAX_TIME, color='red')
+
+        plt.ylabel('AoI $(s)$')
+        plt.title('AoI of IP $p_1$')
+        plt.legend()
+        plt.tight_layout()
+        # plt.savefig("data/aoi_t.pdf")
+        plt.show()
 
     @staticmethod
     def AOI1_integral_func(y_axis):
@@ -172,19 +179,20 @@ class MetricsEvaluation:
         return sums
 
     @staticmethod
-    def AOI3_max_delay_func(y_axis):
-        y_axis[y_axis < 1] = 0
-        sums = np.max(y_axis, axis=0)
+    def AOI3_max_delay_func(y_axis, theta):
+        y_axis_var = np.array(y_axis)
+        y_axis_var[y_axis_var < theta] = 0
+        sums = np.max(y_axis_var, axis=0)
         return sums
 
     @staticmethod
-    def AOI4_n_violations_func(y_axis):
-        n_violations = np.sum((y_axis >= 1) * 1 & (np.roll(y_axis, 1, axis=0) < 1) * 1, axis=0)
+    def AOI4_n_violations_func(y_axis, theta):
+        n_violations = np.sum((y_axis >= theta) * 1 & (np.roll(y_axis, 1, axis=0) < theta) * 1, axis=0)
         return n_violations
 
     @staticmethod
-    def AOI5_violation_time_func(y_axis):
-        violation_time = np.sum((y_axis >= 1) * 1, axis=0)
+    def AOI5_violation_time_func(y_axis, theta):
+        violation_time = np.sum((y_axis >= theta) * 1, axis=0)
         return violation_time
 
     # PLOTTING

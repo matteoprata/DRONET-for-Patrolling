@@ -1,3 +1,6 @@
+import matplotlib.pyplot as plt
+import pandas as pd
+
 import src.constants
 from src.world_entities.environment import Environment
 from src.world_entities.base_station import BaseStation
@@ -6,6 +9,7 @@ from src.world_entities.drone import Drone
 from src.evaluation.MetricsLog import MetricsLog
 from collections import defaultdict
 
+from src.main_metrics import MetricsEvaluation
 from src.evaluation.MetricsEvaluationValidation import plot_validation_stats
 from src.utilities.utilities import euclidean_distance
 from src.drawing import pp_draw
@@ -21,6 +25,8 @@ import wandb
 import traceback
 from src.RL.RLModule import RLModule
 
+import src.patrolling.Baselines as patrol_base
+
 
 class PatrollingSimulator:
 
@@ -32,7 +38,7 @@ class PatrollingSimulator:
         random.seed(self.cf.SEED)
         np.random.seed(self.cf.SEED)
 
-        self.tolerance_factor = config.TARGETS_TOLERANCE
+        self.tolerance_factor = config.TARGETS_TOLERANCE_FIXED
         self.log_state = config.LOG_STATE
         self.penalty_on_bs_expiration = config.PENALTY_ON_BS_EXPIRATION
 
@@ -95,6 +101,11 @@ class PatrollingSimulator:
         self.rmax = 50
 
         self.do_break_episode = False
+        self.policy = None
+
+        if self.cf.IS_AD_HOC_SCENARIO:
+            print("WARNING!: ad hoc scenario running, input number of targets and UVS ignored. "
+                  "To use input, edit IS_AD_HOC_SCENARIO variable in the config.")
 
     # ---- # BOUNDS and CONSTANTS # ---- #
 
@@ -241,13 +252,14 @@ class PatrollingSimulator:
         for epi in tqdm(episodes_ids, desc=typ.value, leave=False, disable=self.cf.IS_HIDE_PROGRESS_BAR):
             self.environment.reset_simulation()
 
-            self.metricsV2 = MetricsLog(self)
-            self.metricsV2.set_episode_details(epi, protocol.name, self.cf.DRONES_NUMBER, self.cf.TARGETS_NUMBER, self.cf.DRONE_SPEED, self.cf.TARGETS_TOLERANCE)
-
             targets = self.environment.targets_dataset[typ][epi]  # [Target1, Target2, ...]
             self.environment.spawn_targets(targets)
 
             self.cur_step = 0
+            self.metricsV2 = MetricsLog(self)
+            self.metricsV2.set_episode_details(epi, protocol.name, self.cf.DRONES_NUMBER, self.cf.TARGETS_NUMBER, self.cf.DRONE_SPEED, self.cf.TARGETS_TOLERANCE_FIXED)
+
+            self.prepare_drones_routes(self.cf.DRONE_PATROLLING_POLICY)  # assign a schedule to the drone
             for cur_step in tqdm(range(self.cf.EPISODE_DURATION), desc='step', leave=False, disable=self.cf.IS_HIDE_PROGRESS_BAR):
 
                 if self.do_break_episode:
@@ -285,12 +297,16 @@ class PatrollingSimulator:
             print("Unhandled protocol for training.")
             exit(1)
 
-    def run_testing_loop(self):
-        if self.cf.DRONE_PATROLLING_POLICY in [e for e in cst.PatrollingProtocol if e != cst.PatrollingProtocol.RL_DECISION_TRAIN]:
-            self.run_episodes([0], typ=cst.EpisodeType.TEST, protocol=self.cf.DRONE_PATROLLING_POLICY)
+    def prepare_drones_routes(self, policy_val):
+        if type(policy_val) == cst.PrecomputedPatrollingProtocol:
+            self.policy = policy_val.value(self.environment.drones, self.environment.targets)
 
+    def run_testing_loop(self):
+        if self.cf.DRONE_PATROLLING_POLICY in [e for e in list(cst.PatrollingProtocol) + list(cst.PrecomputedPatrollingProtocol) if e != cst.PatrollingProtocol.RL_DECISION_TRAIN]:
+            self.run_episodes([0], typ=cst.EpisodeType.TEST, protocol=self.cf.DRONE_PATROLLING_POLICY)
             print("Saving stats file...")
             self.metricsV2.save_metrics()
+            self.patrolling_simulation_report()
         else:
             print("Unhandled protocol for testing.")
             exit(1)
@@ -402,3 +418,47 @@ class PatrollingSimulator:
             self.do_break_episode = True
             return True
         return False
+
+    def patrolling_simulation_report(self):
+        print()
+        print("📌 REPORT:")
+        print("🚁 ")
+
+        met = MetricsEvaluation(sim_seed=self.sim_seed,
+                                drone_mobility=self.drone_mobility,
+                                n_drones=self.n_drones,
+                                n_targets=self.n_targets,
+                                drone_speed_meters_sec=self.drone_speed_meters_sec,
+                                tolerance_factor=self.tolerance_factor)
+
+        plt.clf()
+        plt.close()
+        target_visits = []
+        for t_id in met.targets_tolerance:
+            if t_id != '0':
+                x, times = met.AOI_func(t_id, is_absolute=True)
+                target_visits.append(times)
+
+        target_visits = np.array(target_visits).T  # TIME x TARGETS
+
+        stats = []
+        stats_names = ["c1: integral aoi", "c2: integral delay", "c3: max aoi", "c4: number violations", "c?: max delay"]
+        stats_names = [p.upper() for p in stats_names]
+
+        for t_id in range(target_visits.shape[1]):
+            aois = target_visits[:, t_id]
+            target_idle = self.environment.targets[t_id+1].maximum_tolerated_idleness
+            stat_1 = met.AOI1_integral_func(aois)
+            stat_2 = met.AOI2_max_func(aois)
+            stat_3 = met.AOI3_max_delay_func(aois, target_idle)
+            stat_4 = met.AOI4_n_violations_func(aois, target_idle)
+            stat_5 = met.AOI5_violation_time_func(aois, target_idle)
+            vec = [stat_1, stat_5, stat_2, stat_4, stat_3]
+            stats.append(vec)
+        stats = pd.DataFrame(stats, columns=stats_names)
+
+        print()
+        print(stats)
+        print()
+        print(stats.describe())
+

@@ -3,6 +3,7 @@ from src.drawing import stddraw
 from src.world_entities.environment import Environment
 from collections import defaultdict
 import numpy as np
+import src.constants as cst
 
 
 class PathPlanningDrawer:
@@ -92,12 +93,15 @@ class PathPlanningDrawer:
                 max_tol = int(target.maximum_tolerated_idleness)
 
                 if aoi > max_tol:
-                    stddraw.setPenColor(c=stddraw.RED)
+                    color = stddraw.RED
+                    stddraw.setPenColor(c=color)
                 else:
-                    stddraw.setPenColor(c=stddraw.BLACK)
+                    color = stddraw.BLACK
+                    stddraw.setPenColor(c=color)
                 text_aois += "[{}]: {}/{}".format(target.identifier, aoi, max_tol)
 
             else:  # BASE STATION
+                color = stddraw.BLACK
                 max_tol = int(target.maximum_tolerated_idleness)
                 for dd in range(self.simulator.n_drones):
                     aoi_tol = target.AOI_tolerance_ratio(drone_id_view=dd)
@@ -107,8 +111,20 @@ class PathPlanningDrawer:
                 LIM_CHAR = 70
                 text_aois = "[bat: {}] ".format(max_tol) + text_aois[:LIM_CHAR] + "..."
 
+            prev_color = color
+            if target.family == cst.TargetFamily.PURPLE:
+                color = stddraw.MAGENTA
+            elif target.family == cst.TargetFamily.BLUE:
+                color = stddraw.BLUE
+            elif target.family == cst.TargetFamily.GREEN:
+                color = stddraw.GREEN
+
+            stddraw.setPenColor(c=color)
             startx, starty = tuple(target.coords)
-            stddraw.filledSquare(startx, starty, 10)
+            stddraw.filledSquare(startx, starty, 12)
+            stddraw.setPenColor(c=prev_color)
+
+            # stddraw.setPenColor(c=stddraw.BLACK)
             stddraw.text(startx, starty + 35, text_aois)
 
         self.__reset_pen()
@@ -118,9 +134,19 @@ class PathPlanningDrawer:
         # if drone.buffer_length() > 0:  # change color when find a packet
         #     stddraw.setPenColor(c=stddraw.GREEN)
         # else:
-        stddraw.setPenColor(c=stddraw.BLACK)
         stddraw.setPenRadius(0.0055)
-        stddraw.point(coords[0], coords[1])
+        # stddraw.point(coords[0], coords[1])
+
+        if drone.family == cst.DroneFamily.PURPLE:
+            color = stddraw.MAGENTA
+        elif drone.family == cst.DroneFamily.BLUE:
+            color = stddraw.BLUE
+
+        stddraw.setPenColor(c=color)
+        startx, starty = coords[0], coords[1]
+        stddraw.filledSquare(startx, starty, 7)
+
+        stddraw.setPenColor(c=stddraw.BLACK)
 
         self.__draw_drone_info(drone, cur_step)
         self.__draw_communication_range(drone)

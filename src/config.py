@@ -10,6 +10,7 @@ import os
 #   - do DECISION on fly, no limitation of the action space, bad reward (K-times the worst reward)
 #   - ASSOCIATE the exploration decay to the decision step, and not to the epoch
 
+
 class Configuration:
     """ This class represent all the constants of a simulation, they vary from one run to another. """
     def __init__(self):
@@ -27,7 +28,8 @@ class Configuration:
         self.MIN = int(60 / self.SIM_TS_DURATION)
 
         self.TARGETS_NUMBER = 10       # number of random targets in the map
-        self.TARGETS_TOLERANCE = 0.1   # std % distance of tolerance generation
+        # self.TARGETS_TOLERANCE_SCALE = 0.1   # std % distance of tolerance generation
+        self.TARGETS_TOLERANCE_FIXED = 300   # seconds
 
         self.DRONES_NUMBER = 1                                             # int: number of drones.
         self.DRONE_SPEED = 15                                              # 15 m/s = 54 km/h   # float: m/s, drone speed.
@@ -45,6 +47,9 @@ class Configuration:
         self.DELTA_DEC = 5                 # after how many seconds a new decision must take place
         self.IS_DECIDED_ON_TARGET = True  # the decision step happens on target visited (non uniformity of the decision step), or every DELTA_DEC
         self.IS_ALLOW_SELF_LOOP = False     # drone can decide to visit the same target in two consecutive decisions or not
+
+        self.IS_CONSTANT_IDLENESS = True
+        self.IS_AD_HOC_SCENARIO = True
 
         # algorithms to play with
         self.VALIDATION_ALGORITHMS = [
@@ -165,7 +170,7 @@ class Configuration:
 
     def conf_description(self):
         return "seed={}_nd={}_nt={}_pol={}_sp={}_tolf={}".format(self.SEED, self.DRONES_NUMBER, self.TARGETS_NUMBER,
-                                                                 self.DRONE_PATROLLING_POLICY.name, self.DRONE_SPEED, self.TARGETS_TOLERANCE)
+                                                                 self.DRONE_PATROLLING_POLICY.name, self.DRONE_SPEED, self.TARGETS_TOLERANCE_FIXED)
 
     def n_tot_episodes(self):
         return self.N_EPISODES_TRAIN + self.N_EPISODES_TEST + self.N_EPISODES_VAL

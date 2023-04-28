@@ -17,7 +17,7 @@ import matplotlib
 from matplotlib.pyplot import figure
 figure(figsize=(8, 6), dpi=400)
 
-matplotlib.use('agg')
+# matplotlib.use('agg')
 
 dep_var_map = {depv.CUMULATIVE_AR: MetricsEvaluation.AOI1_integral_func,
                depv.CUMULATIVE_DELAY_AR: MetricsEvaluation.AOI5_violation_time_func,
@@ -66,7 +66,7 @@ def plot_validation_stats(n_episodes, val_algos, metrics_logs, dep_vars, error_t
     metrics = {}
     for dep_var in dep_vars:
         # removes temporal dimensions, becomes: [(TIME) X EPISODE x ALGORITHM x TARGETS]
-        metrics_aoi = dep_var_map[dep_var](data)
+        metrics_aoi = dep_var_map[dep_var](data)  # TODO CHECK
 
         metrics_aoi_2d = metrics_aoi.transpose((0, 2, 1)).reshape((-1, metrics_aoi.shape[1]))
         metrics_aoi_df = pd.DataFrame(metrics_aoi_2d, columns=[v.name for v in val_algos])

@@ -1,7 +1,7 @@
 from enum import Enum
 import multiprocessing
 from src.patrolling import Baselines as pbase
-from src.patrolling.SOABaseline1 import Baseline01
+from src.patrolling.SOABaseline1 import ClusteringTSP, Clustering
 import torch
 
 """
@@ -50,7 +50,21 @@ class PatrollingProtocol(Enum):
     GO_MIN_RESIDUAL     = pbase.MaxAOIRatioPolicy
     GO_MIN_SUM_RESIDUAL = pbase.MaxSumResidualPolicy
 
-    BASE_01 = Baseline01
+
+class PrecomputedPatrollingProtocol(Enum):
+    MULTI_TSP = ClusteringTSP
+    CLUSTERING = Clustering
+
+
+class TargetFamily(Enum):
+    PURPLE = 'purple'
+    BLUE = 'blue'
+    GREEN = 'green'
+
+
+class DroneFamily(Enum):
+    PURPLE = 'purple'
+    BLUE = 'blue'
 
 
 class IndependentVariable(Enum):
@@ -61,7 +75,7 @@ class IndependentVariable(Enum):
     DRONE_SPEED = {"ID": 3, "NAME": "Drones Speed"}
     DRONES_NUMBER = {"ID": 4, "NAME": "Drones Number"}
     TARGETS_NUMBER = {"ID": 5, "NAME": "Targets Number"}
-    TARGETS_TOLERANCE = {"ID": 6, "NAME": "Tolerance Factor"}
+    TARGETS_TOLERANCE_FIXED = {"ID": 7, "NAME": "Tolerance"}
 
 
 class DependentVariable(Enum):
@@ -121,12 +135,13 @@ class RLRewardType(Enum):
 PATH_STATS = "data/experiments/"
 N_CORES = multiprocessing.cpu_count()-1
 
-from src.simulation_setup import setup01, setup02
+from src.simulation_setup import setup01, setup02, progetto_iot_setup
 
 
 class Setups(Enum):
     SETUP01 = setup01
     SETUP02 = setup02
+    IOT = progetto_iot_setup
 
 
 TORCH_DEVICE = 'cpu'  # 'cuda' if torch.cuda.is_available() else 'cpu'

@@ -7,8 +7,7 @@ from scipy.stats import truncnorm
 import numpy as np
 from collections import defaultdict
 from src.evaluation.MetricsLog import MetricsLog
-from src.constants import EpisodeType
-
+from src.constants import EpisodeType, TargetFamily
 
 class ObstacleHandler:
 
@@ -142,7 +141,31 @@ class Environment(ObstacleHandler):
         for tar in self.targets:
             tar.reset()
 
-    def generate_target_combinations(self, seed):
+    def read_target_combinations(self):
+        targets_json = {
+            0: {"coords": (250, 250), "family": "BLUE", "idle": 300},
+            1: {"coords": (300, 180), "family": "BLUE", "idle": 300},
+            2: {"coords": (1250, 1150), "family": "BLUE", "idle": 300},
+        }
+        self.simulator.cf.TARGETS_NUMBER = len(targets_json)
+        self.simulator.n_targets = len(targets_json)
+
+        # self.simulator.cf.DRONES_NUMBER = len(targets_json)
+        # self.simulator.n_drones = len(targets_json)
+
+        epoch_targets = []
+        for i in targets_json:
+            t = Target(identifier=len(self.base_stations) + i,
+                       coords=tuple(targets_json[i]["coords"]),
+                       maximum_tolerated_idleness=targets_json[i]["idle"],
+                       simulator=self.simulator,
+                       family=TargetFamily[targets_json[i]["family"]])
+            epoch_targets.append(t)
+        self.targets_dataset[EpisodeType.TEST].append(epoch_targets)
+        return self.targets_dataset
+
+
+    def generate_target_combinations(self):
         """
         Assumption, file stores for each seed, up to 100 targets, up to 500 episodes
         :param seed:
@@ -172,20 +195,26 @@ class Environment(ObstacleHandler):
                                     self.simulator.rnd_env.randint(0, self.height)]
                     coordinates.append(point_coords)
 
-                # tsp_path_time = self.tsp_path_time(coordinates)  # time of a TSP from the targets
-                REF_SPEED = 15
-                diag_space = np.sqrt(self.width**2 + self.height**2) * 2
-                diag_time = diag_space / REF_SPEED
-                # add tolerances of the targets
-                sigma = 0.3 * diag_time
-                mean = diag_time * (1 + self.simulator.tolerance_factor)
-                # skew = self.sim.tolerance_factor * diag_time
-                MIN_IDLENESS = diag_time / self.simulator.n_targets
+                if self.simulator.cf.TARGETS_TOLERANCE_FIXED is None:
+                    SCALE = 0.1
+                    # tsp_path_time = self.tsp_path_time(coordinates)  # time of a TSP from the targets
+                    REF_SPEED = 15
+                    diag_space = np.sqrt(self.width**2 + self.height**2) * 2
+                    diag_time = diag_space / REF_SPEED
+                    # add tolerances of the targets
+                    sigma = 0.3 * diag_time
+                    mean = diag_time * (1 + SCALE)
+                    # skew = self.sim.tolerance_factor * diag_time
+                    MIN_IDLENESS = diag_time / self.simulator.n_targets
 
                 for i in range(self.simulator.n_targets):  # set the threshold for the targets
                     # idleness = self.sim.rnd_tolerance.normal(tsp_path_time, sigma, 1)[0]
-                    idleness = self.simulator.rnd_tolerance.normal(mean, sigma, 1)[0]  # util.rand_skew_norm(alpha=0, mean=mean, std=sigma, )  # normal
-                    idleness = max(idleness, MIN_IDLENESS)
+                    if self.simulator.cf.TARGETS_TOLERANCE_FIXED is None:
+                        idleness = self.simulator.rnd_tolerance.normal(mean, sigma, 1)[0]  # util.rand_skew_norm(alpha=0, mean=mean, std=sigma, )  # normal
+                        idleness = max(idleness, MIN_IDLENESS)
+                    else:
+                        idleness = self.simulator.cf.TARGETS_TOLERANCE_FIXED
+
                     # print("sigma", sigma, "mu", mean, "sample", idleness)
                     targets_x_episode[ep].append((i, tuple(coordinates[i]), idleness))
 
@@ -200,17 +229,20 @@ class Environment(ObstacleHandler):
                                simulator=self.simulator)
 
                     epoch_targets.append(t)
-                self.targets_dataset[et].append(epoch_targets)
+                self.targets_dataset[et].append(epoch_targets)  # epoch: list of targets
 
+        # print("done", self.targets_dataset)
         # print("TARGETS:", self.targets_dataset)
         return self.targets_dataset
 
     def spawn_targets(self, targets=None):
 
         self.targets = []
-
         if targets is None:
-            targets = self.generate_target_combinations(self.simulator.sim_seed)[0]
+            if self.simulator.cf.IS_AD_HOC_SCENARIO:
+                targets = self.read_target_combinations()[0]
+            else:
+                targets = self.generate_target_combinations()[0]
 
         # The base station is a target
         for i in range(self.simulator.n_base_stations):
@@ -252,3 +284,6 @@ class Environment(ObstacleHandler):
         two_opt = tsp.TwoOpt_solver(initial_tour='NN', iter_num=100)
         path, cost = tsp_ob.get_approx_solution(two_opt, star_node=0)
         return cost / self.simulator.drone_speed_meters_sec
+
+
+

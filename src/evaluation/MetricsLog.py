@@ -52,5 +52,5 @@ class MetricsLog:
         util.write_json(self.to_store_dictionary, PATH_STATS + self.fname_generator())
 
     def visit_done(self, drone, target, time_visit):
-        """ Saves in the matrix the visit time of the drone to the target. """
+        """ Saves in the matrix the visit time of the drone to the target. STEP."""
         self.to_store_dictionary[JSONFields.VISIT_TIMES.value][target.identifier][drone.identifier].append(time_visit)

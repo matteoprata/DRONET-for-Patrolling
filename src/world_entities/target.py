@@ -1,11 +1,12 @@
 import numpy as np
 
 from src.world_entities.entity import SimulatedEntity
+import src.constants as cst
 
 
 class Target(SimulatedEntity):
 
-    def __init__(self, identifier, coords, maximum_tolerated_idleness, simulator):
+    def __init__(self, identifier, coords, maximum_tolerated_idleness, simulator, family=cst.TargetFamily.BLUE):
         SimulatedEntity.__init__(self, identifier, coords, simulator)
         self.maximum_tolerated_idleness = maximum_tolerated_idleness  # how much time until next visit tolerated SECONDS
 
@@ -17,6 +18,7 @@ class Target(SimulatedEntity):
 
         self.furthest_target = None
         self.closest_target = None
+        self.family = family
 
     # ------ AGE OF INFORMATION -- RESIDUAL OF INFORMATION
 

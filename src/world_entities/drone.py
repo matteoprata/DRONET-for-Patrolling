@@ -10,6 +10,7 @@ import src.constants as co
 
 import src.patrolling.Baselines as planners
 from src.config import Configuration
+import src.constants as cst
 
 
 class Drone(SimulatedEntity, AntennaEquippedDevice):
@@ -41,6 +42,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         self.prev_target     = self.simulator.environment.targets[0]
         self.prev_state = None
         self.prev_action = None
+        self.family = cst.DroneFamily.BLUE
 
         # self.rl_module = RLModule(self)
 
@@ -146,6 +148,14 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
                 policy = planners.MaxSumResidualPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
                 target = policy.next_visit()
+                self.__update_next_target_upon_reach(target)
+
+        elif type(protocol) == co.PrecomputedPatrollingProtocol:
+            if self.will_reach_target_now():
+                self.coords = self.next_target_coo()
+                self.__handle_metrics()
+                self.__update_target_time_visit_upon_reach()
+                target = self.simulator.policy.next_visit(self)
                 self.__update_next_target_upon_reach(target)
 
         elif protocol == co.PatrollingProtocol.FREE:

@@ -46,7 +46,7 @@ def run_sweep(configuration: Configuration):
         project=configuration.PROJECT_NAME,
         sweep={
             'command':    ["${env}", "python3", "${program}", "${args}"],
-            'program':    "src/main_WandbTrain.py",
+            'program':    "src/main_wandb_train.py",
             'name':       configuration.conf_description(),
             'method':     configuration.HYPER_PARAM_SEARCH_MODE,
             'metric':     configuration.FUNCTION_TO_OPTIMIZE,

@@ -13,6 +13,7 @@ import os
 from shapely.geometry import LineString
 import signal
 from multiprocessing import Pool
+import networkx as nx
 
 
 def flip_biased_coin(p, random_gen):
@@ -424,3 +425,118 @@ class TraversedCells:
         x_cells = np.ceil(width_area / size_cell)  # numero di celle su X
         return x_cell_coords + (x_cells * y_cell_coords)
 
+
+class Christofides:
+    """
+    A class for compute the approximated solution of TSP by Christofides
+    """
+
+    def compute_from_coordinates(cls, coordinates, depot_index):
+        graph = nx.Graph()
+        for i, coo in enumerate(coordinates):
+            graph.add_nodes_from([(i, {"x": coo[0], "y": coo[1]})])
+
+        for i, coo1 in enumerate(coordinates):
+            for j, coo2 in enumerate(coordinates):
+                if i > j:
+                    graph.add_edges_from([(i, j, {"weight": euclidean_distance(coo1, coo2)})])
+
+        return cls.compute_from_graph(graph, depot_index)
+
+    @classmethod
+    def compute_from_graph(cls, graph : nx.Graph, depot_index: int):
+        """
+        :param graph: the graph where compute the TSP tour
+        :param: depot_index : the index of node which is referred as depot (start and end of the tour)
+        :return: the tsp Tour [e1,e2,...,en] with e1 with indexes of graph
+        """
+        graph = graph.copy()
+
+        # first step -> MST of graph
+        mst = nx.minimum_spanning_tree(graph)
+
+        # even
+        odd_nodes = Christofides.odd_nodes(mst)
+
+        # induced subgraph of odd nodes
+        odd_graph = graph.subgraph(odd_nodes).copy()
+
+        # minimum weighted matching
+        perfect_match = Christofides.min_weight_matching(odd_graph)
+
+        # build Eulerian Graph: mst + perfect match
+        eu_graph = nx.MultiGraph()
+        for e0, e1 in list(mst.edges) + list(perfect_match):
+            eu_graph.add_node(e0)
+            eu_graph.add_node(e1)
+            eu_graph.add_edge(e0, e1, weight=graph.edges[e0, e1]["weight"])
+
+        # Assert a eulerian graph
+        assert nx.is_eulerian(eu_graph), "The mst + perfect matching of Christofides -> not an eulerian graph "
+
+        # eulerian tour
+        eu_tour = list(nx.eulerian_circuit(eu_graph, source=depot_index, keys=False))
+
+        # shortcut tour to have a 1.5-TSP
+        tsp_tour = Christofides.shorted_tour(eu_tour)
+        return tsp_tour
+
+    @classmethod
+    def min_weight_matching(cls, graph: nx.Graph):
+        """
+        :param graph: NetworkX Graph -  the graph where compute the minium weight matching .
+        :return: a list of edges of the perfect match
+        """
+        temp_graph = graph.copy()
+        # reverse weight to use built-in function of networkx -> max_weight_matching
+        for edge in temp_graph.edges():
+            temp_graph.edges[edge[0], edge[1]]["weight"] = 1.0 / temp_graph.edges[edge[0], edge[1]]["weight"]
+
+        # list of edges for a perfect matching graph
+        return nx.max_weight_matching(temp_graph)
+
+    @classmethod
+    def odd_nodes(cls, mst: nx.Graph):
+        """
+
+        :param mst: NetworkX Graph -  A minimum spanning tree.
+        :return:
+        """
+        odd_vert = []  # list containing vertices with odd degree
+        for i in mst.nodes():
+            if mst.degree(i) % 2 != 0:
+                odd_vert.append(i)  # if the degree of the vertex is odd, then append it to odd_vert list
+        return odd_vert
+
+    @classmethod
+    def shorted_tour(cls, eu_tour: list) -> list:
+        """
+        sub-routine for TSP-algorithm of Christofides. Takes input
+        an eulerian tour and remove the nodes already visited in the tour
+        and return an instance of tour [e1,e2,...,en].
+
+        :param eu_tour: Takes input an eulerian tour [e1,e2,... ] edges.
+        :return: the 1.5-TSP from the shortcut of eulerian tour
+        """
+        ordered_unique_nodes_in_tour = []
+        for node0, node1 in eu_tour:
+            if node0 not in ordered_unique_nodes_in_tour:
+                ordered_unique_nodes_in_tour.append(node0)
+
+        return ordered_unique_nodes_in_tour
+
+    @classmethod
+    def build_tour_from_ordered_nodes(cls, nodes: list):
+        """
+
+        :param nodes: a list of nodes
+        :return: a tour made of [(node[0], node[1]), (node[1], node[2]), .... , (node[n], node[0])]
+        """
+        tour = []
+        l_nodes = len(nodes)
+        for t_i in range(l_nodes):
+            if t_i == l_nodes - 1:
+                tour += [(nodes[t_i], nodes[0])]
+            else:
+                tour += [(nodes[t_i], nodes[t_i + 1])]
+        return tour

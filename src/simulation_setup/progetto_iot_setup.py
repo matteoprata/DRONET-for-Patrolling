@@ -4,13 +4,14 @@ from src.constants import IndependentVariable as indv
 from src.constants import PatrollingProtocol as pol
 from src.constants import PrecomputedPatrollingProtocol as pol2
 
-comp_dims = {indv.SEED: range(1),
-             indv.DRONE_PATROLLING_POLICY: [
-                                            # pol.RANDOM_MOVEMENT,
-                                            # pol2.CLUSTERING,
-                                            # pol2.MULTI_TSP,
-                                            # pol.GO_MAX_AOI,
-                                            pol.GO_MIN_SUM_RESIDUAL
+# SEED x ALGO (N_DRONES)
+
+comp_dims = {indv.SEED: range(2),
+             indv.DRONE_PATROLLING_POLICY: [pol.RANDOM_MOVEMENT,
+                                            pol2.MULTI_TSP,
+                                            pol.GO_MAX_AOI,
+                                            pol.GO_MIN_SUM_RESIDUAL,
+                                            pol.GO_MIN_RESIDUAL
                                             ]
              }
 

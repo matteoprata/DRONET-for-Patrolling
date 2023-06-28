@@ -1,8 +1,12 @@
 from enum import Enum
 import multiprocessing
-from src.patrolling import Baselines as pbase
-from src.patrolling.SOABaseline1 import ClusteringTSP, Clustering
-import torch
+
+from src.patrolling.base_max_aoi import MaxAOIPolicy
+from src.patrolling.base_random import RandomPolicy
+from src.patrolling.base_max_sum_aoi_ratio import MaxSumResidualPolicy
+from src.patrolling.base_max_aoi_ratio import MaxAOIRatioPolicy
+
+from src.patrolling.base_clustering_tsp import ClusteringTSP
 
 """
 This file contains all the constants of the sim.
@@ -45,15 +49,14 @@ class PatrollingProtocol(Enum):
     RL_DECISION_TRAIN = 0
     RL_DECISION_TEST    = 2
 
-    RANDOM_MOVEMENT     = pbase.RandomPolicy
-    GO_MAX_AOI          = pbase.MaxAOIPolicy
-    GO_MIN_RESIDUAL     = pbase.MaxAOIRatioPolicy
-    GO_MIN_SUM_RESIDUAL = pbase.MaxSumResidualPolicy
+    RANDOM_MOVEMENT     = RandomPolicy
+    GO_MAX_AOI          = MaxAOIPolicy
+    GO_MIN_RESIDUAL     = MaxAOIRatioPolicy
+    GO_MIN_SUM_RESIDUAL = MaxSumResidualPolicy
 
 
 class PrecomputedPatrollingProtocol(Enum):
     MULTI_TSP = ClusteringTSP
-    CLUSTERING = Clustering
 
 
 class TargetFamily(Enum):

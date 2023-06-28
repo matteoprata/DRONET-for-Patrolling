@@ -49,7 +49,7 @@ class Configuration:
         self.IS_ALLOW_SELF_LOOP = False     # drone can decide to visit the same target in two consecutive decisions or not
 
         self.IS_CONSTANT_IDLENESS = True
-        self.IS_AD_HOC_SCENARIO = True
+        self.IS_AD_HOC_SCENARIO = False
 
         # algorithms to play with
         self.VALIDATION_ALGORITHMS = [

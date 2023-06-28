@@ -50,7 +50,6 @@ def main_multi_test(configuration: Configuration):
 
 
 def main_safe_execution(configuration):
-
     try:
         configuration.run_parameters_sanity_check()
         print("\nExecuting > {}\n".format(configuration.conf_description()))
@@ -70,15 +69,18 @@ def parser_cl_arguments(configuration: Configuration):
 
     parser.add_argument('-set', '--SETUP_NAME', type=str)
     parser.add_argument('-par', '--IS_PARALLEL_EXECUTION', default=0, type=int)
+    parser.add_argument('-pl',  '--PLOT_SIM', default=configuration.PLOT_SIM, type=int)
 
-    # python -m src.main_MultiTest -set setup02 -par 1
     # parsing arguments from cli
     args = vars(parser.parse_args())
 
     print("Setting parameters...")
     configuration.SETUP_NAME = args["SETUP_NAME"].upper()
     configuration.IS_PARALLEL_EXECUTION = bool(args["IS_PARALLEL_EXECUTION"])
+    configuration.PLOT_SIM = bool(args["PLOT_SIM"])
 
+
+# python -m src.main_multi_test -set IOT -par 0 -pl 1
 
 if __name__ == "__main__":
     conf = Configuration()

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from src.utilities import utilities as util
 
-from src.simulation_setup import setup01, setup02, progetto_iot_setup
+from src.simulation_setup import progetto_iot_setup
 from src.constants import IndependentVariable as indv
 from src.constants import DependentVariable as depv
 from src.constants import ErrorType
@@ -74,12 +74,13 @@ def __data_matrix_multiple_exps(setup_file, independent_variable):
 
 def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD, targets_aggregator=np.average, is_boxplot=True):
     """ Given a matrix of data, plots an XY chart """
+
     print("Plotting the stats...")
     data = __data_matrix_multiple_exps(setup, indep_var)
     print("Done filling up the matrix.")
 
     # removes temporal dimensions, becomes: [(TIME) X SEEDS x ALGORITHMS x TARGETS x INDEPENDENT]
-    metrics_aoi = dep_var_map[dep_var](data)
+    metrics_aoi = dep_var_map[dep_var](data)  # data shape (5400, 1, 2, 30, 4)
 
     plt.close('all')
     _, ax = plt.subplots()
@@ -101,6 +102,7 @@ def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD, 
 
                 if xi == 0:
                     boxes.append(bp["boxes"][0])
+
         plt.xticks(np.arange(0, len(X) * (len(AL) + 1), len(AL) + 1), X)
         plt.legend(boxes, [al.name for al in AL])
 
@@ -175,4 +177,6 @@ if __name__ == '__main__':
 
     # X, Y
     plot_stats_dep_ind_var(progetto_iot_setup, indv.DRONES_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)
+    plot_stats_dep_ind_var(progetto_iot_setup, indv.DRONES_NUMBER, depv.WORST_AGE, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)
+    plot_stats_dep_ind_var(progetto_iot_setup, indv.DRONES_NUMBER, depv.WORST_DELAY, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)
     plot_stats_dep_ind_var(progetto_iot_setup, indv.DRONES_NUMBER, depv.CUMULATIVE_DELAY_AR, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)

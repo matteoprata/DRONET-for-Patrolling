@@ -8,7 +8,11 @@ from src.utilities.utilities import euclidean_distance, angle_between_three_poin
 import numpy as np
 import src.constants as co
 
-import src.patrolling.Baselines as planners
+from src.patrolling.base_max_aoi import MaxAOIPolicy
+from src.patrolling.base_random import RandomPolicy
+from src.patrolling.base_max_sum_aoi_ratio import MaxSumResidualPolicy
+from src.patrolling.base_max_aoi_ratio import MaxAOIRatioPolicy
+
 from src.config import Configuration
 import src.constants as cst
 
@@ -116,7 +120,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 self.coords = self.next_target_coo()  # this instruction sets the position of the drone on top of the target (useful due to discrete time)
                 self.__handle_metrics()
                 self.__update_target_time_visit_upon_reach()
-                policy = planners.RandomPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
+                policy = RandomPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
                 target = policy.next_visit()
                 self.__update_next_target_upon_reach(target)
 
@@ -126,7 +130,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 self.__handle_metrics()
                 self.__update_target_time_visit_upon_reach()
 
-                policy = planners.MaxAOIPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
+                policy = MaxAOIPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
                 target = policy.next_visit()
                 self.__update_next_target_upon_reach(target)
 
@@ -136,7 +140,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 self.__handle_metrics()
                 self.__update_target_time_visit_upon_reach()
 
-                policy = planners.MaxAOIRatioPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
+                policy = MaxAOIRatioPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
                 target = policy.next_visit()
                 self.__update_next_target_upon_reach(target)
 
@@ -146,7 +150,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 self.__handle_metrics()
                 self.__update_target_time_visit_upon_reach()
 
-                policy = planners.MaxSumResidualPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
+                policy = MaxSumResidualPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
                 target = policy.next_visit()
                 self.__update_next_target_upon_reach(target)
 

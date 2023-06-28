@@ -8,6 +8,7 @@ class Target(SimulatedEntity):
 
     def __init__(self, identifier, coords, maximum_tolerated_idleness, simulator, family=cst.TargetFamily.BLUE):
         SimulatedEntity.__init__(self, identifier, coords, simulator)
+        # THETA
         self.maximum_tolerated_idleness = maximum_tolerated_idleness  # how much time until next visit tolerated SECONDS
 
         self.last_visit_ts = 0  # - maximum_tolerated_idleness / self.sim.ts_duration_sec

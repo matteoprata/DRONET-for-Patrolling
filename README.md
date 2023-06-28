@@ -73,6 +73,15 @@ specify all the constants and parameters for a one-shot simulation, ideal when o
 the quality of a routing algorithm making frequent executions. Constants and parameters should **always** be added here
 and never be hard-coded.
   
+## Running  
+Running multi tests in parallel as defined in the setups:
+
+```python -m src.main_multi_test -set IOT -par 0 -pl 1```
+
+Plotting a setup:
+
+```python -m src.main_metrics```
+
 ## Contacts
 For further information contact Matteo Prata at [prata@di.uniroma1.it](mailto:prata@di.uniroma1.it) and 
 Andrea Coletta at [coletta@di.uniroma1.it](mailto:coletta@di.uniroma1.it).

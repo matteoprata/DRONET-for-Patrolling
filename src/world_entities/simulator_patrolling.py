@@ -25,7 +25,7 @@ import wandb
 import traceback
 from src.RL.RLModule import RLModule
 
-import src.patrolling.Baselines as patrol_base
+import src.patrolling.meta_patrolling as patrol_base
 
 
 class PatrollingSimulator:
@@ -306,7 +306,7 @@ class PatrollingSimulator:
             self.run_episodes([0], typ=cst.EpisodeType.TEST, protocol=self.cf.DRONE_PATROLLING_POLICY)
             print("Saving stats file...")
             self.metricsV2.save_metrics()
-            self.patrolling_simulation_report()
+            self.patrolling_report()
         else:
             print("Unhandled protocol for testing.")
             exit(1)
@@ -419,7 +419,7 @@ class PatrollingSimulator:
             return True
         return False
 
-    def patrolling_simulation_report(self):
+    def patrolling_report(self):
         print()
         print("📌 REPORT:")
         print("🚁 ")
@@ -461,4 +461,3 @@ class PatrollingSimulator:
         print(stats)
         print()
         print(stats.describe())
-

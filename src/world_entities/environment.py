@@ -9,6 +9,7 @@ from collections import defaultdict
 from src.evaluation.MetricsLog import MetricsLog
 from src.constants import EpisodeType, TargetFamily
 
+
 class ObstacleHandler:
 
     def __init__(self, simulator, width, height):

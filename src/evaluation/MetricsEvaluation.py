@@ -102,8 +102,7 @@ class MetricsEvaluation:
         # self.episode_duration seconds
         target_tolerance = self.targets_tolerance[str(target_id)]
         MAX_TIME = int(self.episode_duration * self.ts_duration_sec)  # seconds
-        print(MAX_TIME)
-        exit()
+
         x_axis = np.linspace(0, MAX_TIME, MAX_TIME)
 
         times = []
@@ -127,8 +126,9 @@ class MetricsEvaluation:
 
         y_axis = y_axis / (target_tolerance if not is_absolute else 1)
 
+        # UNCOMMENT TO PLOT AOI
         # THETA = target_tolerance if is_absolute else 1
-        # self.plot_x_y(x_axis, y_axis, MAX_TIME, THETA=THETA, is_show_threshold=True)
+        # self.plot_x_y(x_axis, y_axis, MAX_TIME, THETA=THETA, is_show_threshold=False, is_absolute=True)
 
         assert(len(y_axis) == len(x_axis))
         return x_axis, y_axis
@@ -136,11 +136,11 @@ class MetricsEvaluation:
     # ------------ FUNCTIONS ------------
     def plot_x_y(self, x_axis, y_axis, MAX_TIME, THETA, is_show_threshold=True, is_absolute=False):
 
-        print(self.AOI1_integral_func(y_axis))
-        print(self.AOI2_max_func(y_axis))
-        print(self.AOI3_max_delay_func(y_axis, THETA))
-        print(self.AOI4_n_violations_func(y_axis, THETA))
-        print(self.AOI5_violation_time_func(y_axis, THETA))
+        # print(self.AOI1_integral_func(y_axis))
+        # print(self.AOI2_max_func(y_axis))
+        # print(self.AOI3_max_delay_func(y_axis, THETA))
+        # print(self.AOI4_n_violations_func(y_axis, THETA))
+        # print(self.AOI5_violation_time_func(y_axis, THETA))
 
         plt.figure(figsize=(6.7, 6))
         plt.rcParams.update({'font.size': 15})
@@ -148,8 +148,13 @@ class MetricsEvaluation:
         if not is_show_threshold:
             plt.fill_between(x_axis, y_axis, 0, color='yellow', alpha=.2)
             if is_absolute:
-                plt.yticks([int(i) for i in range(MAX_TIME) if i % 10000 == 0] + [MAX_TIME],
-                           [int(i) for i in range(MAX_TIME) if i % 10000 == 0] + ["M"])  # "$\\theta(p_1)$"
+                AX = [int(i) for i in range(MAX_TIME) if i % 1000 == 0] + [MAX_TIME]
+                plt.yticks(AX,
+                           [int(i) for i in range(MAX_TIME) if i % 1000 == 0] + ["M"])  # "$\\theta(p_1)$"
+
+                plt.xticks(AX,
+                           [int(i) for i in range(MAX_TIME) if i % 1000 == 0] + ["M"])  # "$\\theta(p_1)$"
+                plt.ylim((0, max(AX)))
         else:
             plt.fill_between(x_axis, y_axis, THETA, where=y_axis>THETA, color='red', alpha=.2)
             plt.axhline(THETA, color='red')
@@ -169,29 +174,29 @@ class MetricsEvaluation:
         plt.show()
 
     @staticmethod
-    def AOI1_integral_func(y_axis):
+    def AOI1_integral_func(y_axis, theta=None):
         sums = np.sum(y_axis, axis=0)
         return sums
 
     @staticmethod
-    def AOI2_max_func(y_axis):
+    def AOI2_max_func(y_axis, theta=None):
         sums = np.max(y_axis, axis=0)
         return sums
 
     @staticmethod
-    def AOI3_max_delay_func(y_axis, theta):
+    def AOI3_max_delay_func(y_axis, theta=1):
         y_axis_var = np.array(y_axis)
         y_axis_var[y_axis_var < theta] = 0
         sums = np.max(y_axis_var, axis=0)
         return sums
 
     @staticmethod
-    def AOI4_n_violations_func(y_axis, theta):
+    def AOI4_n_violations_func(y_axis, theta=1):
         n_violations = np.sum((y_axis >= theta) * 1 & (np.roll(y_axis, 1, axis=0) < theta) * 1, axis=0)
         return n_violations
 
     @staticmethod
-    def AOI5_violation_time_func(y_axis, theta):
+    def AOI5_violation_time_func(y_axis, theta=1):
         violation_time = np.sum((y_axis >= theta) * 1, axis=0)
         return violation_time
 

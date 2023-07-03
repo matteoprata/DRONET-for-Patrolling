@@ -82,6 +82,11 @@ Plotting a setup:
 
 ```python -m src.main_metrics```
 
+## TODO:
+- Aggiungere metrica di fairness, max - min e std 
+- Aggiungere variabilità nel THETA 
+- Aggiungere variabilità nelle posizioni dei target 
+
 ## Contacts
 For further information contact Matteo Prata at [prata@di.uniroma1.it](mailto:prata@di.uniroma1.it) and 
 Andrea Coletta at [coletta@di.uniroma1.it](mailto:coletta@di.uniroma1.it).

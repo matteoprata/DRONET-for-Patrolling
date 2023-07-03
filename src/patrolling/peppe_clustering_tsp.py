@@ -30,7 +30,6 @@ class PeppeClusteringTSP(PrecomputedPolicy):
         np.fill_diagonal(distances, 0)
 
         # rendere distances simmetrica
-
         distances = distances / np.linalg.norm(distances)
 
         affinities = 1-distances

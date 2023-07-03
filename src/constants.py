@@ -8,6 +8,7 @@ from src.patrolling.base_max_aoi_ratio import MaxAOIRatioPolicy
 from src.patrolling.base_clustering_max_aoi_ratio import ClusterMaxAOIRatioPolicy
 
 from src.patrolling.base_clustering_tsp import ClusteringTSP
+from src.patrolling.peppe_clustering_tsp import PeppeClusteringTSP
 
 """
 This file contains all the constants of the sim.
@@ -32,6 +33,18 @@ class LearningHyperParameters(Enum):
     PERCENTAGE_SWAP = "percentage_swap"
     # OPTIMIZER = "optimizer"
     # LOSS = "loss"
+
+
+class ToleranceScenario(Enum):
+    CONSTANT = 0
+    UNIFORM = 1
+    CLUSTERED = 2
+    NORMAL = 3
+
+
+class PositionScenario(Enum):
+    UNIFORM = 1
+    CLUSTERED = 2
 
 
 class ErrorType(Enum):
@@ -59,6 +72,7 @@ class OnlinePatrollingProtocol(Enum):
 
 class PrecomputedPatrollingProtocol(Enum):
     MULTI_TSP = ClusteringTSP
+    PEPPE_CLUSTERING = PeppeClusteringTSP
 
 
 class TargetFamily(Enum):
@@ -81,6 +95,8 @@ class IndependentVariable(Enum):
     DRONES_NUMBER = {"ID": 4, "NAME": "Drones Number"}
     TARGETS_NUMBER = {"ID": 5, "NAME": "Targets Number"}
     TARGETS_TOLERANCE_FIXED = {"ID": 7, "NAME": "Tolerance"}
+    TARGETS_TOLERANCE_SCENARIO = {"ID": 8, "NAME": "Tolerance Scenario"}
+    TARGETS_POSITION_SCENARIO = {"ID": 9, "NAME": "Position Scenario"}
 
 
 class DependentVariable(Enum):
@@ -128,6 +144,7 @@ class JSONFields(Enum):
     TARGET_NUMBER = "TARGET_NUMBER"
     DRONE_SPEED = "DRONE_SPEED"
     TOLERANCE_FACTOR = "TOLERANCE_FACTOR"
+    TOLERANCE_SCENARIO = "TARGETS_TOLERANCE_SCENARIO"
 
 
 class RLRewardType(Enum):
@@ -140,13 +157,11 @@ class RLRewardType(Enum):
 PATH_STATS = "data/experiments/"
 N_CORES = multiprocessing.cpu_count()-1
 
-from src.simulation_setup import setup01, setup02, progetto_iot_setup
+from src.simulation_setup import setup0
 
 
 class Setups(Enum):
-    SETUP01 = setup01
-    SETUP02 = setup02
-    IOT = progetto_iot_setup
+    SETUP0 = setup0
 
 
 TORCH_DEVICE = 'cpu'  # 'cuda' if torch.cuda.is_available() else 'cpu'

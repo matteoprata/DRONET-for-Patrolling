@@ -29,6 +29,7 @@ def main_multi_test(configuration: Configuration):
                     stp.indv_fixed[x_var_k] = x
                     stp.indv_fixed[indv.DRONE_PATROLLING_POLICY] = a
                     stp.indv_fixed[indv.SEED] = s
+
                     # stp.indv_fixed is now fully formed
 
                     configuration = copy.deepcopy(configuration)

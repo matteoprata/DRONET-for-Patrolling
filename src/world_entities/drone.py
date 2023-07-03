@@ -116,46 +116,8 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 # print(self.identifier, self.sim.rl_module.state_prime(self))
                 self.__update_next_target_upon_reach(target)
 
-        # elif protocol == co.OnlinePatrollingProtocol.RANDOM_MOVEMENT:
-        #     if self.will_reach_target_now():
-        #         self.coords = self.next_target_coo()  # this instruction sets the position of the drone on top of the target (useful due to discrete time)
-        #         self.__handle_metrics()
-        #         self.__update_target_time_visit_upon_reach()
-        #         policy = RandomPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
-        #         target = policy.next_visit()
-        #         self.__update_next_target_upon_reach(target)
-        #
-        # elif protocol == co.OnlinePatrollingProtocol.GO_MAX_AOI:
-        #     if self.will_reach_target_now():
-        #         self.coords = self.next_target_coo()
-        #         self.__handle_metrics()
-        #         self.__update_target_time_visit_upon_reach()
-        #
-        #         policy = MaxAOIPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
-        #         target = policy.next_visit()
-        #         self.__update_next_target_upon_reach(target)
-        #
-        # elif protocol == co.OnlinePatrollingProtocol.GO_MIN_RESIDUAL:
-        #     if self.will_reach_target_now():
-        #         self.coords = self.next_target_coo()
-        #         self.__handle_metrics()
-        #         self.__update_target_time_visit_upon_reach()
-        #
-        #         policy = MaxAOIRatioPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
-        #         target = policy.next_visit()
-        #         self.__update_next_target_upon_reach(target)
-        #
-        # elif protocol == co.OnlinePatrollingProtocol.GO_MIN_SUM_RESIDUAL:
-        #     if self.will_reach_target_now():
-        #         self.coords = self.next_target_coo()
-        #         self.__handle_metrics()
-        #         self.__update_target_time_visit_upon_reach()
-        #
-        #         policy = MaxSumResidualPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
-        #         target = policy.next_visit()
-        #         self.__update_next_target_upon_reach(target)
-
-        elif type(protocol) == co.OnlinePatrollingProtocol:  # co.OnlinePatrollingProtocol.CLUSTER_GO_MIN_RESIDUAL:
+        # ONLINE POLICIES
+        elif type(protocol) == co.OnlinePatrollingProtocol:
             if self.will_reach_target_now():
                 self.coords = self.next_target_coo()
                 self.__handle_metrics()
@@ -165,6 +127,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 target = policy.next_visit()
                 self.__update_next_target_upon_reach(target)
 
+        # PRECOMPUTED POLICIES
         elif type(protocol) == co.PrecomputedPatrollingProtocol:
             if self.will_reach_target_now():
                 self.coords = self.next_target_coo()

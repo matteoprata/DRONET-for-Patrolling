@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from src.utilities import utilities as util
 
-from src.simulation_setup import progetto_iot_setup
+from src.simulation_setup import setup0
 from src.constants import IndependentVariable as indv
 from src.constants import DependentVariable as depv
 from src.constants import ErrorType
@@ -43,10 +43,10 @@ def __data_matrix_multiple_exps(setup_file, independent_variable):
                                             n_drones               = stp.indv_fixed[indv.DRONES_NUMBER],
                                             n_targets              = stp.indv_fixed[indv.TARGETS_NUMBER],
                                             drone_speed_meters_sec = stp.indv_fixed[indv.DRONE_SPEED],
-                                            tolerance_factor       = stp.indv_fixed[indv.TARGETS_TOLERANCE_FIXED])
+                                            tolerance_factor       = stp.indv_fixed[indv.TARGETS_TOLERANCE_FIXED],
+                                            tolerance_scenario     = stp.indv_fixed[indv.TARGETS_TOLERANCE_SCENARIO].name)
 
                     met.load_metrics()
-
                     N_TARGETS = max(stp.indv_vary[indv.TARGETS_NUMBER]) if independent_variable == indv.TARGETS_NUMBER else stp.indv_fixed[indv.TARGETS_NUMBER]
 
                     times = []  # for each target
@@ -127,6 +127,7 @@ def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD, 
             elif error_type == ErrorType.STD:
                 error = Y_std
 
+            plt.title("Scenario {}".format(setup.indv_fixed[indv.TARGETS_TOLERANCE_SCENARIO]))
             plt.errorbar(X, Y, yerr=error, label=setup.comp_dims[indv.DRONE_PATROLLING_POLICY][al].name, # marker=algo_marker[al_id],
                          fillstyle='full')  # color=util.sample_color(map_color[al_id]))
 
@@ -149,7 +150,8 @@ def plot_stats_single_seed(setup, seed, algorithm):
                             n_drones=setup.indv_fixed[indv.DRONES_NUMBER],
                             n_targets=setup.indv_fixed[indv.TARGETS_NUMBER],
                             drone_speed_meters_sec=setup.indv_fixed[indv.DRONE_SPEED],
-                            tolerance_factor=setup.indv_fixed[indv.TARGETS_TOLERANCE_SCALE])
+                            tolerance_factor=setup.indv_fixed[indv.TARGETS_TOLERANCE_SCALE],
+                            tolerance_scenario=setup.indv_fixed[indv.TARGETS_TOLERANCE_SCENARIO].name)
     # N 1
     X, Yavg = met.plot_avg_aoi()
 
@@ -176,7 +178,7 @@ if __name__ == '__main__':
     # python -m src.main_metrics
 
     # X, Y
-    plot_stats_dep_ind_var(progetto_iot_setup, indv.DRONES_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)
-    plot_stats_dep_ind_var(progetto_iot_setup, indv.DRONES_NUMBER, depv.WORST_AGE, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)
-    plot_stats_dep_ind_var(progetto_iot_setup, indv.DRONES_NUMBER, depv.WORST_DELAY, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)
-    plot_stats_dep_ind_var(progetto_iot_setup, indv.DRONES_NUMBER, depv.CUMULATIVE_DELAY_AR, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)
+    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.CUMULATIVE_DELAY_AR, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)
+    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)
+    # plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.WORST_AGE, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)
+    # plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.WORST_DELAY, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)

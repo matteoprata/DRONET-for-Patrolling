@@ -84,7 +84,13 @@ Plotting a setup:
 
 ## TODO:
 - Aggiungere metrica di fairness, max - min e std 
-- Aggiungere variabilità nel THETA 
+
+- Aggiungere variabilità nel THETA: bounds \[0, MISSION_TIME\]
+- - costante  (X)
+- - uniforme  ($)
+- - normale   (mu=MISSION_TIME/2, std=MISSION_TIME*.25)
+- - clustered (5 epicentri, theta per epicentro $)
+
 - Aggiungere variabilità nelle posizioni dei target 
 
 ## Contacts

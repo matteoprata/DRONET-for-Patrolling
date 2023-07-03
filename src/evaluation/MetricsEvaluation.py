@@ -11,11 +11,12 @@ from src.constants import JSONFields
 from src.evaluation.MetricsLog import MetricsLog
 import logging
 
+
 class MetricsEvaluation:
     """ This class is used to evaluate the stats of the simulation, logged on files. """
 
-    def __init__(self, sim_seed=None, n_drones=None, n_targets=None, drone_mobility=None, drone_speed_meters_sec=None, tolerance_factor=None,
-                 metrics_log: dict = None):
+    def __init__(self, sim_seed=None, n_drones=None, n_targets=None, drone_mobility=None, drone_speed_meters_sec=None,
+                 tolerance_factor=None, tolerance_scenario=None, metrics_log: dict = None):
 
         if metrics_log is None:
             self.sim_seed = sim_seed
@@ -24,6 +25,7 @@ class MetricsEvaluation:
             self.drone_mobility = drone_mobility
             self.drone_speed_meters_sec = drone_speed_meters_sec
             self.tolerance_factor = tolerance_factor
+            self.tolerance_scenario = tolerance_scenario
 
             simulation_visits_info = self.load_metrics()
             self.times_visit = simulation_visits_info[JSONFields.VISIT_TIMES.value]
@@ -41,6 +43,7 @@ class MetricsEvaluation:
             self.n_targets = metrics_log[JSONFields.SIMULATION_INFO.value][JSONFields.TARGET_NUMBER.value]
             self.drone_speed_meters_sec = metrics_log[JSONFields.SIMULATION_INFO.value][JSONFields.DRONE_SPEED.value]
             self.tolerance_factor = metrics_log[JSONFields.SIMULATION_INFO.value][JSONFields.TOLERANCE_FACTOR.value]
+            self.tolerance_scenario = metrics_log[JSONFields.SIMULATION_INFO.value][JSONFields.TOLERANCE_SCENARIO.value]
 
             self.times_visit = metrics_log[JSONFields.VISIT_TIMES.value]
             self.targets_tolerance = metrics_log[JSONFields.SIMULATION_INFO.value][JSONFields.TOLERANCE.value]
@@ -49,14 +52,15 @@ class MetricsEvaluation:
 
     def fname_generator(self):
         # independent variables
-        fname = "seed={}_nd={}_nt={}_pol={}_sp={}_tolf={}.json".format(
+        fname = "seed={}_nd={}_nt={}_pol={}_sp={}_tolscen={}_tolfixed={}.json".format(
             self.sim_seed,
             self.n_drones,
             self.n_targets,
             self.drone_mobility.name,
             self.drone_speed_meters_sec,
-            self.tolerance_factor
-            )
+            self.tolerance_scenario,
+            self.tolerance_factor,
+        )
         print("reading", fname)
         return fname
 
@@ -69,7 +73,6 @@ class MetricsEvaluation:
         if not os.path.exists(path):
             raise Exception("File {} you are trying to load does not exist. Run a simulation first.".format(path))
         return json_dict
-
 
     def plot_aoi(self, target_id, drone_id=None):
         X, Y = self.AOI_func(target_id, drone_id)
@@ -99,6 +102,7 @@ class MetricsEvaluation:
 
     # AOI
     def AOI_func(self, target_id, is_absolute=False):
+        """ if is_absolute it is the absolute, else / the threshold! """
         # self.episode_duration seconds
         target_tolerance = self.targets_tolerance[str(target_id)]
         MAX_TIME = int(self.episode_duration * self.ts_duration_sec)  # seconds

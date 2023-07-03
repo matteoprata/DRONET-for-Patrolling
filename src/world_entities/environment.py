@@ -1,5 +1,5 @@
 
-from src.utilities.utilities import log, is_segments_intersect, distance_point_segment, TraversedCells, euclidean_distance
+from src.utilities.utilities import log, is_segments_intersect, distance_point_segment, TraversedCells, euclidean_distance, clustering_kmeans
 from src.world_entities.target import Target
 from tqdm import tqdm
 from src.utilities import tsp
@@ -7,7 +7,8 @@ from scipy.stats import truncnorm
 import numpy as np
 from collections import defaultdict
 from src.evaluation.MetricsLog import MetricsLog
-from src.constants import EpisodeType, TargetFamily
+from src.constants import EpisodeType, TargetFamily, ToleranceScenario, PositionScenario
+from src.utilities.utilities import generate_random_coordinates_in_circle
 
 
 class ObstacleHandler:
@@ -165,6 +166,63 @@ class Environment(ObstacleHandler):
         self.targets_dataset[EpisodeType.TEST].append(epoch_targets)
         return self.targets_dataset
 
+    def tolerances_function(self, target_coords):
+        """ returns the thresholds for every target, based on the scenario"""
+        scen = self.simulator.cf.TARGETS_TOLERANCE_SCENARIO
+
+        if scen == ToleranceScenario.CONSTANT:
+            return [self.simulator.cf.TARGETS_TOLERANCE_FIXED] * len(target_coords)  # +1 in case
+
+        elif scen == ToleranceScenario.UNIFORM:
+            LOW, HIGH = 0, 500
+            return np.random.randint(LOW, HIGH, len(target_coords))
+
+        elif scen == ToleranceScenario.NORMAL:
+            LOC, SCALE = 250, 250 * .25
+            thetas = np.random.normal(LOC, SCALE, len(target_coords))
+            thetas = [int(t) for t in thetas]
+            return thetas
+
+        elif scen == ToleranceScenario.CLUSTERED:
+            N_CLUSTERS = min(5, len(target_coords))
+            LOW, HIGH = 0, 500
+            THRESHOLDS = np.random.randint(LOW, HIGH, N_CLUSTERS)
+            clusters = clustering_kmeans(target_coords, N_CLUSTERS)
+            thetas = [THRESHOLDS[clu] for clu in clusters]
+            return thetas
+
+    def positions_function(self):
+        """ Returns the coordinates for every """
+
+        scen = self.simulator.cf.TARGETS_POSITION_SCENARIO
+        coordinates = []
+        if scen == PositionScenario.UNIFORM:
+            for i in range(self.simulator.n_targets):
+                point_coords = [self.simulator.rnd_env.randint(0, self.width), self.simulator.rnd_env.randint(0, self.height)]
+                coordinates.append(point_coords)
+
+        elif scen == PositionScenario.CLUSTERED:
+            N_EPICENTERS_DISTRIBS = np.array([1/2, 1/4, 1/8, 1/8])
+
+            EPI_POS = [[self.height/4, self.width/4],
+                       [self.height/4, 3*self.width/4],
+                       [3*self.height/4, self.width/4],
+                       [3*self.height/4, 3*self.width/4]]
+
+            WIDTH = .9
+            LOW, HIGH = WIDTH * self.width / 6,  WIDTH * self.width / 4
+            rads = np.random.uniform(LOW, HIGH, len(N_EPICENTERS_DISTRIBS))  # radius of claster
+            rads = sorted(rads)
+
+            N_TARS = N_EPICENTERS_DISTRIBS * self.simulator.n_targets
+            N_TARS = [int(t) for t in N_TARS]
+            N_TARS[-1] = self.simulator.n_targets - sum(N_TARS[:-1])
+            print(rads, N_TARS)
+
+            for i, (epi_x, epi_y) in enumerate(EPI_POS):
+                coordinates += generate_random_coordinates_in_circle(epi_x, epi_y, rads[i], N_TARS[i])
+
+        return coordinates
 
     def generate_target_combinations(self):
         """
@@ -173,7 +231,6 @@ class Environment(ObstacleHandler):
         :return:
         """
         # Creates a dataset of targets to iterate over to
-
         # loading targets list
         # targets_fname = conf.TARGETS_FILE + "targets_s{}_nt{}_sp{}.json".format(seed, self.sim.n_targets, self.sim.drone_speed_meters_sec)
 
@@ -188,35 +245,11 @@ class Environment(ObstacleHandler):
 
         for et, en in epi_type:
             for ep in range(en):
-                coordinates = []
-
-                # add coordinates of the targets
-                for i in range(self.simulator.n_targets):
-                    point_coords = [self.simulator.rnd_env.randint(0, self.width),
-                                    self.simulator.rnd_env.randint(0, self.height)]
-                    coordinates.append(point_coords)
-
-                if self.simulator.cf.TARGETS_TOLERANCE_FIXED is None:
-                    SCALE = 0.1
-                    # tsp_path_time = self.tsp_path_time(coordinates)  # time of a TSP from the targets
-                    REF_SPEED = 15
-                    diag_space = np.sqrt(self.width**2 + self.height**2) * 2
-                    diag_time = diag_space / REF_SPEED
-                    # add tolerances of the targets
-                    sigma = 0.3 * diag_time
-                    mean = diag_time * (1 + SCALE)
-                    # skew = self.sim.tolerance_factor * diag_time
-                    MIN_IDLENESS = diag_time / self.simulator.n_targets
+                coordinates = self.positions_function()
+                thetas = self.tolerances_function(coordinates)
 
                 for i in range(self.simulator.n_targets):  # set the threshold for the targets
-                    # idleness = self.sim.rnd_tolerance.normal(tsp_path_time, sigma, 1)[0]
-                    if self.simulator.cf.TARGETS_TOLERANCE_FIXED is None:
-                        idleness = self.simulator.rnd_tolerance.normal(mean, sigma, 1)[0]  # util.rand_skew_norm(alpha=0, mean=mean, std=sigma, )  # normal
-                        idleness = max(idleness, MIN_IDLENESS)
-                    else:
-                        idleness = self.simulator.cf.TARGETS_TOLERANCE_FIXED
-
-                    # print("sigma", sigma, "mu", mean, "sample", idleness)
+                    idleness = thetas[i]  # self.simulator.cf.TARGETS_TOLERANCE_FIXED
                     targets_x_episode[ep].append((i, tuple(coordinates[i]), idleness))
 
         for et, en in epi_type:

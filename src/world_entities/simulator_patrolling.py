@@ -429,7 +429,8 @@ class PatrollingSimulator:
                                 n_drones=self.n_drones,
                                 n_targets=self.n_targets,
                                 drone_speed_meters_sec=self.drone_speed_meters_sec,
-                                tolerance_factor=self.tolerance_factor)
+                                tolerance_factor=self.tolerance_factor,
+                                tolerance_scenario=self.cf.TARGETS_TOLERANCE_SCENARIO.name)
 
         plt.clf()
         plt.close()

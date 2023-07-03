@@ -1,6 +1,6 @@
 
 from src.utilities.utilities import xor
-from src.constants import OnlinePatrollingProtocol, DependentVariable, LearningHyperParameters, RLRewardType
+from src.constants import OnlinePatrollingProtocol, DependentVariable, LearningHyperParameters, RLRewardType, ToleranceScenario, PositionScenario
 import numpy as np
 import os
 
@@ -29,7 +29,6 @@ class Configuration:
 
         self.TARGETS_NUMBER = 10       # number of random targets in the map
         # self.TARGETS_TOLERANCE_SCALE = 0.1   # std % distance of tolerance generation
-        self.TARGETS_TOLERANCE_FIXED = 300   # seconds
 
         self.DRONES_NUMBER = 1                                             # int: number of drones.
         self.DRONE_SPEED = 15                                              # 15 m/s = 54 km/h   # float: m/s, drone speed.
@@ -48,8 +47,13 @@ class Configuration:
         self.IS_DECIDED_ON_TARGET = True  # the decision step happens on target visited (non uniformity of the decision step), or every DELTA_DEC
         self.IS_ALLOW_SELF_LOOP = False     # drone can decide to visit the same target in two consecutive decisions or not
 
-        self.IS_CONSTANT_IDLENESS = True
         self.IS_AD_HOC_SCENARIO = False
+
+        # Scenarios variables
+        self.TARGETS_TOLERANCE_SCENARIO = ToleranceScenario.CONSTANT
+        self.TARGETS_TOLERANCE_FIXED = 300  # seconds
+        self.TARGETS_POSITION_SCENARIO = PositionScenario.UNIFORM
+        # end
 
         # algorithms to play with
         self.VALIDATION_ALGORITHMS = [
@@ -169,8 +173,13 @@ class Configuration:
         self.IS_HIDE_PROGRESS_BAR = False
 
     def conf_description(self):
-        return "seed={}_nd={}_nt={}_pol={}_sp={}_tolf={}".format(self.SEED, self.DRONES_NUMBER, self.TARGETS_NUMBER,
-                                                                 self.DRONE_PATROLLING_POLICY.name, self.DRONE_SPEED, self.TARGETS_TOLERANCE_FIXED)
+        return "seed={}_nd={}_nt={}_pol={}_sp={}_tolscen={}_tolfixed={}".format(self.SEED,
+                                                                                self.DRONES_NUMBER,
+                                                                                self.TARGETS_NUMBER,
+                                                                                self.DRONE_PATROLLING_POLICY.name,
+                                                                                self.DRONE_SPEED,
+                                                                                self.TARGETS_TOLERANCE_SCENARIO.name,
+                                                                                self.TARGETS_TOLERANCE_FIXED)
 
     def n_tot_episodes(self):
         return self.N_EPISODES_TRAIN + self.N_EPISODES_TEST + self.N_EPISODES_VAL

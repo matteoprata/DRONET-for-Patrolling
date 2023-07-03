@@ -14,7 +14,8 @@ from shapely.geometry import LineString
 import signal
 from multiprocessing import Pool
 import networkx as nx
-
+from sklearn.cluster import KMeans
+from collections import defaultdict
 
 def flip_biased_coin(p, random_gen):
     """ Return true with probability p, false with probability 1-p. """
@@ -39,6 +40,30 @@ def euclidean_distance(p1, p2):
 
 def xor(a, b):
     return (a and not b) or (not a and b)
+
+
+def clustering_kmeans(set_coords, n_clusters):
+    kmeans_vals = KMeans(n_clusters=n_clusters, random_state=0, n_init="auto").fit(set_coords)
+    clusters = np.array(kmeans_vals.labels_)
+    return clusters
+
+
+def generate_random_coordinates_in_circle(x, y, r, num_points):
+    points = []
+    for _ in range(num_points):
+        # Generate a random angle between 0 and 2pi
+        angle = np.random.uniform(0, 2 * np.pi)
+
+        # Generate a random radius between 0 and r
+        radius = np.random.uniform(0, r)
+
+        # Convert polar coordinates to Cartesian coordinates
+        new_x = x + radius * np.cos(angle)
+        new_y = y + radius * np.sin(angle)
+
+        # Add the coordinates to the list of points
+        points.append([new_x, new_y])
+    return points
 
 
 def min_max_normalizer(value, startLB, startUB, endLB=0, endUB=1, soft=False):
@@ -249,7 +274,6 @@ def read_json(fname):
         with open(fname, 'r') as fp:
             data = json.load(fp)
     return data
-
 
 
 class LimitedList:

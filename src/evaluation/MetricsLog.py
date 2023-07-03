@@ -26,7 +26,7 @@ class MetricsLog:
         self.to_store_dictionary[JSONFields.SIMULATION_INFO.value][JSONFields.EPISODE_DURATION.value] = self.simulator.episode_duration
         self.to_store_dictionary[JSONFields.SIMULATION_INFO.value][JSONFields.TS_DURATION.value] = self.simulator.ts_duration_sec
 
-        tols = {t.identifier: t.maximum_tolerated_idleness for t in self.simulator.environment.targets}
+        tols = {t.identifier: int(t.maximum_tolerated_idleness) for t in self.simulator.environment.targets}
         self.to_store_dictionary[JSONFields.SIMULATION_INFO.value][JSONFields.TOLERANCE.value] = tols
         self.to_store_dictionary[JSONFields.VISIT_TIMES.value] = times_visit
 

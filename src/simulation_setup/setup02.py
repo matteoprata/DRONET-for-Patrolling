@@ -1,6 +1,6 @@
 
 from src.constants import IndependentVariable as indv
-from src.constants import PatrollingProtocol as pol
+from src.constants import OnlinePatrollingProtocol as pol
 
 
 comp_dims = {indv.SEED: [5],

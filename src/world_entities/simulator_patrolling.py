@@ -196,7 +196,7 @@ class PatrollingSimulator:
         drones = []
         for i in range(self.n_drones):
             drone_path = [self.cf.DRONE_COORDS]
-            drone_speed = 0 if self.drone_mobility == src.constants.PatrollingProtocol.FREE else self.drone_speed_meters_sec
+            drone_speed = 0 if self.drone_mobility == src.constants.OnlinePatrollingProtocol.FREE else self.drone_speed_meters_sec
             drone = Drone(identifier=i,
                           path=drone_path,
                           bs=base_stations[0],
@@ -281,7 +281,7 @@ class PatrollingSimulator:
 
     def run_training_loop(self):
 
-        if self.cf.DRONE_PATROLLING_POLICY == cst.PatrollingProtocol.RL_DECISION_TRAIN:
+        if self.cf.DRONE_PATROLLING_POLICY == cst.OnlinePatrollingProtocol.RL_DECISION_TRAIN:
             for epo in tqdm(range(self.cf.N_EPOCHS), desc='epoch', disable=self.cf.IS_HIDE_PROGRESS_BAR):
                 self.epoch = epo
 
@@ -302,7 +302,7 @@ class PatrollingSimulator:
             self.policy = policy_val.value(self.environment.drones, self.environment.targets)
 
     def run_testing_loop(self):
-        if self.cf.DRONE_PATROLLING_POLICY in [e for e in list(cst.PatrollingProtocol) + list(cst.PrecomputedPatrollingProtocol) if e != cst.PatrollingProtocol.RL_DECISION_TRAIN]:
+        if self.cf.DRONE_PATROLLING_POLICY in [e for e in list(cst.OnlinePatrollingProtocol) + list(cst.PrecomputedPatrollingProtocol) if e != cst.OnlinePatrollingProtocol.RL_DECISION_TRAIN]:
             self.run_episodes([0], typ=cst.EpisodeType.TEST, protocol=self.cf.DRONE_PATROLLING_POLICY)
             print("Saving stats file...")
             self.metricsV2.save_metrics()

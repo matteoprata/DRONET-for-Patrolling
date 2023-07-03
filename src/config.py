@@ -1,6 +1,6 @@
 
 from src.utilities.utilities import xor
-from src.constants import PatrollingProtocol, DependentVariable, LearningHyperParameters, RLRewardType
+from src.constants import OnlinePatrollingProtocol, DependentVariable, LearningHyperParameters, RLRewardType
 import numpy as np
 import os
 
@@ -33,7 +33,7 @@ class Configuration:
 
         self.DRONES_NUMBER = 1                                             # int: number of drones.
         self.DRONE_SPEED = 15                                              # 15 m/s = 54 km/h   # float: m/s, drone speed.
-        self.DRONE_PATROLLING_POLICY = PatrollingProtocol.RANDOM_MOVEMENT  #
+        self.DRONE_PATROLLING_POLICY = OnlinePatrollingProtocol.RANDOM_MOVEMENT  #
         self.DRONE_MAX_ENERGY = int(2 * self.HOUR)                         # int: max energy of a drone steps
 
         self.N_EPOCHS = 1                           # how many times you will see the same scenario
@@ -53,10 +53,10 @@ class Configuration:
 
         # algorithms to play with
         self.VALIDATION_ALGORITHMS = [
-            PatrollingProtocol.GO_MIN_SUM_RESIDUAL,
-            PatrollingProtocol.RANDOM_MOVEMENT,
-            PatrollingProtocol.GO_MIN_RESIDUAL,
-            PatrollingProtocol.GO_MAX_AOI
+            OnlinePatrollingProtocol.GO_MIN_SUM_RESIDUAL,
+            OnlinePatrollingProtocol.RANDOM_MOVEMENT,
+            OnlinePatrollingProtocol.GO_MIN_RESIDUAL,
+            OnlinePatrollingProtocol.GO_MAX_AOI
         ]
 
         self.VALIDATION_DEP_VARS = [
@@ -185,10 +185,10 @@ class Configuration:
         return np.sqrt(self.ENV_WIDTH**2 + self.ENV_HEIGHT**2) / self.DRONE_SPEED
 
     def is_rl_training(self):
-        return self.DRONE_PATROLLING_POLICY == PatrollingProtocol.RL_DECISION_TRAIN
+        return self.DRONE_PATROLLING_POLICY == OnlinePatrollingProtocol.RL_DECISION_TRAIN
 
     def is_rl_testing(self):
-        return self.DRONE_PATROLLING_POLICY == PatrollingProtocol.RL_DECISION_TEST
+        return self.DRONE_PATROLLING_POLICY == OnlinePatrollingProtocol.RL_DECISION_TEST
 
     def max_times_violation(self):
         return 1000

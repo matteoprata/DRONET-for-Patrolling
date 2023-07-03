@@ -54,14 +54,14 @@ def parser_cl_arguments(configuration: Configuration):
     configuration.EPISODE_DURATION = args["EPISODE_DURATION"]
 
     if type(args["DRONE_PATROLLING_POLICY"]) == str:
-        if is_enum_key(args["DRONE_PATROLLING_POLICY"], cst.PatrollingProtocol):
-            configuration.DRONE_PATROLLING_POLICY = cst.PatrollingProtocol[args["DRONE_PATROLLING_POLICY"]]
+        if is_enum_key(args["DRONE_PATROLLING_POLICY"], cst.OnlinePatrollingProtocol):
+            configuration.DRONE_PATROLLING_POLICY = cst.OnlinePatrollingProtocol[args["DRONE_PATROLLING_POLICY"]]
         elif is_enum_key(args["DRONE_PATROLLING_POLICY"], cst.PrecomputedPatrollingProtocol):
             configuration.DRONE_PATROLLING_POLICY = cst.PrecomputedPatrollingProtocol[args["DRONE_PATROLLING_POLICY"]]
     else:
         configuration.DRONE_PATROLLING_POLICY = args["DRONE_PATROLLING_POLICY"]  # ?
 
-    if configuration.DRONE_PATROLLING_POLICY == cst.PatrollingProtocol.RL_DECISION_TEST:
+    if configuration.DRONE_PATROLLING_POLICY == cst.OnlinePatrollingProtocol.RL_DECISION_TEST:
         if os.path.exists(args["MODEL_PATH"]):
             configuration.RL_BEST_MODEL_PATH = args["MODEL_PATH"]
         else:

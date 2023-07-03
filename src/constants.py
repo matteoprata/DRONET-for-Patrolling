@@ -5,6 +5,7 @@ from src.patrolling.base_max_aoi import MaxAOIPolicy
 from src.patrolling.base_random import RandomPolicy
 from src.patrolling.base_max_sum_aoi_ratio import MaxSumResidualPolicy
 from src.patrolling.base_max_aoi_ratio import MaxAOIRatioPolicy
+from src.patrolling.base_clustering_max_aoi_ratio import ClusterMaxAOIRatioPolicy
 
 from src.patrolling.base_clustering_tsp import ClusteringTSP
 
@@ -44,7 +45,7 @@ class EpisodeType(Enum):
     VAL = "validation"
 
 
-class PatrollingProtocol(Enum):
+class OnlinePatrollingProtocol(Enum):
     FREE = 1
     RL_DECISION_TRAIN = 0
     RL_DECISION_TEST    = 2
@@ -53,6 +54,7 @@ class PatrollingProtocol(Enum):
     GO_MAX_AOI          = MaxAOIPolicy
     GO_MIN_RESIDUAL     = MaxAOIRatioPolicy
     GO_MIN_SUM_RESIDUAL = MaxSumResidualPolicy
+    CLUSTER_GO_MIN_RESIDUAL = ClusterMaxAOIRatioPolicy
 
 
 class PrecomputedPatrollingProtocol(Enum):

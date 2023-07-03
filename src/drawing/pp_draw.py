@@ -156,7 +156,7 @@ class PathPlanningDrawer:
         self.__draw_distance_radar(coords[0], coords[1], drone.radar_range)
         self.__reset_pen()
 
-        if self.config.PLOT_TRAJECTORY_NEXT_TARGET and not self.simulator.drone_mobility == src.constants.PatrollingProtocol.FREE:
+        if self.config.PLOT_TRAJECTORY_NEXT_TARGET and not self.simulator.drone_mobility == src.constants.OnlinePatrollingProtocol.FREE:
             self.__draw_next_target(drone.coords, drone.next_target_coo())
 
     def __validate_rew(self, drone, cur_step):
@@ -294,7 +294,7 @@ class PathPlanningDrawer:
         # index
         stddraw.text(drone.coords[0], drone.coords[1] + (drone.com_range / 2.0), "id: " + str(drone.identifier))
         # state_prime action
-        # if self.sim.drone_mobility == src.constants.PatrollingProtocol.RL_DECISION_TRAIN:
+        # if self.sim.drone_mobility == src.constants.OnlinePatrollingProtocol.RL_DECISION_TRAIN:
         #     lt = self.sim.environment.drones[0].rl_module.previous_learning_tuple
         #     if lt is not None:
         #         s, a, s_prime, r = lt

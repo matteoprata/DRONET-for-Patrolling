@@ -84,7 +84,7 @@ def run():
 def parser_cl_arguments(configuration: Configuration):
     """ Parses the arguments for the command line. """
 
-    configuration.DRONE_PATROLLING_POLICY = cst.PatrollingProtocol.RL_DECISION_TRAIN
+    configuration.DRONE_PATROLLING_POLICY = cst.OnlinePatrollingProtocol.RL_DECISION_TRAIN
 
     configuration.N_EPOCHS = 200
     configuration.N_EPISODES_TRAIN = 30

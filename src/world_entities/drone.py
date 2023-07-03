@@ -12,6 +12,7 @@ from src.patrolling.base_max_aoi import MaxAOIPolicy
 from src.patrolling.base_random import RandomPolicy
 from src.patrolling.base_max_sum_aoi_ratio import MaxSumResidualPolicy
 from src.patrolling.base_max_aoi_ratio import MaxAOIRatioPolicy
+from src.patrolling.base_clustering_max_aoi_ratio import ClusterMaxAOIRatioPolicy
 
 from src.config import Configuration
 import src.constants as cst
@@ -88,7 +89,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
             self.__movement(self.angle)
             return
 
-        if protocol == co.PatrollingProtocol.RL_DECISION_TRAIN:
+        if protocol == co.OnlinePatrollingProtocol.RL_DECISION_TRAIN:
             if self.will_reach_target_now():
                 self.coords = self.next_target_coo()  # this instruction sets the position of the drone on top of the target (useful due to discrete time)
 
@@ -102,7 +103,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 # print(self.identifier, self.sim.rl_module.state_prime(self))
                 self.__update_next_target_upon_reach(target)
 
-        elif protocol == co.PatrollingProtocol.RL_DECISION_TEST:
+        elif protocol == co.OnlinePatrollingProtocol.RL_DECISION_TEST:
             if self.will_reach_target_now():
                 self.coords = self.next_target_coo()  # this instruction sets the position of the drone on top of the target (useful due to discrete time)
 
@@ -115,42 +116,52 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 # print(self.identifier, self.sim.rl_module.state_prime(self))
                 self.__update_next_target_upon_reach(target)
 
-        elif protocol == co.PatrollingProtocol.RANDOM_MOVEMENT:
-            if self.will_reach_target_now():
-                self.coords = self.next_target_coo()  # this instruction sets the position of the drone on top of the target (useful due to discrete time)
-                self.__handle_metrics()
-                self.__update_target_time_visit_upon_reach()
-                policy = RandomPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
-                target = policy.next_visit()
-                self.__update_next_target_upon_reach(target)
+        # elif protocol == co.OnlinePatrollingProtocol.RANDOM_MOVEMENT:
+        #     if self.will_reach_target_now():
+        #         self.coords = self.next_target_coo()  # this instruction sets the position of the drone on top of the target (useful due to discrete time)
+        #         self.__handle_metrics()
+        #         self.__update_target_time_visit_upon_reach()
+        #         policy = RandomPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
+        #         target = policy.next_visit()
+        #         self.__update_next_target_upon_reach(target)
+        #
+        # elif protocol == co.OnlinePatrollingProtocol.GO_MAX_AOI:
+        #     if self.will_reach_target_now():
+        #         self.coords = self.next_target_coo()
+        #         self.__handle_metrics()
+        #         self.__update_target_time_visit_upon_reach()
+        #
+        #         policy = MaxAOIPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
+        #         target = policy.next_visit()
+        #         self.__update_next_target_upon_reach(target)
+        #
+        # elif protocol == co.OnlinePatrollingProtocol.GO_MIN_RESIDUAL:
+        #     if self.will_reach_target_now():
+        #         self.coords = self.next_target_coo()
+        #         self.__handle_metrics()
+        #         self.__update_target_time_visit_upon_reach()
+        #
+        #         policy = MaxAOIRatioPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
+        #         target = policy.next_visit()
+        #         self.__update_next_target_upon_reach(target)
+        #
+        # elif protocol == co.OnlinePatrollingProtocol.GO_MIN_SUM_RESIDUAL:
+        #     if self.will_reach_target_now():
+        #         self.coords = self.next_target_coo()
+        #         self.__handle_metrics()
+        #         self.__update_target_time_visit_upon_reach()
+        #
+        #         policy = MaxSumResidualPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
+        #         target = policy.next_visit()
+        #         self.__update_next_target_upon_reach(target)
 
-        elif protocol == co.PatrollingProtocol.GO_MAX_AOI:
+        elif type(protocol) == co.OnlinePatrollingProtocol:  # co.OnlinePatrollingProtocol.CLUSTER_GO_MIN_RESIDUAL:
             if self.will_reach_target_now():
                 self.coords = self.next_target_coo()
                 self.__handle_metrics()
                 self.__update_target_time_visit_upon_reach()
 
-                policy = MaxAOIPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
-                target = policy.next_visit()
-                self.__update_next_target_upon_reach(target)
-
-        elif protocol == co.PatrollingProtocol.GO_MIN_RESIDUAL:
-            if self.will_reach_target_now():
-                self.coords = self.next_target_coo()
-                self.__handle_metrics()
-                self.__update_target_time_visit_upon_reach()
-
-                policy = MaxAOIRatioPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
-                target = policy.next_visit()
-                self.__update_next_target_upon_reach(target)
-
-        elif protocol == co.PatrollingProtocol.GO_MIN_SUM_RESIDUAL:
-            if self.will_reach_target_now():
-                self.coords = self.next_target_coo()
-                self.__handle_metrics()
-                self.__update_target_time_visit_upon_reach()
-
-                policy = MaxSumResidualPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
+                policy = protocol.value(self, self.simulator.environment.drones, self.simulator.environment.targets)  # ClusterMaxAOIRatioPolicy(self, self.simulator.environment.drones, self.simulator.environment.targets)
                 target = policy.next_visit()
                 self.__update_next_target_upon_reach(target)
 
@@ -162,7 +173,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 target = self.simulator.policy.next_visit(self)
                 self.__update_next_target_upon_reach(target)
 
-        elif protocol == co.PatrollingProtocol.FREE:
+        elif protocol == co.OnlinePatrollingProtocol.FREE:
             if self.will_reach_target_now():
                 self.__update_target_time_visit_upon_reach()
 
@@ -172,7 +183,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
 
     def __set_next_target_angle(self):
         """ Set the angle of the next target """
-        if self.patrolling_protocol != src.constants.PatrollingProtocol.FREE:
+        if self.patrolling_protocol != src.constants.OnlinePatrollingProtocol.FREE:
             horizontal_coo = np.array([self.coords[0] + 1, self.coords[1]])
             self.angle = angle_between_three_points(self.next_target_coo(), np.array(self.coords), horizontal_coo)
 

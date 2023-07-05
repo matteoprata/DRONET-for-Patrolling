@@ -174,11 +174,11 @@ class Environment(ObstacleHandler):
             return [self.simulator.cf.TARGETS_TOLERANCE_FIXED] * len(target_coords)  # +1 in case
 
         elif scen == ToleranceScenario.UNIFORM:
-            LOW, HIGH = 0, 500
+            LOW, HIGH = 0, 300
             return np.random.randint(LOW, HIGH, len(target_coords))
 
         elif scen == ToleranceScenario.NORMAL:
-            LOC, SCALE = 250, 250 * .25
+            LOC, SCALE = 150, 250 * .25
             thetas = np.random.normal(LOC, SCALE, len(target_coords))
             thetas = [int(t) for t in thetas]
             return thetas

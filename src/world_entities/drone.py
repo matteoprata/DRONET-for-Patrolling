@@ -34,6 +34,7 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
         AntennaEquippedDevice.__init__(self)
 
         self.sim = simulator
+        self.speed = simulator.drone_speed_meters_sec
         self.cf: Configuration = self.simulator.cf
         self.patrolling_protocol = patrolling_protocol
         self.angle, self.speed = angle, speed

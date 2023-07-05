@@ -9,6 +9,7 @@ from src.patrolling.base_clustering_max_aoi_ratio import ClusterMaxAOIRatioPolic
 
 from src.patrolling.base_clustering_tsp import ClusteringTSP
 from src.patrolling.peppe_clustering_tsp import PeppeClusteringTSP
+from src.patrolling.ours import Ours
 
 """
 This file contains all the constants of the sim.
@@ -73,6 +74,7 @@ class OnlinePatrollingProtocol(Enum):
 class PrecomputedPatrollingProtocol(Enum):
     MULTI_TSP = ClusteringTSP
     PEPPE_CLUSTERING = PeppeClusteringTSP
+    OURS = Ours
 
 
 class TargetFamily(Enum):

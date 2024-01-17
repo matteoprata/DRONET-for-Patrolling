@@ -6,6 +6,7 @@ from src.patrolling.base_random import RandomPolicy
 from src.patrolling.base_max_sum_aoi_ratio import MaxSumResidualPolicy
 from src.patrolling.base_max_aoi_ratio import MaxAOIRatioPolicy
 from src.patrolling.base_clustering_max_aoi_ratio import ClusterMaxAOIRatioPolicy
+from src.patrolling.base_infocom import INFOCOM_Patrol
 
 from src.patrolling.base_clustering_tsp import ClusteringTSP
 from src.patrolling.peppe_clustering_tsp import PeppeClusteringTSP
@@ -75,6 +76,7 @@ class PrecomputedPatrollingProtocol(Enum):
     MULTI_TSP = ClusteringTSP
     PEPPE_CLUSTERING = PeppeClusteringTSP
     OURS = Ours
+    INFOCOM = INFOCOM_Patrol
 
 
 class TargetFamily(Enum):
@@ -145,7 +147,7 @@ class JSONFields(Enum):
     DRONE_NUMBER = "DRONE_NUMBER"
     TARGET_NUMBER = "TARGET_NUMBER"
     DRONE_SPEED = "DRONE_SPEED"
-    TOLERANCE_FACTOR = "TOLERANCE_FACTOR"
+    GEOGRAPHIC_SCENARIO = "GEOGRAPHIC_SCENARIO"
     TOLERANCE_SCENARIO = "TARGETS_TOLERANCE_SCENARIO"
 
 

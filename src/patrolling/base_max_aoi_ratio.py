@@ -17,6 +17,8 @@ class MaxAOIRatioPolicy(PatrollingPolicy):
         chosen_target = None
         least_ratio = np.inf
         for t in self.set_targets:
+            if t.identifier == 0:
+                continue
             temp = t.AOI_tolerance_ratio()
             # set the target visited furthest in the past and has lest tolerance
             if t.lock is None and temp < least_ratio:

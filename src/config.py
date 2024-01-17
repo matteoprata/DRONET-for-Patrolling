@@ -173,13 +173,13 @@ class Configuration:
         self.IS_HIDE_PROGRESS_BAR = False
 
     def conf_description(self):
-        return "seed={}_nd={}_nt={}_pol={}_sp={}_tolscen={}_tolfixed={}".format(self.SEED,
+        return "seed={}_nd={}_nt={}_pol={}_sp={}_tolscen={}_geoscen={}".format(self.SEED,
                                                                                 self.DRONES_NUMBER,
                                                                                 self.TARGETS_NUMBER,
                                                                                 self.DRONE_PATROLLING_POLICY.name,
                                                                                 self.DRONE_SPEED,
                                                                                 self.TARGETS_TOLERANCE_SCENARIO.name,
-                                                                                self.TARGETS_TOLERANCE_FIXED)
+                                                                                self.TARGETS_POSITION_SCENARIO.name)
 
     def n_tot_episodes(self):
         return self.N_EPISODES_TRAIN + self.N_EPISODES_TEST + self.N_EPISODES_VAL
@@ -220,4 +220,4 @@ class Configuration:
             print("Check on condition(s) {} did not pass.".format(id_fails))
             exit()
 
-        print("🫡✅ All sanity checks of the configurations passed.")
+        print("🫡✅ All configuration sanity checks passed.")

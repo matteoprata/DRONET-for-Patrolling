@@ -33,14 +33,14 @@ class MetricsLog:
     def to_json(self):
         return self.to_store_dictionary
 
-    def set_episode_details(self, idd, algo, drone_number, target_number, drone_speed, tol_factor):
+    def set_episode_details(self, idd, algo, drone_number, target_number, drone_speed, geo_scen):
         self.to_store_dictionary[JSONFields.SIMULATION_INFO.value][JSONFields.VAL_EPISODE_ID.value] = idd
         self.to_store_dictionary[JSONFields.SIMULATION_INFO.value][JSONFields.VAL_EPISODE_ALGO.value] = algo
 
         self.to_store_dictionary[JSONFields.SIMULATION_INFO.value][JSONFields.DRONE_NUMBER.value] = drone_number
         self.to_store_dictionary[JSONFields.SIMULATION_INFO.value][JSONFields.TARGET_NUMBER.value] = target_number
         self.to_store_dictionary[JSONFields.SIMULATION_INFO.value][JSONFields.DRONE_SPEED.value] = drone_speed
-        self.to_store_dictionary[JSONFields.SIMULATION_INFO.value][JSONFields.TOLERANCE_FACTOR.value] = tol_factor
+        self.to_store_dictionary[JSONFields.SIMULATION_INFO.value][JSONFields.GEOGRAPHIC_SCENARIO.value] = geo_scen
 
     def fname_generator(self):
         # independent variables

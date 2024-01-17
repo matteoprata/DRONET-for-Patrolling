@@ -32,6 +32,7 @@ class MaxSumResidualPolicy(PatrollingPolicy):
 
             # print("min ->", min_res_list, target_1.identifier)
             max_min_res_list[ti] = np.sum(min_res_list)
+            max_min_res_list[0] = np.inf  # ignore the base station
         max_min_res_tar = self.set_targets[np.argmin(max_min_res_list)]
 
         # print("max_min ->", max_min_res_list, max_min_res_tar.identifier)

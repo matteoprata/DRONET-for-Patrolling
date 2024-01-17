@@ -43,7 +43,7 @@ def __data_matrix_multiple_exps(setup_file, independent_variable):
                                             n_drones               = stp.indv_fixed[indv.DRONES_NUMBER],
                                             n_targets              = stp.indv_fixed[indv.TARGETS_NUMBER],
                                             drone_speed_meters_sec = stp.indv_fixed[indv.DRONE_SPEED],
-                                            tolerance_factor       = stp.indv_fixed[indv.TARGETS_TOLERANCE_FIXED],
+                                            geographic_scenario= stp.indv_fixed[indv.TARGETS_POSITION_SCENARIO].name,
                                             tolerance_scenario     = stp.indv_fixed[indv.TARGETS_TOLERANCE_SCENARIO].name)
 
                     met.load_metrics()
@@ -150,7 +150,7 @@ def plot_stats_single_seed(setup, seed, algorithm):
                             n_drones=setup.indv_fixed[indv.DRONES_NUMBER],
                             n_targets=setup.indv_fixed[indv.TARGETS_NUMBER],
                             drone_speed_meters_sec=setup.indv_fixed[indv.DRONE_SPEED],
-                            tolerance_factor=setup.indv_fixed[indv.TARGETS_TOLERANCE_SCALE],
+                            geographic_scenario=setup.indv_fixed[indv.TARGETS_POSITION_SCENARIO],
                             tolerance_scenario=setup.indv_fixed[indv.TARGETS_TOLERANCE_SCENARIO].name)
     # N 1
     X, Yavg = met.plot_avg_aoi()
@@ -178,7 +178,11 @@ if __name__ == '__main__':
     # python -m src.main_metrics
 
     # X, Y
-    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.CUMULATIVE_DELAY_AR, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)
-    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)
+    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.CUMULATIVE_DELAY_AR, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
+    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
+    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.WORST_AGE, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
+    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.WORST_DELAY, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
+    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.VIOLATION_NUMBER, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
+
     # plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.WORST_AGE, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)
     # plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.WORST_DELAY, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)

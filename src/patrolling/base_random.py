@@ -13,6 +13,6 @@ class RandomPolicy(PatrollingPolicy):
 
     def next_visit(self):
         """ Returns a random target. """
-        target_id = self.patrol_drone.sim.rnd_explore.randint(0, len(self.patrol_drone.sim.environment.targets))
+        target_id = self.patrol_drone.sim.rnd_explore.randint(1, len(self.patrol_drone.sim.environment.targets))
         target = self.patrol_drone.sim.environment.targets[target_id]
         return target

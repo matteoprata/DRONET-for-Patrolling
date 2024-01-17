@@ -78,8 +78,22 @@ def is_enum_key(key:str, enum):
 
 
 if __name__ == "__main__":
-    conf = Configuration()
-    parser_cl_arguments(conf)
-    main(conf)
+    # conf = Configuration()
+    # parser_cl_arguments(conf)
+    # main(conf)
 
+    configuration = Configuration()
+
+    configuration.SEED = 1
+    configuration.PLOT_SIM = True
+    configuration.TARGETS_NUMBER = 10
+    configuration.DRONE_SPEED = 5
+    configuration.TARGETS_POSITION_SCENARIO = cst.PositionScenario.CLUSTERED
+
+    configuration.EPISODE_DURATION = 500
+    configuration.N_EPISODES_TRAIN = 5
+    configuration.N_EPISODES_TEST = 5
+    configuration.N_EPISODES_VAL = 5
+
+    main(configuration)
 

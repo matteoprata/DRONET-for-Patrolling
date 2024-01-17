@@ -257,7 +257,8 @@ class PatrollingSimulator:
 
             self.cur_step = 0
             self.metricsV2 = MetricsLog(self)
-            self.metricsV2.set_episode_details(epi, protocol.name, self.cf.DRONES_NUMBER, self.cf.TARGETS_NUMBER, self.cf.DRONE_SPEED, self.cf.TARGETS_TOLERANCE_FIXED)
+            self.metricsV2.set_episode_details(epi, protocol.name, self.cf.DRONES_NUMBER, self.cf.TARGETS_NUMBER,
+                                               self.cf.DRONE_SPEED, self.cf.TARGETS_POSITION_SCENARIO.name)
 
             self.prepare_drones_routes(self.cf.DRONE_PATROLLING_POLICY)  # assign a schedule to the drone
             for cur_step in tqdm(range(self.cf.EPISODE_DURATION), desc='step', leave=False, disable=self.cf.IS_HIDE_PROGRESS_BAR):
@@ -429,7 +430,7 @@ class PatrollingSimulator:
                                 n_drones=self.n_drones,
                                 n_targets=self.n_targets,
                                 drone_speed_meters_sec=self.drone_speed_meters_sec,
-                                tolerance_factor=self.tolerance_factor,
+                                geographic_scenario=self.cf.TARGETS_POSITION_SCENARIO.name,
                                 tolerance_scenario=self.cf.TARGETS_TOLERANCE_SCENARIO.name)
 
         plt.clf()

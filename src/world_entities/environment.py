@@ -166,8 +166,8 @@ class Environment(ObstacleHandler):
         self.targets_dataset[EpisodeType.TEST].append(epoch_targets)
         return self.targets_dataset
 
-    def tolerances_function(self, target_coords):
-        """ returns the thresholds for every target, based on the scenario"""
+    def tolerances_function(self, target_coords, clusters_split):
+        """ KEY: returns the thresholds for every target, based on the scenario"""
         scen = self.simulator.cf.TARGETS_TOLERANCE_SCENARIO
 
         if scen == ToleranceScenario.CONSTANT:
@@ -184,45 +184,49 @@ class Environment(ObstacleHandler):
             return thetas
 
         elif scen == ToleranceScenario.CLUSTERED:
-            N_CLUSTERS = min(5, len(target_coords))
-            LOW, HIGH = 0, 500
-            THRESHOLDS = np.random.randint(LOW, HIGH, N_CLUSTERS)
-            clusters = clustering_kmeans(target_coords, N_CLUSTERS)
-            thetas = [THRESHOLDS[clu] for clu in clusters]
+            N_CLUSTERS = len(clusters_split)
+            thetas = []
+            for i, clus in enumerate(clusters_split):
+                LOW, HIGH = 0, 500
+                THRESHOLDS = np.random.randint(LOW, HIGH, N_CLUSTERS)
+                thetas += [THRESHOLDS[i] for _ in clus]
+
             return thetas
 
     def positions_function(self):
-        """ Returns the coordinates for every """
+        """ KEY: Returns the coordinates of the targets. Both in a UNIFORM deployment and CLUSTERED. """
 
         scen = self.simulator.cf.TARGETS_POSITION_SCENARIO
         coordinates = []
+        clusters_split = []  # contains the coordinates of the N clusters
+
         if scen == PositionScenario.UNIFORM:
             for i in range(self.simulator.n_targets):
                 point_coords = [self.simulator.rnd_env.randint(0, self.width), self.simulator.rnd_env.randint(0, self.height)]
                 coordinates.append(point_coords)
+            print(self.simulator.n_targets)
 
         elif scen == PositionScenario.CLUSTERED:
-            N_EPICENTERS_DISTRIBS = np.array([1/2, 1/4, 1/8, 1/8])
+            N_EPICENTERS = 5
+            MAP_SIZE = self.height  # assumed squared
+            POINT_PER_CLUSTER = self.simulator.n_targets // N_EPICENTERS
+            SPARE = self.simulator.n_targets - (POINT_PER_CLUSTER * N_EPICENTERS)
+            SPREAD = 20  # higher the tighter
 
-            EPI_POS = [[self.height/4, self.width/4],
-                       [self.height/4, 3*self.width/4],
-                       [3*self.height/4, self.width/4],
-                       [3*self.height/4, 3*self.width/4]]
+            epicenters = np.random.rand(N_EPICENTERS, 2) * MAP_SIZE
+            for epicenter in epicenters:
+                cluster = epicenter + np.random.randn(POINT_PER_CLUSTER, 2) * MAP_SIZE / SPREAD
+                cluster = np.clip(cluster, 0, MAP_SIZE)
+                coordinates.extend(cluster)
+                clusters_split.append(cluster)
 
-            WIDTH = .9
-            LOW, HIGH = WIDTH * self.width / 6,  WIDTH * self.width / 4
-            rads = np.random.uniform(LOW, HIGH, len(N_EPICENTERS_DISTRIBS))  # radius of claster
-            rads = sorted(rads)
+            if SPARE > 0:
+                cluster = epicenters[0] + np.random.randn(SPARE, 2) * MAP_SIZE / SPREAD
+                cluster = np.clip(cluster, 0, MAP_SIZE)
+                coordinates.extend(cluster)
+                clusters_split[0].append(cluster)
 
-            N_TARS = N_EPICENTERS_DISTRIBS * self.simulator.n_targets
-            N_TARS = [int(t) for t in N_TARS]
-            N_TARS[-1] = self.simulator.n_targets - sum(N_TARS[:-1])
-            print(rads, N_TARS)
-
-            for i, (epi_x, epi_y) in enumerate(EPI_POS):
-                coordinates += generate_random_coordinates_in_circle(epi_x, epi_y, rads[i], N_TARS[i])
-
-        return coordinates
+        return coordinates, clusters_split
 
     def generate_target_combinations(self):
         """
@@ -245,8 +249,8 @@ class Environment(ObstacleHandler):
 
         for et, en in epi_type:
             for ep in range(en):
-                coordinates = self.positions_function()
-                thetas = self.tolerances_function(coordinates)
+                coordinates, clusters_split = self.positions_function()
+                thetas = self.tolerances_function(coordinates, clusters_split)
 
                 for i in range(self.simulator.n_targets):  # set the threshold for the targets
                     idleness = thetas[i]  # self.simulator.cf.TARGETS_TOLERANCE_FIXED

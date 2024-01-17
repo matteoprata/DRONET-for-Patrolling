@@ -23,7 +23,7 @@ class Ours(PrecomputedPolicy):
         def benefit_of_cluster(target_to_visit_coo, target_to_visit, ndrones):
             tsp_path = Christofides().compute_from_coordinates(target_to_visit_coo, 0)
             # min_period = np.min([t.maximum_tolerated_idleness for t in target_to_visit]) * self.set_drones[0].simulator.cf.SIM_TS_DURATION
-            sum_period = np.sum([t.maximum_tolerated_idleness for t in target_to_visit]) # * self.set_drones[0].simulator.cf.SIM_TS_DURATION
+            sum_period = np.sum([t.maximum_tolerated_idleness for t in target_to_visit])  # * self.set_drones[0].simulator.cf.SIM_TS_DURATION
 
             tsp_coo = np.array(target_to_visit_coo)[tsp_path]
             tsp_period = self.tsp_length(tsp_coo) / self.set_drones[0].speed
@@ -38,7 +38,7 @@ class Ours(PrecomputedPolicy):
                 return {0: tsp_path[0]}
 
             drones_split = {k:None for k in range(nsplit)} # map the drone to the starting node
-            #tsp_path = tsp_per_cluster #Christofides().compute_from_coordinates(coords, 0)  # [0,2,4,5,3,2,1]
+            # tsp_path = tsp_per_cluster #Christofides().compute_from_coordinates(coords, 0)  # [0,2,4,5,3,2,1]
             tsp_cum_len = np.zeros(shape=len(tsp_path))
 
             for i in range(len(tsp_path) - 1):

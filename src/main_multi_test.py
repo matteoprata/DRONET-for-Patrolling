@@ -84,6 +84,15 @@ def parser_cl_arguments(configuration: Configuration):
 # python -m src.main_multi_test -set IOT -par 0 -pl 1
 
 if __name__ == "__main__":
-    conf = Configuration()
-    parser_cl_arguments(conf)
-    main_multi_test(conf)
+    # conf = Configuration()
+    # parser_cl_arguments(conf)
+    # main_multi_test(conf)
+
+    configuration = Configuration()
+
+    configuration.EPISODE_DURATION = 10000
+    configuration.SETUP_NAME = 'SETUP0'
+    configuration.IS_PARALLEL_EXECUTION = True
+    configuration.PLOT_SIM = not configuration.IS_PARALLEL_EXECUTION
+
+    main_multi_test(configuration)

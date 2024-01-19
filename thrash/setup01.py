@@ -1,49 +1,31 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.cluster import KMeans
-from sklearn.datasets import make_blobs
-from mpl_toolkits.mplot3d import Axes3D
 
-# Example with randomly generated 3D data
-np.random.seed(42)
-X, _ = make_blobs(n_samples=300, centers=4, cluster_std=1.0, random_state=42)
-X = np.column_stack((X, np.random.rand(300)))  # Adding a third dimension
 
-# Range of k values to test
-k_values = range(1, 11)
+def generate_2d_smile_gaussian(width, epicenter_position, sigma):
+    x, y = np.meshgrid(np.linspace(0, width-1, width), np.linspace(0, width-1, width))
+    d = np.sqrt((x - epicenter_position[0])**2 + (y - epicenter_position[1])**2)
+    values = np.exp(-(d**2) / (2 * sigma**2))
+    return values
 
-# Plot the data points in 3D
-fig = plt.figure()
-ax = fig.add_subplot(121, projection='3d')
+# Set parameters
+WIDTH = 100
+EPICENTER_POSITION = (50, 50)  # Center of the area
+SIGMA = 20  # Adjust this parameter to control the spread of the values
 
-# Perform k-means clustering for k=4 (for example)
-kmeans = KMeans(n_clusters=4, random_state=42)
-labels = kmeans.fit_predict(X)
+# Generate 2D smile Gaussian distribution
+smile_values = generate_2d_smile_gaussian(WIDTH, EPICENTER_POSITION, SIGMA)
 
-# Assign different colors to clusters
-colors = ['r', 'g', 'b', 'y']
-for i in range(4):
-    cluster_points = X[labels == i]
-    ax.scatter(cluster_points[:, 0], cluster_points[:, 1], cluster_points[:, 2], label=f'Cluster {i}', c=colors[i])
+# Access values using values[x][y]
+for i in range(0, 40):
+    x_coord = 50+i
+    y_coord = 50
+    print(f"Value at ({x_coord}, {y_coord}): {smile_values[x_coord][y_coord]}")
 
-ax.set_xlabel('X-axis')
-ax.set_ylabel('Y-axis')
-ax.set_zlabel('Z-axis')
-ax.set_title('Data Points')
-ax.legend()
-
-# Plot the elbow curve
-ax = fig.add_subplot(122)
-inertia_values = []
-for k in k_values:
-    kmeans = KMeans(n_clusters=k, random_state=42)
-    kmeans.fit(X)
-    labels = kmeans.labels_
-    inertia_values.append(kmeans.inertia_)
-
-ax.plot(k_values, inertia_values, marker='o')
-ax.set_xlabel('Number of Clusters (k)')
-ax.set_ylabel('Inertia')
-ax.set_title('Elbow Method for Optimal k')
-
+# Plot the result
+plt.imshow(smile_values, cmap='viridis', extent=[0, WIDTH-1, 0, WIDTH-1], origin='lower')
+plt.title('2D Smile Gaussian Distribution')
+plt.colorbar(label='Values')
+plt.scatter(*EPICENTER_POSITION, color='red', marker='x', label='Epicenter (Peak)')
+plt.legend()
 plt.show()

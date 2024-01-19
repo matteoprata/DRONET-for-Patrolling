@@ -26,7 +26,7 @@ class INFOCOM_Patrol(PrecomputedPolicy):
 
     def my_solution(self) -> dict:
         ids_targets = {e: t for e, t in enumerate(self.set_targets)}
-        targets_coo = np.array([np.array(list(t.coords)) for t in self.set_targets][1:])  # + [t.maximum_tolerated_idleness]
+        targets_coo = np.array([np.array(list(t.coords) + [t.maximum_tolerated_idleness]) for t in self.set_targets][1:])  # +
         n_drones = len(self.set_drones)
 
         k_values = range(1, n_drones)
@@ -45,6 +45,7 @@ class INFOCOM_Patrol(PrecomputedPolicy):
 
         kneedle = KneeLocator(list(k_values), inertia_values, curve='convex', direction='decreasing')
         elbow_index = kneedle.knee
+
         if elbow_index:
             n_clusters = elbow_index + 1
             n_clusters = min(n_clusters, n_drones)

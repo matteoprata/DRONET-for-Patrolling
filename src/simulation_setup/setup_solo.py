@@ -22,7 +22,7 @@ comp_dims = {indv.SEED: range(1),  # [0, 2, 3, 4, 5],
 
 indv_vary = {
     # indv.DRONE_SPEED: [5, 10, 15, 20, 25],
-    indv.DRONES_NUMBER: [5]  # [1, 2, 5, 10, 15, 20, 25],
+    indv.DRONES_NUMBER: [2]  # [1, 2, 5, 10, 15, 20, 25],
 }
 
 indv_fixed = {
@@ -31,5 +31,5 @@ indv_fixed = {
     indv.TARGETS_NUMBER: 40,
     indv.TARGETS_TOLERANCE_FIXED: 100,
     indv.TARGETS_TOLERANCE_SCENARIO: ToleranceScenario.GAUSSIAN,
-    indv.TARGETS_POSITION_SCENARIO: PositionScenario.UNIFORM,
+    indv.TARGETS_POSITION_SCENARIO: PositionScenario.CLUSTERED,
 }

@@ -166,6 +166,13 @@ class Environment(ObstacleHandler):
         self.targets_dataset[EpisodeType.TEST].append(epoch_targets)
         return self.targets_dataset
 
+    @staticmethod
+    def __generate_2d_smile_gaussian(width, epicenter_position, sigma):
+        x, y = np.meshgrid(np.linspace(0, width - 1, width), np.linspace(0, width - 1, width))
+        d = np.sqrt((x - epicenter_position[0]) ** 2 + (y - epicenter_position[1]) ** 2)
+        values = np.exp(-(d ** 2) / (2 * sigma ** 2))
+        return values
+
     def tolerances_function(self, target_coords, clusters_split):
         """ KEY: returns the thresholds for every target, based on the scenario"""
         scen = self.simulator.cf.TARGETS_TOLERANCE_SCENARIO
@@ -178,9 +185,22 @@ class Environment(ObstacleHandler):
             return np.random.randint(LOW, HIGH, len(target_coords))
 
         elif scen == ToleranceScenario.GAUSSIAN:
-            LOC, SCALE = 150, 250 * .25
-            thetas = np.random.normal(LOC, SCALE, len(target_coords))
-            thetas = [int(t) for t in thetas]
+            # LOC, SCALE = 150, 250 * .25
+            # thetas = np.random.normal(LOC, SCALE, len(target_coords))
+            # thetas = [int(t) for t in thetas]
+            # return thetas
+
+            thetas = []
+            MAX_TH = 300
+            START = 50
+            SIG = 500
+            # Generate 2D smile Gaussian distribution
+            smile_values = self.__generate_2d_smile_gaussian(self.width, (self.width//2, self.width//2), sigma=SIG)
+            for x, y in target_coords:
+                x, y = np.clip(int(x), 0, self.width-1), np.clip(int(y), 0, self.width-1)
+                perc = 1 - smile_values[x][y]
+                theta = START + MAX_TH * perc
+                thetas.append(theta)
             return thetas
 
         elif scen == ToleranceScenario.CLUSTERED:

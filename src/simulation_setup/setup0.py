@@ -16,7 +16,7 @@ comp_dims = {indv.SEED: range(0, 5),  # [0, 2, 3, 4, 5],
                                             # pol.CLUSTER_GO_MIN_RESIDUAL,
                                             pol2.PEPPE_CLUSTERING,
                                             pol2.INFOCOM,
-                                            pol2.MULTI_TSP
+                                            # pol2.MULTI_TSP
                                             ]
              }
 
@@ -31,5 +31,5 @@ indv_fixed = {
     indv.TARGETS_NUMBER: 40,
     indv.TARGETS_TOLERANCE_FIXED: 100,
     indv.TARGETS_TOLERANCE_SCENARIO: ToleranceScenario.GAUSSIAN,
-    indv.TARGETS_POSITION_SCENARIO: PositionScenario.UNIFORM,
+    indv.TARGETS_POSITION_SCENARIO: PositionScenario.CLUSTERED,
 }

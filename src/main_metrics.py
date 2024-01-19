@@ -129,7 +129,8 @@ def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD, 
             elif error_type == ErrorType.STD:
                 error = Y_std
 
-            plt.title("Scenario {}".format(setup.indv_fixed[indv.TARGETS_TOLERANCE_SCENARIO]))
+            plt.title("Scenario geo {}, temp {}".format(setup.indv_fixed[indv.TARGETS_POSITION_SCENARIO].name,
+                                                              setup.indv_fixed[indv.TARGETS_TOLERANCE_SCENARIO].name,))
             plt.errorbar(X, Y, yerr=error, label=setup.comp_dims[indv.DRONE_PATROLLING_POLICY][al].name, # marker=algo_marker[al_id],
                          fillstyle='full')  # color=util.sample_color(map_color[al_id]))
 
@@ -141,6 +142,9 @@ def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD, 
     plt.xlabel(indep_var.value["NAME"])
     plt.ylabel(dep_var.value["NAME"])  # + " (tar-agg {})".format(target_aggregator.__name__))
     plt.tight_layout()
+
+    fname = "{}_{}_{}.pdf".format(str(dep_var), str([v for k, v in setup.indv_fixed.items()]), str([v for k, v in setup.indv_vary.items()]))  #, str(setup.comp_dims))
+    plt.savefig("data/imgs/{}".format(fname))
     plt.show()
 
 

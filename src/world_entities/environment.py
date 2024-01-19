@@ -177,7 +177,7 @@ class Environment(ObstacleHandler):
             LOW, HIGH = 0, 300
             return np.random.randint(LOW, HIGH, len(target_coords))
 
-        elif scen == ToleranceScenario.NORMAL:
+        elif scen == ToleranceScenario.GAUSSIAN:
             LOC, SCALE = 150, 250 * .25
             thetas = np.random.normal(LOC, SCALE, len(target_coords))
             thetas = [int(t) for t in thetas]

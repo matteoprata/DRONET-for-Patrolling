@@ -17,18 +17,23 @@ class ClusteringTSP(PrecomputedPolicy):
         return self.my_solution()  # {0: [0, 1, 2, 4, 2, 3, 0, 3], 1: [3]}
 
     def my_solution(self) -> dict:
-        targets_coo = [np.array(t.coords) for t in self.set_targets][1:]
-
+        targets_coo = np.array([np.array(list(t.coords) + []) for t in self.set_targets][1:])  # + [t.maximum_tolerated_idleness]
         n_drones = len(self.set_drones)
-        kmeans_vals = KMeans(n_clusters=n_drones, random_state=0, n_init="auto").fit(targets_coo)
-        target_clusters = np.array(kmeans_vals.labels_)  # [0, 0, 0, 1, 1, 1, ...]
-        print(target_clusters)
 
+        n_clusters = n_drones
+        print("n_clusters", n_clusters)
+
+        kmeans = KMeans(n_clusters=n_clusters, n_init="auto", random_state=0)
+        kmeans.fit(targets_coo)
+        labels = kmeans.labels_
+        target_clusters = np.array(labels)  # [0, 0, 0, 1, 1, 1, ...]
+
+        # TSP simple
         # drones assignment
         plan = defaultdict(list)
         # plan[0].append(0)
         for id_target, id_drone in enumerate(target_clusters):
-            plan[id_drone].append(id_target+1)
+            plan[id_drone].append(id_target + 1)
 
         # path optimization
         for d in plan:
@@ -37,4 +42,4 @@ class ClusteringTSP(PrecomputedPolicy):
                 tsp_path = Christofides().compute_from_coordinates(target_to_visit, 0)
                 plan[d] = [plan[d][tp] for tp in tsp_path]
 
-        return plan  # {0: [1, 2, 1, 3]}  # plan  # {0: [1, 2]}
+        return plan

@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from src.utilities import utilities as util
 
 from src.simulation_setup import setup0
+from src.simulation_setup import setup_solo
+
 from src.constants import IndependentVariable as indv
 from src.constants import DependentVariable as depv
 from src.constants import ErrorType

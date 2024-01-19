@@ -41,7 +41,7 @@ class ToleranceScenario(Enum):
     CONSTANT = 0
     UNIFORM = 1
     CLUSTERED = 2
-    NORMAL = 3
+    GAUSSIAN = 3
 
 
 class PositionScenario(Enum):
@@ -162,10 +162,12 @@ PATH_STATS = "data/experiments/"
 N_CORES = multiprocessing.cpu_count()-1
 
 from src.simulation_setup import setup0
+from src.simulation_setup import setup_solo
 
 
 class Setups(Enum):
     SETUP0 = setup0
+    SETUP_SOLO = setup_solo
 
 
 TORCH_DEVICE = 'cpu'  # 'cuda' if torch.cuda.is_available() else 'cpu'

@@ -90,9 +90,13 @@ if __name__ == "__main__":
 
     configuration = Configuration()
 
-    configuration.EPISODE_DURATION = 10000
-    configuration.SETUP_NAME = 'SETUP0'
-    configuration.IS_PARALLEL_EXECUTION = True
-    configuration.PLOT_SIM = not configuration.IS_PARALLEL_EXECUTION
+    configuration.EPISODE_DURATION = 100000
 
+    # configuration.SETUP_NAME = 'SETUP0'
+    # configuration.IS_PARALLEL_EXECUTION = True
+
+    configuration.SETUP_NAME = 'SETUP_SOLO'
+    configuration.IS_PARALLEL_EXECUTION = False
+
+    configuration.PLOT_SIM = not configuration.IS_PARALLEL_EXECUTION
     main_multi_test(configuration)

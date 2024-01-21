@@ -95,8 +95,8 @@ if __name__ == "__main__":
     configuration.SETUP_NAME = 'SETUP0'
     configuration.IS_PARALLEL_EXECUTION = True
 
-    # configuration.SETUP_NAME = 'SETUP_SOLO'
-    # configuration.IS_PARALLEL_EXECUTION = False
+    configuration.SETUP_NAME = 'SETUP_SOLO'
+    configuration.IS_PARALLEL_EXECUTION = False
 
     configuration.PLOT_SIM = not configuration.IS_PARALLEL_EXECUTION
     main_multi_test(configuration)

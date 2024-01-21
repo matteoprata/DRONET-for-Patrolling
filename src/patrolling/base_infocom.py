@@ -26,56 +26,127 @@ class INFOCOM_Patrol(PrecomputedPolicy):
         return self.my_solution()  # {0: [0, 1, 2, 4, 2, 3, 0, 3], 1: [3]}
 
     def my_solution(self) -> dict:
-        ids_targets = {e: t for e, t in enumerate(self.set_targets)}
-        targets_coo = np.array([np.array(list(t.coords)) for t in self.set_targets][1:])  # [t.maximum_tolerated_idleness]
+        self.set_targets = self.set_targets[1:]
+
         n_drones = len(self.set_drones)
-        n_targets = len(self.set_targets) - 1
+        n_targets = len(self.set_targets)
 
         distances = self.distances_matrix_targets(self.set_targets, n_targets)
         n_clusters = self.elbow_k_search(n_drones, distances)
-        target_clusters = self.kmeans(n_clusters, distances)
+        target_clusters = self.kmeans(n_clusters, distances)  # [00000000 1111] len of the target NO BS
 
         print("n_clusters", n_clusters)
-
+        # number of drones in each cluster
         if n_drones > n_clusters:
-            clusters_assignments = self.n_drones_cluster(n_clusters, n_drones, ids_targets, target_clusters)
+            clusters_assignments = self.n_drones_cluster(n_clusters, n_drones, self.set_targets, target_clusters)
         else:
             clusters_assignments = [1 for _ in range(n_clusters)]
 
-        plan = self.plan_given_clusters(n_clusters, target_clusters, clusters_assignments, ids_targets)
+        plan = {}
+        drones_so_far = 0
+        # second clustering
+        for c in range(n_clusters):
+            n_drones_cluster = int(clusters_assignments[c])
+            # targets objects in the cluster
+            new_targets_subset = [self.set_targets[tid] for tid in np.where(target_clusters == c)[0]]
+            # targets_coo = np.asarray([np.array(t.coords) for t in targets_cluster_i[:]])
+            print(c+1, n_clusters, new_targets_subset)
+            distances_intern = self.distances_matrix_targets(new_targets_subset, len(new_targets_subset))
+
+            assert n_drones_cluster <= len(new_targets_subset), str(n_drones_cluster)  + "_" + str(len(new_targets_subset))
+            target_clusters_int = self.kmeans(n_drones_cluster, distances_intern)  # cluster nel cluster [0 0 0 1 1 1]
+
+            print("siamo qui", target_clusters_int)
+            for dr in range(n_drones_cluster):
+                tar_ids_for_drone = [new_targets_subset[tid] for tid in np.where(target_clusters_int == dr)[0]]
+                tar_coo = np.asarray([np.array(t.coords) for t in tar_ids_for_drone])
+                if len(tar_coo) > 1:
+                    tsp = Christofides().compute_from_coordinates(tar_coo, 0)
+                else:
+                    tsp = [0]
+                plan[drones_so_far] = [tar_ids_for_drone[i].identifier-1 for i in tsp]
+                drones_so_far += 1
+        print(plan)
+        # plan = self.plan_given_clusters(n_clusters, target_clusters, clusters_assignments, self.set_targets)
         return plan
 
-    def n_drones_cluster(self, n_clusters, n_drones, ids_targets, target_clusters):
+    def n_drones_cluster(self, n_clusters, n_drones, set_targets, target_clusters):
+        UB = 10000
         clusters_tolerances = []
-
+        clusters_crowd = []
         for i in range(n_clusters):
-            targets_cluster_i = [ids_targets[tid] for tid in np.where(target_clusters == i)[0]]
+            targets_cluster_i = [set_targets[tid] for tid in np.where(target_clusters == i)[0]]
             cluster_tolerance = np.min([t.maximum_tolerated_idleness for t in targets_cluster_i])  # low is more urgent
             clusters_tolerances.append(cluster_tolerance)
+            clusters_crowd.append(len(targets_cluster_i))
 
+        clusters_crowd = np.array(clusters_crowd)
+        print(clusters_tolerances)
         clusters_tolerances = 1 / np.array(clusters_tolerances)  # + DRONI = - TOLL highest means [.5, .3, .2] high priority (low thresholds)
         clusters_tolerances /= np.sum(clusters_tolerances)  # [.5, .2, .3]
         print(clusters_tolerances)
         clusters_assignments = clusters_tolerances * (n_drones - n_clusters)
         clusters_assignments = np.floor(clusters_assignments) + 1
 
+        viol = clusters_assignments >= clusters_crowd
+        # print(clusters_assignments, clusters_crowd, viol)
+        # print("crucial")
+        # exit()
+        clusters_assignments[viol] = np.minimum(clusters_crowd, clusters_assignments)[viol]
+        # clusters_tolerances[viol] = (np.ones(shape=clusters_tolerances.shape) * - np.inf)[viol]
+
+        # print(clusters_assignments, clusters_crowd)
+
+        # spare = int(n_drones - np.sum(clusters_assignments))
+        sorted_clusters_tolerances_ix = np.argsort(clusters_tolerances)[::-1]
         spare = int(n_drones - np.sum(clusters_assignments))
-        if spare > 0:  # there are spare drones
-            sorted_clusters_tolerances_ix = np.argsort(list(clusters_tolerances))[::-1]
-            for idx in range(spare):
-                clusters_assignments[sorted_clusters_tolerances_ix[idx]] += 1
+        glob_last_end = 0
+        for _ in range(spare):
+            # print("inizio", glob_last_end)
+            for idx in range(glob_last_end, len(sorted_clusters_tolerances_ix)):
+                # print("idx", idx)
+                # ind = sorted_clusters_tolerances_ix[idx]
+                n_el = clusters_assignments[sorted_clusters_tolerances_ix[idx]]
+                # print(n_el, clusters_crowd[sorted_clusters_tolerances_ix[idx]])
+                glob_last_end += 1
+                glob_last_end %= len(sorted_clusters_tolerances_ix)
+
+                if n_el + 1 <= clusters_crowd[sorted_clusters_tolerances_ix[idx]]:
+                    # print("adding")
+                    # print("aggiungo a", glob_last_end, sorted_clusters_tolerances_ix[idx])
+                    clusters_assignments[sorted_clusters_tolerances_ix[idx]] += 1
+                    break
+
+        # print(clusters_assignments, clusters_crowd)
+        # exit()
+            # for idx in range(len(sorted_clusters_tolerances_ix)):
+            #     idx += glob_last_end
+            #     idx = idx % len(sorted_clusters_tolerances_ix)
+
+
+
+        # ok_indices_to_increase = list(np.where(viol==False)[0])
+        # to_assign = spare
+        # while to_assign > 0:
+        #     sorted_clusters_tolerances_ix = np.argsort(clusters_tolerances)[::-1]
+        #     clusters_assignments[sorted_clusters_tolerances_ix[idx]]
+        # if spare > 0:  # there are spare drones
+        #     sorted_clusters_tolerances_ix = np.argsort(clusters_tolerances)[::-1]
+        #     for idx in range(spare):
+        #         if clusters_assignments[sorted_clusters_tolerances_ix[idx]] + 1
+        #         clusters_assignments[sorted_clusters_tolerances_ix[idx]] += 1
 
         # clusters_assignments how many drone per cluster [ 1. 10.  2.  1.  1.]
         return clusters_assignments
 
-    def plan_given_clusters(self, n_clusters, target_clusters, clusters_assignments, ids_targets):
+    def plan_given_clusters(self, n_clusters, target_clusters, clusters_assignments, set_targets):
         """ Assign clusters to drones and shifts the path accordingly """
         # drones assignment
         plan = defaultdict(list)
 
         clid_tars = {}  # map cluster id : target ids
         for i in range(n_clusters):
-            targets_cluster_i = [ids_targets[tid + 1] for tid in np.where(target_clusters == i)[0]]  # +1 for depot
+            targets_cluster_i = [set_targets[tid] for tid in np.where(target_clusters == i)[0]]  # +1 for depot
             cluster_tids = [t.identifier for t in targets_cluster_i]
             clid_tars[i] = cluster_tids
 
@@ -105,8 +176,8 @@ class INFOCOM_Patrol(PrecomputedPolicy):
     @staticmethod
     def distances_matrix_targets(set_targets, n_targets):
         """ given a set of targets it returns the matrix of residual times"""
-        targets_theta = np.asarray([t.maximum_tolerated_idleness for t in set_targets[1:]])  # 40
-        targets_coo = np.asarray([np.array(t.coords) for t in set_targets[1:]])
+        targets_theta = np.asarray([t.maximum_tolerated_idleness for t in set_targets])  # 40
+        targets_coo = np.asarray([np.array(t.coords) for t in set_targets])
         distances = euclidean_distances(targets_coo, targets_coo)  # 40 x 40 symmetrical
 
         for i in range(n_targets):
@@ -145,7 +216,7 @@ class INFOCOM_Patrol(PrecomputedPolicy):
     @staticmethod
     def kmeans(k, to_fit):
         """ given k it computes the kmeans"""
-        kmeans = KMeans(n_clusters=k, random_state=0)
+        kmeans = KMeans(n_clusters=k, random_state=0, n_init="auto")
         kmeans.fit(to_fit)
         labels = kmeans.labels_
         target_clusters = np.array(labels)  # [0, 0, 0, 1, 1, 1, ...]

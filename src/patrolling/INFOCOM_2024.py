@@ -18,6 +18,10 @@ from sklearn.metrics.pairwise import euclidean_distances
 
 
 class INFOCOM_Patrol(PrecomputedPolicy):
+    name = "BilClust"
+    identifier = 2
+    line_tick = 7
+    marker = 7
 
     def __init__(self, set_drones, set_targets):
         super().__init__(set_drones=set_drones, set_targets=set_targets)
@@ -102,39 +106,14 @@ class INFOCOM_Patrol(PrecomputedPolicy):
         spare = int(n_drones - np.sum(clusters_assignments))
         glob_last_end = 0
         for _ in range(spare):
-            # print("inizio", glob_last_end)
             for idx in range(glob_last_end, len(sorted_clusters_tolerances_ix)):
-                # print("idx", idx)
-                # ind = sorted_clusters_tolerances_ix[idx]
                 n_el = clusters_assignments[sorted_clusters_tolerances_ix[idx]]
-                # print(n_el, clusters_crowd[sorted_clusters_tolerances_ix[idx]])
                 glob_last_end += 1
                 glob_last_end %= len(sorted_clusters_tolerances_ix)
 
                 if n_el + 1 <= clusters_crowd[sorted_clusters_tolerances_ix[idx]]:
-                    # print("adding")
-                    # print("aggiungo a", glob_last_end, sorted_clusters_tolerances_ix[idx])
                     clusters_assignments[sorted_clusters_tolerances_ix[idx]] += 1
                     break
-
-        # print(clusters_assignments, clusters_crowd)
-        # exit()
-            # for idx in range(len(sorted_clusters_tolerances_ix)):
-            #     idx += glob_last_end
-            #     idx = idx % len(sorted_clusters_tolerances_ix)
-
-
-
-        # ok_indices_to_increase = list(np.where(viol==False)[0])
-        # to_assign = spare
-        # while to_assign > 0:
-        #     sorted_clusters_tolerances_ix = np.argsort(clusters_tolerances)[::-1]
-        #     clusters_assignments[sorted_clusters_tolerances_ix[idx]]
-        # if spare > 0:  # there are spare drones
-        #     sorted_clusters_tolerances_ix = np.argsort(clusters_tolerances)[::-1]
-        #     for idx in range(spare):
-        #         if clusters_assignments[sorted_clusters_tolerances_ix[idx]] + 1
-        #         clusters_assignments[sorted_clusters_tolerances_ix[idx]] += 1
 
         # clusters_assignments how many drone per cluster [ 1. 10.  2.  1.  1.]
         return clusters_assignments
@@ -189,7 +168,7 @@ class INFOCOM_Patrol(PrecomputedPolicy):
     def elbow_k_search(self, n_drones, data):
         """ Given the max number of drones available and a set of points, it returns the clusters"""
 
-        k_values = range(1, n_drones)  # [1, 2, 3, 4, ]
+        k_values = range(1, n_drones+1)  # [1, 2, 3, 4, ]
 
         # Plot the elbow curve
         inertia_values = []

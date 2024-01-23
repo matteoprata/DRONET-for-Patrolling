@@ -5,10 +5,10 @@ from src.patrolling.meta_patrolling import PatrollingPolicy
 
 
 class MaxSumResidualPolicy(PatrollingPolicy):
-    name = "Go-Max-Residual-Ratio"
-    identifier = 3
-    line_tick = "-"
-    marker = "+"
+    name = "Max-Residual-Ratio"
+    identifier = 4
+    line_tick = 4
+    marker = 4
 
     def __init__(self, patrol_drone, set_drones, set_targets):
         super().__init__(patrol_drone=patrol_drone, set_drones=set_drones, set_targets=set_targets)

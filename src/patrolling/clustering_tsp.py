@@ -9,6 +9,10 @@ from src.utilities.utilities import Christofides
 
 
 class ClusteringTSP(PrecomputedPolicy):
+    name = "Partition"
+    identifier = 6
+    line_tick = 6
+    marker = 10
 
     def __init__(self, set_drones, set_targets):
         super().__init__(set_drones=set_drones, set_targets=set_targets)
@@ -31,15 +35,15 @@ class ClusteringTSP(PrecomputedPolicy):
         # TSP simple
         # drones assignment
         plan = defaultdict(list)
-        # plan[0].append(0)
         for id_target, id_drone in enumerate(target_clusters):
             plan[id_drone].append(id_target + 1)
 
         # path optimization
         for d in plan:
             target_to_visit = [self.set_targets[tid].coords for tid in plan[d]]
-            if len(target_to_visit) >= 2:
+            if len(target_to_visit) > 1:
                 tsp_path = Christofides().compute_from_coordinates(target_to_visit, 0)
-                plan[d] = [plan[d][tp] for tp in tsp_path]
-
+            else:
+                tsp_path = [0]
+            plan[d] = [plan[d][tp] for tp in tsp_path]
         return plan

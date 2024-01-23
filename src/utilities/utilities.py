@@ -564,3 +564,31 @@ class Christofides:
             else:
                 tour += [(nodes[t_i], nodes[t_i + 1])]
         return tour
+
+
+def sample_marker(index):
+    MARKERS = ["p", "s", "P", "*", "h", "H", "+", "x", "X", "D", "d", "|", "_", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, ".", ",", "o", "v", "^", "<", ">", "1", "2", "3", "4", "8"]
+    return MARKERS[index]
+
+
+def sample_pattern(index):
+    MARKERS = ['/', '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*'] + ['/o', '\\|', '|*', '-\\', '+o', 'x*', 'o-', 'O|', 'O.', '*-']
+    return MARKERS[index]
+
+
+def sample_line(index):
+    MARKERS = ['-', '--', '-.', ':', 'None', ' ', '', 'solid', 'dashed', 'dashdot', 'dotted', 'loosely dotted', 'densely dotted', 'loosely dashed', 'densely dashed', 'loosely dashdotted', 'densely dashdotted', 'loosely dashdotdotted', 'dashdotdotted', 'densely dashdotdotted']
+    return MARKERS[index]
+
+
+def sample_color(index, cmap='tab10'):
+    # 1. Choose your desired colormap
+    cmap = plt.get_cmap(cmap)
+
+    # 2. Segmenting the whole range (from 0 to 1) of the color map into multiple segments
+    colors = [cmap(x) for x in range(cmap.N)]
+    assert index < cmap.N
+
+    # 3. Color the i-th line with the i-th color, i.e. slicedCM[i]
+    color = colors[index]
+    return color

@@ -2,13 +2,14 @@ from enum import Enum
 import multiprocessing
 
 from src.patrolling.base_max_aoi import MaxAOIPolicy
-from src.patrolling.base_random import RandomPolicy
+from src.patrolling.random import RandomPolicy
 from src.patrolling.base_max_sum_aoi_ratio import MaxSumResidualPolicy
 from src.patrolling.base_max_aoi_ratio import MaxAOIRatioPolicy
 from src.patrolling.base_clustering_max_aoi_ratio import ClusterMaxAOIRatioPolicy
-from src.patrolling.base_infocom import INFOCOM_Patrol
+from src.patrolling.INFOCOM_2024 import INFOCOM_Patrol
+from src.patrolling.tsp_cycle import Cycle
 
-from src.patrolling.base_clustering_tsp import ClusteringTSP
+from src.patrolling.clustering_tsp import ClusteringTSP
 from src.patrolling.peppe_clustering_tsp import PeppeClusteringTSP
 from src.patrolling.ours import Ours
 
@@ -73,10 +74,11 @@ class OnlinePatrollingProtocol(Enum):
 
 
 class PrecomputedPatrollingProtocol(Enum):
-    MULTI_TSP = ClusteringTSP
+    PARTITION = ClusteringTSP
     PEPPE_CLUSTERING = PeppeClusteringTSP
     OURS = Ours
     INFOCOM = INFOCOM_Patrol
+    CYCLE = Cycle
 
 
 class TargetFamily(Enum):
@@ -108,11 +110,11 @@ class DependentVariable(Enum):
     AOI_RATIO = {"NAME": "Ratio AOI"}
 
     # distinct target distribution & averaged targets
-    CUMULATIVE_AR =       {"NAME": "Integral AOI"}
-    CUMULATIVE_DELAY_AR = {"NAME": "Cumulative Delay AOI"}
-    WORST_DELAY =         {"NAME": "Worst Delay"}
-    WORST_AGE =           {"NAME": "Worst Age"}
-    VIOLATION_NUMBER =    {"NAME": "Number of Violations"}
+    CUMULATIVE_AR =       {"NAME": "Cumulative AOI ($s$)"}
+    CUMULATIVE_DELAY_AR = {"NAME": "Cumulative AOI delay ($s$)"}
+    WORST_DELAY =         {"NAME": "Worst delay ($s$)"}
+    WORST_AGE =           {"NAME": "Worst age ($s$)"}
+    VIOLATION_NUMBER =    {"NAME": "Number of violations"}
 
 
 class HyperParameters(Enum):

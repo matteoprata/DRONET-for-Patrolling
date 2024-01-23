@@ -31,16 +31,19 @@ class PrecomputedPolicy(PatrollingPolicy):  # PRECOMPUTED
     def add_cyclic_to_visit(self, cyclic_to_visit):
         self.cyclic_to_visit = cyclic_to_visit
 
-    def next_visit(self, drone):
+    def next_visit(self, drone_id):
         """ Called every time the drone reaches a new target"""
-        just_visited_id = self.drone_visit_last[drone.identifier]
-        news_visited_id = just_visited_id + 1 if just_visited_id < len(self.cyclic_to_visit[drone.identifier]) - 1 else 0
-        self.drone_visit_last[drone.identifier] = news_visited_id
-        news_target_id = self.cyclic_to_visit[drone.identifier][news_visited_id]
+        just_visited_id = self.drone_visit_last[drone_id]
+        news_visited_id = just_visited_id + 1 if just_visited_id < len(self.cyclic_to_visit[drone_id]) - 1 else 0
+        self.drone_visit_last[drone_id] = news_visited_id
+        news_target_id = self.cyclic_to_visit[drone_id][news_visited_id]
         return self.set_targets[news_target_id]
 
     def set_tour(self) -> dict:  # must override everywhere
         return dict()
+
+    def set_route_info(self, info):
+        self.route_info = info
 
 
 class RLPolicy(PatrollingPolicy):

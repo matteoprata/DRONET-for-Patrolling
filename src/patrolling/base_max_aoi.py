@@ -4,10 +4,10 @@ from src.patrolling.meta_patrolling import PatrollingPolicy
 
 
 class MaxAOIPolicy(PatrollingPolicy):
-    name = "Go-Max-AOI"
-    identifier = 1
-    line_tick = "-"
-    marker = ">"
+    name = "Max-AOI"
+    identifier = 7
+    line_tick = 2
+    marker = 9
 
     def __init__(self, patrol_drone, set_drones, set_targets):
         super().__init__(patrol_drone=patrol_drone, set_drones=set_drones, set_targets=set_targets)

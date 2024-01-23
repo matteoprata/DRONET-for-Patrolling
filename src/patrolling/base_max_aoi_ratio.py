@@ -4,10 +4,10 @@ from src.patrolling.meta_patrolling import PatrollingPolicy
 
 
 class MaxAOIRatioPolicy(PatrollingPolicy):
-    name = "Go-Max-AOI-Ratio"
-    identifier = 2
-    line_tick = "-"
-    marker = "<"
+    name = "Max-AOI-Ratio"
+    identifier = 3
+    line_tick = 3
+    marker = 3
 
     def __init__(self, patrol_drone, set_drones, set_targets):
         super().__init__(patrol_drone=patrol_drone, set_drones=set_drones, set_targets=set_targets)

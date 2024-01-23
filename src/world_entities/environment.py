@@ -191,9 +191,9 @@ class Environment(ObstacleHandler):
             # return thetas
 
             thetas = []
-            MAX_TH = 300
-            START = 50
-            SIG = 500
+            MAX_TH = 400
+            START = 20
+            SIG = 300
             # Generate 2D smile Gaussian distribution
             smile_values = self.__generate_2d_smile_gaussian(self.width, (self.width//2, self.width//2), sigma=SIG)
             for x, y in target_coords:
@@ -206,9 +206,9 @@ class Environment(ObstacleHandler):
         elif scen == ToleranceScenario.CLUSTERED:
             N_CLUSTERS = len(clusters_split)
             thetas = []
+            LOW, HIGH = 50, 500
+            THRESHOLDS = [30, 60, 90, 500, 500]
             for i, clus in enumerate(clusters_split):
-                LOW, HIGH = 0, 500
-                THRESHOLDS = np.random.randint(LOW, HIGH, N_CLUSTERS)
                 thetas += [THRESHOLDS[i] for _ in clus]
 
             return thetas

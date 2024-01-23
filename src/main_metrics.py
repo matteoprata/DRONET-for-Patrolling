@@ -19,6 +19,13 @@ dep_var_map = {depv.CUMULATIVE_AR: MetricsEvaluation.AOI1_integral_func,
                depv.VIOLATION_NUMBER: MetricsEvaluation.AOI4_n_violations_func
                }
 
+grid_alpha = .2
+figure_size = (6.7, 6)
+marker_size = 8
+line_width = 2
+legend_font = 15
+fontsize = 12
+
 
 def __data_matrix_multiple_exps(setup_file, independent_variable):
     """ Assuming that all the files are present according to setup_file, it generates the matrix
@@ -85,7 +92,8 @@ def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD, 
     metrics_aoi = dep_var_map[dep_var](data)  # data shape (5400, 1, 2, 30, 4)
 
     plt.close('all')
-    _, ax = plt.subplots()
+    _, ax = plt.subplots(figsize=figure_size)
+    plt.grid(True, alpha=grid_alpha)
 
     # BOXPLOT
     if is_boxplot:
@@ -105,8 +113,8 @@ def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD, 
                 if xi == 0:
                     boxes.append(bp["boxes"][0])
 
-        plt.xticks(np.arange(0, len(X) * (len(AL) + 1), len(AL) + 1), X)
-        plt.legend(boxes, [al.name for al in AL])
+        plt.xticks(np.arange(0, len(X) * (len(AL) + 1), len(AL) + 1), X, fontsize=fontsize)
+        plt.legend(boxes, [al.name for al in AL], fontsize=legend_font)
 
     # LINE PLOT
     else:
@@ -129,18 +137,22 @@ def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD, 
             elif error_type == ErrorType.STD:
                 error = Y_std
 
-            plt.title("Scenario geo {}, temp {}".format(setup.indv_fixed[indv.TARGETS_POSITION_SCENARIO].name,
-                                                              setup.indv_fixed[indv.TARGETS_TOLERANCE_SCENARIO].name,))
-            plt.errorbar(X, Y, yerr=error, label=setup.comp_dims[indv.DRONE_PATROLLING_POLICY][al].name, # marker=algo_marker[al_id],
-                         fillstyle='full')  # color=util.sample_color(map_color[al_id]))
+            plt.errorbar(X, Y, yerr=error, capsize=3,
+                         label=setup.comp_dims[indv.DRONE_PATROLLING_POLICY][al].value.name,  # marker=algo_marker[al_id],
+                         marker=util.sample_marker(setup.comp_dims[indv.DRONE_PATROLLING_POLICY][al].value.marker),
+                         color=util.sample_color(setup.comp_dims[indv.DRONE_PATROLLING_POLICY][al].value.identifier)
+                         )  # color=util.sample_color(map_color[al_id]))
+
+            # plt.title("Scenario geo {}, temp {}".format(setup.indv_fixed[indv.TARGETS_POSITION_SCENARIO].name,
+            #                                                   setup.indv_fixed[indv.TARGETS_TOLERANCE_SCENARIO].name,))
 
             # ax.plot(X, Y, label=setup.comp_dims[indv.ALGORITHM][al].name, color=util.sample_color(map_color[al_id]))
             # ax.fill_between(X, Y+error, Y-error, alpha=.2)
-        plt.xticks(setup.indv_vary[indep_var])
-        plt.legend()
+        plt.xticks(setup.indv_vary[indep_var], fontsize=fontsize)
+        plt.legend(fontsize=legend_font)
 
-    plt.xlabel(indep_var.value["NAME"])
-    plt.ylabel(dep_var.value["NAME"])  # + " (tar-agg {})".format(target_aggregator.__name__))
+    plt.xlabel(indep_var.value["NAME"], fontsize=legend_font)
+    plt.ylabel(dep_var.value["NAME"], fontsize=legend_font)  # + " (tar-agg {})".format(target_aggregator.__name__))
     plt.tight_layout()
 
     fname = "{}_{}_{}.pdf".format(str(dep_var), str([v for k, v in setup.indv_fixed.items()]), str([v for k, v in setup.indv_vary.items()]))  #, str(setup.comp_dims))
@@ -184,13 +196,12 @@ if __name__ == '__main__':
     # python -m src.main_metrics
 
     # X, Y
-    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.CUMULATIVE_DELAY_AR, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.mean)
-    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.CUMULATIVE_DELAY_AR, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.max)
+    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.CUMULATIVE_DELAY_AR, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
 
-    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.max)
-    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.WORST_AGE, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.max)
-    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.WORST_DELAY, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.max)
-    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.VIOLATION_NUMBER, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.max)
+    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
+    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.WORST_AGE, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
+    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.WORST_DELAY, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
+    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.VIOLATION_NUMBER, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
 
     # plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.WORST_AGE, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)
     # plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.WORST_DELAY, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)

@@ -6,10 +6,10 @@ from collections import defaultdict
 from src.utilities.utilities import euclidean_distance
 
 class ClusterMaxAOIRatioPolicy(PatrollingPolicy):
-    name = "Go-cluster-Max-AOI-Ratio"
-    identifier = 2
-    line_tick = "-"
-    marker = "<"
+    name = "Max-AOI-Ratio-Cluster"
+    identifier = 5
+    line_tick = 5
+    marker = 5
 
     def __init__(self, patrol_drone, set_drones, set_targets):
         super().__init__(patrol_drone=patrol_drone, set_drones=set_drones, set_targets=set_targets)

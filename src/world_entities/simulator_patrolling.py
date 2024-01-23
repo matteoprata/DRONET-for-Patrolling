@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
+from src.patrolling.meta_patrolling import PrecomputedPolicy
 
 import src.constants
 from src.world_entities.environment import Environment
@@ -23,7 +24,9 @@ import random
 import torch
 import wandb
 import traceback
+
 from src.RL.RLModule import RLModule
+from src.constants import PrecomputedPatrollingProtocol as pol2
 
 import src.patrolling.meta_patrolling as patrol_base
 
@@ -102,6 +105,8 @@ class PatrollingSimulator:
 
         self.do_break_episode = False
         self.policy = None
+
+        self.ok_to_start = self.policy not in [pol2.CYCLE]  # in cyclic policies, the protocol should start when all the drones reached their initial point
 
         if self.cf.IS_AD_HOC_SCENARIO:
             print("WARNING!: ad hoc scenario running, input number of targets and UVS ignored. "
@@ -246,6 +251,146 @@ class PatrollingSimulator:
         print("simulation starting", self.name())
         print()
 
+    @staticmethod
+    def point_on_line_segment(A, B, x):
+        x1, y1 = A
+        x2, y2 = B
+        # Calculate the distance between A and B
+        distance_AB = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+        # Calculate the parameter t
+        t = x / distance_AB
+        # Calculate the coordinates of the point on AB at distance x from A
+        point_on_AB = np.array([x1 + t * (x2 - x1), y1 + t * (y2 - y1)])
+        return point_on_AB
+
+    @staticmethod
+    def generate_nodes_on_path(coordinates, N):
+        if len(coordinates) < 2 or N < 2:
+            raise ValueError("Invalid input: At least two coordinates and N >= 2 are required.")
+
+        path_length = 0
+        for i in range(len(coordinates) - 1):
+            x1, y1 = coordinates[i]
+            x2, y2 = coordinates[i + 1]
+            path_length += np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+        x1, y1 = coordinates[0]
+        x2, y2 = coordinates[-1]
+        path_length += np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+
+        distance_between_nodes = path_length / N
+        current_distance = 0
+        path_coordinates = [coordinates[0]]
+        assigned_target = []
+        for i in range(len(coordinates) - 1):
+            x1, y1 = coordinates[i]
+            x2, y2 = coordinates[i + 1]
+            segment_length = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+
+            while current_distance + distance_between_nodes < segment_length:
+                ratio = (current_distance + distance_between_nodes) / segment_length
+                x = x1 + ratio * (x2 - x1)
+                y = y1 + ratio * (y2 - y1)
+                # print(ratio, (x, y))
+                assigned_target.append((i+1) % len(coordinates))
+                path_coordinates.append((x, y))
+                current_distance += distance_between_nodes
+
+            current_distance -= segment_length
+        assigned_target = [1] + assigned_target
+
+        # # Extract x and y coordinates for plotting
+        # x_original, y_original = zip(*coordinates)
+        # x_nodes, y_nodes = zip(*path_coordinates)
+        #
+        # # Plotting
+        # plt.figure(figsize=(8, 6))
+        # plt.plot(x_original, y_original, marker='o', linestyle='-', color='blue', label='Original Coordinates')
+        # plt.scatter(x_nodes, y_nodes, color='red', label='Generated Nodes')
+        #
+        # # Annotate the indices of the next node in the path
+        # for i, index in enumerate(assigned_target):
+        #     plt.annotate(index, (x_nodes[i], y_nodes[i]), textcoords="offset points", xytext=(0, 5), ha='center')
+        #
+        # # Adding labels and legend
+        # plt.title('Nodes along the Path with Associated Indices')
+        # plt.xlabel('X-axis')
+        # plt.ylabel('Y-axis')
+        # plt.legend()
+        #
+        # # Show the plot
+        # plt.show()
+
+        return path_coordinates, assigned_target
+
+    def assign_initial_pos(self):
+        # prev_t0, prev_t1 = None, None
+        # sim_prev = 0
+        #
+        # tsp_cost = self.policy.route_info["cost"]
+        # tsp_targets = self.policy.cyclic_to_visit[0]
+        #
+        # intra_drone_distance = tsp_cost // len(self.environment.drones)
+        # for it in range(len(tsp_targets)-1):
+        #     t1, t2 = self.environment.targets[tsp_targets[it]], self.environment.targets[tsp_targets[it+1]]
+        #     dist = euclidean_distance(t1.coords, t2.coords)
+        #     n_drones = int(dist / intra_drone_distance) + 1
+        #     for ind in range(n_drones):
+        #         cocco = self.point_on_line_segment(t1.coords, t2.coords, intra_drone_distance)
+
+        if issubclass(type(self.policy), PrecomputedPolicy):
+            if type(self.policy) is pol2.CYCLE.value:
+                # tsp_cost = self.policy.route_info["cost"]
+                # intra_drone_distance = tsp_cost // len(self.environment.drones)
+                tsp_ids =  [self.environment.targets[t].identifier for t in self.policy.cyclic_to_visit[0]]
+                coors = [self.environment.targets[t].coords for t in self.policy.cyclic_to_visit[0]]
+                print("-----")
+                if len(self.environment.drones) > 1:
+                    c1, c2 = self.generate_nodes_on_path(coors, len(self.environment.drones))
+                else:
+                    c1, c2 = [self.environment.targets[self.policy.cyclic_to_visit[0][0]].coords], [0]
+
+                di = len(self.environment.drones) - len(c1)
+                if di > 0:
+                    rand_tar_id = np.random.randint(0, len(self.environment.drones), size=di)
+                    for r in rand_tar_id:
+                        c1.append(self.environment.targets[r].coords)
+                        c2.append(r)
+
+                print("C2", c2, tsp_ids)
+                for dr in self.environment.drones:
+                    COORS = c1[dr.identifier]
+                    dr.coords = COORS
+                    dr.visited_targets_coordinates[0] = COORS
+                    dr.previous_coords = COORS
+
+                    t_id = tsp_ids[c2[dr.identifier]-1]
+                    dr.prev_target = self.environment.targets[t_id]
+
+                    idx = self.policy.cyclic_to_visit[dr.identifier].index(dr.prev_target.identifier)
+                    # print(dr.prev_target.identifier, idx, self.policy.cyclic_to_visit[dr.identifier])
+                    self.policy.cyclic_to_visit[dr.identifier] = self.policy.cyclic_to_visit[dr.identifier][idx:] + self.policy.cyclic_to_visit[dr.identifier][:idx]
+                    print(dr.identifier, self.policy.cyclic_to_visit[dr.identifier])
+            else:
+                for dr in self.environment.drones:
+                    # print("QUI ", self.policy.cyclic_to_visit[dr.identifier])
+                    index_tar = 1 if type(self.policy) is pol2.INFOCOM.value else 0
+                    tar_0 = self.environment.targets[self.policy.cyclic_to_visit[dr.identifier][0] + index_tar]
+                    dr.coords = tar_0.coords
+                    dr.visited_targets_coordinates[0] = tar_0.coords
+                    dr.previous_coords = tar_0.coords
+                    dr.prev_target = tar_0
+        else:
+            for dr in self.environment.drones:
+                # print("QUI ", self.policy.cyclic_to_visit[dr.identifier])
+                rand_tar = np.random.randint(0, len(self.environment.targets), 1)[0]
+                tar_0 = self.environment.targets[rand_tar]
+                dr.coords = tar_0.coords
+                dr.visited_targets_coordinates[0] = tar_0.coords
+                dr.previous_coords = tar_0.coords
+                dr.prev_target = tar_0
+
+
+
     def run_episodes(self, episodes_ids, typ: cst.EpisodeType, protocol):
         print("Doing", typ)
         self.run_state = typ
@@ -261,8 +406,13 @@ class PatrollingSimulator:
                                                self.cf.DRONE_SPEED, self.cf.TARGETS_POSITION_SCENARIO.name)
 
             self.prepare_drones_routes(self.cf.DRONE_PATROLLING_POLICY)  # assign a schedule to the drone
-            for cur_step in tqdm(range(self.cf.EPISODE_DURATION), desc='step', leave=False, disable=self.cf.IS_HIDE_PROGRESS_BAR):
+            # TODO better pisition? this allows the drone to depart form the first target
+            self.assign_initial_pos()
 
+            # a = self.policy.next_visit(0)
+            # print(a)
+            # exit()
+            for cur_step in tqdm(range(self.cf.EPISODE_DURATION), desc='step', leave=False, disable=self.cf.IS_HIDE_PROGRESS_BAR):
                 if self.do_break_episode:
                     self.do_break_episode = False
                     break

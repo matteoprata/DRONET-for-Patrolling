@@ -16,7 +16,7 @@ class MetricsEvaluation:
     """ This class is used to evaluate the stats of the simulation, logged on files. """
 
     def __init__(self, sim_seed=None, n_drones=None, n_targets=None, drone_mobility=None, drone_speed_meters_sec=None,
-                 geographic_scenario=None, tolerance_scenario=None, metrics_log: dict = None):
+                 geographic_scenario=None, tolerance_fixed=None, tolerance_scenario=None, metrics_log: dict = None):
 
         if metrics_log is None:
             self.sim_seed = sim_seed
@@ -25,6 +25,7 @@ class MetricsEvaluation:
             self.drone_mobility = drone_mobility
             self.drone_speed_meters_sec = drone_speed_meters_sec
             self.geographic_scenario = geographic_scenario
+            self.tolerance_fixed = tolerance_fixed
             self.tolerance_scenario = tolerance_scenario
 
             simulation_visits_info = self.load_metrics()
@@ -44,6 +45,7 @@ class MetricsEvaluation:
             self.drone_speed_meters_sec = metrics_log[JSONFields.SIMULATION_INFO.value][JSONFields.DRONE_SPEED.value]
             self.geographic_scenario = metrics_log[JSONFields.SIMULATION_INFO.value][JSONFields.GEOGRAPHIC_SCENARIO.value]
             self.tolerance_scenario = metrics_log[JSONFields.SIMULATION_INFO.value][JSONFields.TOLERANCE_SCENARIO.value]
+            self.tolerance_fixed = metrics_log[JSONFields.SIMULATION_INFO.value][JSONFields.TOLERANCE_FIXED.value]
 
             self.times_visit = metrics_log[JSONFields.VISIT_TIMES.value]
             self.targets_tolerance = metrics_log[JSONFields.SIMULATION_INFO.value][JSONFields.TOLERANCE.value]
@@ -52,7 +54,7 @@ class MetricsEvaluation:
 
     def fname_generator(self):
         # independent variables
-        fname = "seed={}_nd={}_nt={}_pol={}_sp={}_tolscen={}_geoscen={}.json".format(
+        fname = "seed={}_nd={}_nt={}_pol={}_sp={}_tolscen={}_geoscen={}_deadco={}.json".format(
             self.sim_seed,
             self.n_drones,
             self.n_targets,
@@ -60,6 +62,7 @@ class MetricsEvaluation:
             self.drone_speed_meters_sec,
             self.tolerance_scenario,
             self.geographic_scenario,
+            self.tolerance_fixed,
         )
         print("reading", fname)
         return fname
@@ -198,6 +201,15 @@ class MetricsEvaluation:
     def AOI4_n_violations_func(y_axis, theta=1):
         n_violations = np.sum((y_axis >= theta) * 1 & (np.roll(y_axis, 1, axis=0) < theta) * 1, axis=0)
         return n_violations
+
+    @staticmethod
+    def AOI6_cumulative_delay_AOI_func(y_axis, theta=1):
+        """ somma triangoli rossi"""
+        viol = y_axis >= theta
+        triangles = y_axis * (viol * 1)
+        violation_time = np.sum(triangles, axis=0)
+        return violation_time
+
 
     @staticmethod
     def AOI5_violation_time_func(y_axis, theta=1):

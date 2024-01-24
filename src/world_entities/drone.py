@@ -136,7 +136,10 @@ class Drone(SimulatedEntity, AntennaEquippedDevice):
                 self.__handle_metrics()
                 self.__update_target_time_visit_upon_reach()
 
-                target = self.simulator.policy.next_visit(self.identifier)
+                if not self.cf.NO_BATTERY and isinstance(self.simulator.policy, co.PrecomputedPatrollingProtocol.INFOCOM.value):
+                    target = self.simulator.policy.next_visit_battery(self.identifier)
+                else:
+                    target = self.simulator.policy.next_visit(self.identifier)
                 self.__update_next_target_upon_reach(target)
 
         elif protocol == co.OnlinePatrollingProtocol.FREE:

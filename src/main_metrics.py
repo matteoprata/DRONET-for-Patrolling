@@ -3,9 +3,7 @@ import matplotlib.pyplot as plt
 
 from src.utilities import utilities as util
 
-from src.simulation_setup import setup0
-from src.simulation_setup import setup_solo
-
+from src.constants import Setups
 from src.constants import IndependentVariable as indv
 from src.constants import DependentVariable as depv
 from src.constants import ErrorType
@@ -13,10 +11,11 @@ from src.evaluation.MetricsEvaluation import MetricsEvaluation
 
 
 dep_var_map = {depv.CUMULATIVE_AR: MetricsEvaluation.AOI1_integral_func,
-               depv.CUMULATIVE_DELAY_AR: MetricsEvaluation.AOI5_violation_time_func,
+               depv.CUMULATIVE_DELAY_AR: MetricsEvaluation.AOI6_cumulative_delay_AOI_func,
                depv.WORST_DELAY: MetricsEvaluation.AOI3_max_delay_func,
                depv.WORST_AGE: MetricsEvaluation.AOI2_max_func,
-               depv.VIOLATION_NUMBER: MetricsEvaluation.AOI4_n_violations_func
+               depv.VIOLATION_NUMBER: MetricsEvaluation.AOI4_n_violations_func,
+               depv.DELAY_SUM: MetricsEvaluation.AOI5_violation_time_func
                }
 
 grid_alpha = .2
@@ -53,7 +52,8 @@ def __data_matrix_multiple_exps(setup_file, independent_variable):
                                             n_targets              = stp.indv_fixed[indv.TARGETS_NUMBER],
                                             drone_speed_meters_sec = stp.indv_fixed[indv.DRONE_SPEED],
                                             geographic_scenario= stp.indv_fixed[indv.TARGETS_POSITION_SCENARIO].name,
-                                            tolerance_scenario     = stp.indv_fixed[indv.TARGETS_TOLERANCE_SCENARIO].name)
+                                            tolerance_scenario     = stp.indv_fixed[indv.TARGETS_TOLERANCE_SCENARIO].name,
+                                            tolerance_fixed=stp.indv_fixed[indv.TARGETS_TOLERANCE_FIXED])
 
                     met.load_metrics()
                     N_TARGETS = max(stp.indv_vary[indv.TARGETS_NUMBER]) if independent_variable == indv.TARGETS_NUMBER else stp.indv_fixed[indv.TARGETS_NUMBER]
@@ -78,6 +78,10 @@ def __data_matrix_multiple_exps(setup_file, independent_variable):
 
                     stp.indv_fixed = {k: indv_fixed_original[k] for k in indv_fixed_original}  # reset the change
                     TOT_MAT[:, si, ai, :, xi] = times_array
+
+    # print(np.sum(TOT_MAT[:, 0, 0, 0, 0]))
+    # print(np.sum(TOT_MAT[:, 0, 0, 0, 1]))
+    # exit()
     return TOT_MAT
 
 
@@ -155,7 +159,7 @@ def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD, 
     plt.ylabel(dep_var.value["NAME"], fontsize=legend_font)  # + " (tar-agg {})".format(target_aggregator.__name__))
     plt.tight_layout()
 
-    fname = "{}_{}_{}.pdf".format(str(dep_var), str([v for k, v in setup.indv_fixed.items()]), str([v for k, v in setup.indv_vary.items()]))  #, str(setup.comp_dims))
+    fname = "{}_{}_{}.pdf".format(str(dep_var.name), str([v for k, v in setup.indv_fixed.items()]), str([v for k, v in setup.indv_vary.items()]))  #, str(setup.comp_dims))
     plt.savefig("data/imgs/{}".format(fname))
     plt.show()
 
@@ -169,7 +173,8 @@ def plot_stats_single_seed(setup, seed, algorithm):
                             n_targets=setup.indv_fixed[indv.TARGETS_NUMBER],
                             drone_speed_meters_sec=setup.indv_fixed[indv.DRONE_SPEED],
                             geographic_scenario=setup.indv_fixed[indv.TARGETS_POSITION_SCENARIO],
-                            tolerance_scenario=setup.indv_fixed[indv.TARGETS_TOLERANCE_SCENARIO].name)
+                            tolerance_scenario=setup.indv_fixed[indv.TARGETS_TOLERANCE_SCENARIO].name,
+                            tolerance_fixed=setup.indv_fixed[indv.TARGETS_TOLERANCE_FIXED])
     # N 1
     X, Yavg = met.plot_avg_aoi()
 
@@ -194,14 +199,15 @@ if __name__ == '__main__':
     # 2. Declare what independent variable varies at this execution and what stays fixed
 
     # python -m src.main_metrics
+    setu = Setups.SETUP0.value
+    for k, _ in setu.indv_vary.items():
+        plot_stats_dep_ind_var(setu, k, depv.CUMULATIVE_DELAY_AR, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
+        plot_stats_dep_ind_var(setu, k, depv.CUMULATIVE_AR, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
+        plot_stats_dep_ind_var(setu, k, depv.WORST_AGE, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
+        plot_stats_dep_ind_var(setu, k, depv.DELAY_SUM, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
 
-    # X, Y
-    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.CUMULATIVE_DELAY_AR, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
-
-    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.CUMULATIVE_AR, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
-    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.WORST_AGE, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
-    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.WORST_DELAY, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
-    plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.VIOLATION_NUMBER, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
+    # plot_stats_dep_ind_var(setu, indv.DRONES_NUMBER, depv.WORST_DELAY, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
+    # plot_stats_dep_ind_var(setu, indv.DRONES_NUMBER, depv.VIOLATION_NUMBER, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
 
     # plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.WORST_AGE, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)
     # plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.WORST_DELAY, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)

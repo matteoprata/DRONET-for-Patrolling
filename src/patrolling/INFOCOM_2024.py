@@ -7,6 +7,7 @@ from sklearn.cluster import KMeans
 from collections import defaultdict
 from src.utilities.utilities import Christofides
 
+from shapely.geometry import Polygon
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,10 +16,11 @@ from sklearn.datasets import make_blobs
 from mpl_toolkits.mplot3d import Axes3D
 from kneed import KneeLocator
 from sklearn.metrics.pairwise import euclidean_distances
+from src.utilities.utilities import euclidean_distance as euc
 
 
 class INFOCOM_Patrol(PrecomputedPolicy):
-    name = "BilClust"
+    name = "BCP"
     identifier = 2
     line_tick = 7
     marker = 7
@@ -30,19 +32,21 @@ class INFOCOM_Patrol(PrecomputedPolicy):
         return self.my_solution()  # {0: [0, 1, 2, 4, 2, 3, 0, 3], 1: [3]}
 
     def my_solution(self) -> dict:
+        self.depot = self.set_targets[0]
         self.set_targets = self.set_targets[1:]
+        OUR_TARS = self.set_targets
 
         n_drones = len(self.set_drones)
-        n_targets = len(self.set_targets)
+        n_targets = len(OUR_TARS)
 
-        distances = self.distances_matrix_targets(self.set_targets, n_targets)
+        distances = self.distances_matrix_targets(OUR_TARS, n_targets)
         n_clusters = self.elbow_k_search(n_drones, distances)
         target_clusters = self.kmeans(n_clusters, distances)  # [00000000 1111] len of the target NO BS
 
         print("n_clusters", n_clusters)
         # number of drones in each cluster
         if n_drones > n_clusters:
-            clusters_assignments = self.n_drones_cluster(n_clusters, n_drones, self.set_targets, target_clusters)
+            clusters_assignments = self.n_drones_cluster(n_clusters, n_drones, OUR_TARS, target_clusters)
         else:
             clusters_assignments = [1 for _ in range(n_clusters)]
 
@@ -52,15 +56,15 @@ class INFOCOM_Patrol(PrecomputedPolicy):
         for c in range(n_clusters):
             n_drones_cluster = int(clusters_assignments[c])
             # targets objects in the cluster
-            new_targets_subset = [self.set_targets[tid] for tid in np.where(target_clusters == c)[0]]
+            new_targets_subset = [OUR_TARS[tid] for tid in np.where(target_clusters == c)[0]]
             # targets_coo = np.asarray([np.array(t.coords) for t in targets_cluster_i[:]])
-            print(c+1, n_clusters, new_targets_subset)
+            # print(c+1, n_clusters, new_targets_subset)
             distances_intern = self.distances_matrix_targets(new_targets_subset, len(new_targets_subset))
 
             assert n_drones_cluster <= len(new_targets_subset), str(n_drones_cluster)  + "_" + str(len(new_targets_subset))
             target_clusters_int = self.kmeans(n_drones_cluster, distances_intern)  # cluster nel cluster [0 0 0 1 1 1]
 
-            print("siamo qui", target_clusters_int)
+            # print("siamo qui", target_clusters_int)
             for dr in range(n_drones_cluster):
                 tar_ids_for_drone = [new_targets_subset[tid] for tid in np.where(target_clusters_int == dr)[0]]
                 tar_coo = np.asarray([np.array(t.coords) for t in tar_ids_for_drone])
@@ -71,22 +75,49 @@ class INFOCOM_Patrol(PrecomputedPolicy):
                 plan[drones_so_far] = [tar_ids_for_drone[i].identifier-1 for i in tsp]
                 drones_so_far += 1
         print(plan)
-        # plan = self.plan_given_clusters(n_clusters, target_clusters, clusters_assignments, self.set_targets)
+        # plan = self.plan_given_clusters(n_clusters, target_clusters, clusters_assignments, OUR_TARS)
         return plan
+
+    def calculate_irregular_polygon_area(self, coordinates):
+        polygon = Polygon(coordinates)
+        area = polygon.area
+        return area
+
+    def compute_tsp_cost(self, tsp, targets_cluster_coo):
+        total_cost = 0
+        tsp = [targets_cluster_coo[id] for id in tsp]
+        for i in range(len(tsp)-1):
+            # print(tsp[i], tsp[i+1])
+            total_cost += euc(np.array(tsp[i]), np.array(tsp[i+1]))
+        total_cost += euc(np.array(tsp[0]), np.array(tsp[-1]))
+        return total_cost
 
     def n_drones_cluster(self, n_clusters, n_drones, set_targets, target_clusters):
         UB = 10000
         clusters_tolerances = []
         clusters_crowd = []
+        densities = []
         for i in range(n_clusters):
             targets_cluster_i = [set_targets[tid] for tid in np.where(target_clusters == i)[0]]
+            targets_cluster_coo = [tar.coords for tar in targets_cluster_i]
+            if len(targets_cluster_i) > 1:
+                # area_cluster = self.calculate_irregular_polygon_area(targets_cluster_coo)
+                tsp = Christofides().compute_from_coordinates(targets_cluster_coo, 0)
+                tsp_cost = self.compute_tsp_cost(tsp, targets_cluster_coo)
+            else:
+                tsp_cost = 0
+
             cluster_tolerance = np.min([t.maximum_tolerated_idleness for t in targets_cluster_i])  # low is more urgent
             clusters_tolerances.append(cluster_tolerance)
             clusters_crowd.append(len(targets_cluster_i))
+            densities.append(tsp_cost)
 
+        print(densities)
+
+        densities = np.array(densities)
         clusters_crowd = np.array(clusters_crowd)
         print(clusters_tolerances)
-        clusters_tolerances = 1 / np.array(clusters_tolerances)  # + DRONI = - TOLL highest means [.5, .3, .2] high priority (low thresholds)
+        clusters_tolerances = densities / np.array(clusters_tolerances)  # + DRONI = - TOLL highest means [.5, .3, .2] high priority (low thresholds)
         clusters_tolerances /= np.sum(clusters_tolerances)  # [.5, .2, .3]
         print(clusters_tolerances)
         clusters_assignments = clusters_tolerances * (n_drones - n_clusters)
@@ -114,7 +145,7 @@ class INFOCOM_Patrol(PrecomputedPolicy):
                 if n_el + 1 <= clusters_crowd[sorted_clusters_tolerances_ix[idx]]:
                     clusters_assignments[sorted_clusters_tolerances_ix[idx]] += 1
                     break
-
+        print(clusters_assignments)
         # clusters_assignments how many drone per cluster [ 1. 10.  2.  1.  1.]
         return clusters_assignments
 
@@ -134,7 +165,7 @@ class INFOCOM_Patrol(PrecomputedPolicy):
         id_drone_so_far = 0
         for i in range(n_clusters):
             # print("CLUSTER i", i)
-            target_to_visit = [self.set_targets[tid].coords for tid in clid_tars[i]]
+            target_to_visit = [OUR_TARS[tid].coords for tid in clid_tars[i]]
             if len(target_to_visit) > 1:
                 tsp_path = Christofides().compute_from_coordinates(target_to_visit, 0)
             elif len(target_to_visit) == 1:

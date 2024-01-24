@@ -195,7 +195,7 @@ class Environment(ObstacleHandler):
             START = 20
             SIG = 300
             # Generate 2D smile Gaussian distribution
-            smile_values = self.__generate_2d_smile_gaussian(self.width, (self.width//2, self.width//2), sigma=SIG)
+            smile_values = self.__generate_2d_smile_gaussian(self.width, (self.width//2, self.width//2), sigma=SIG*self.simulator.cf.TARGETS_TOLERANCE_FIXED)
             for x, y in target_coords:
                 x, y = np.clip(int(x), 0, self.width-1), np.clip(int(y), 0, self.width-1)
                 perc = 1 - smile_values[x][y]
@@ -206,8 +206,11 @@ class Environment(ObstacleHandler):
         elif scen == ToleranceScenario.CLUSTERED:
             N_CLUSTERS = len(clusters_split)
             thetas = []
-            LOW, HIGH = 50, 500
-            THRESHOLDS = [30, 60, 90, 500, 500]
+            # LOW, HIGH = 50, 500
+            VAL = 100
+            th = self.simulator.cf.TARGETS_TOLERANCE_FIXED
+            THRESHOLDS = [VAL*th, VAL*th, (VAL*th + VAL/th) / 2, VAL/th, VAL/th]
+            THRESHOLDS = [int(t) for t in THRESHOLDS]
             for i, clus in enumerate(clusters_split):
                 thetas += [THRESHOLDS[i] for _ in clus]
 

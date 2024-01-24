@@ -7,6 +7,8 @@ from src.patrolling.base_max_sum_aoi_ratio import MaxSumResidualPolicy
 from src.patrolling.base_max_aoi_ratio import MaxAOIRatioPolicy
 from src.patrolling.base_clustering_max_aoi_ratio import ClusterMaxAOIRatioPolicy
 from src.patrolling.INFOCOM_2024 import INFOCOM_Patrol
+from src.patrolling.SOTA.andrea_multi_tsp import Bartolini
+
 from src.patrolling.tsp_cycle import Cycle
 
 from src.patrolling.clustering_tsp import ClusteringTSP
@@ -79,6 +81,7 @@ class PrecomputedPatrollingProtocol(Enum):
     OURS = Ours
     INFOCOM = INFOCOM_Patrol
     CYCLE = Cycle
+    BARTOLINI = Bartolini
 
 
 class TargetFamily(Enum):
@@ -98,9 +101,9 @@ class IndependentVariable(Enum):
 
     # PICK FROM HERE:
     DRONE_SPEED = {"ID": 3, "NAME": "Drones Speed"}
-    DRONES_NUMBER = {"ID": 4, "NAME": "Drones Number"}
+    DRONES_NUMBER = {"ID": 4, "NAME": "Number of UAVs"}
     TARGETS_NUMBER = {"ID": 5, "NAME": "Targets Number"}
-    TARGETS_TOLERANCE_FIXED = {"ID": 7, "NAME": "Tolerance"}
+    TARGETS_TOLERANCE_FIXED = {"ID": 7, "NAME": "Tolerance factor"}
     TARGETS_TOLERANCE_SCENARIO = {"ID": 8, "NAME": "Tolerance Scenario"}
     TARGETS_POSITION_SCENARIO = {"ID": 9, "NAME": "Position Scenario"}
 
@@ -112,9 +115,10 @@ class DependentVariable(Enum):
     # distinct target distribution & averaged targets
     CUMULATIVE_AR =       {"NAME": "Cumulative AOI ($s$)"}
     CUMULATIVE_DELAY_AR = {"NAME": "Cumulative AOI delay ($s$)"}
-    WORST_DELAY =         {"NAME": "Worst delay ($s$)"}
-    WORST_AGE =           {"NAME": "Worst age ($s$)"}
+    WORST_DELAY =         {"NAME": "Max delay ($s$)"}
+    WORST_AGE =           {"NAME": "Max age ($s$)"}
     VIOLATION_NUMBER =    {"NAME": "Number of violations"}
+    DELAY_SUM =           {"NAME": "Total delay ($s$)"}
 
 
 class HyperParameters(Enum):
@@ -152,6 +156,8 @@ class JSONFields(Enum):
     GEOGRAPHIC_SCENARIO = "GEOGRAPHIC_SCENARIO"
     TOLERANCE_SCENARIO = "TARGETS_TOLERANCE_SCENARIO"
 
+    TOLERANCE_FIXED = "TOLERANCE_FIXED"
+
 
 class RLRewardType(Enum):
     REW0 = 1
@@ -165,11 +171,15 @@ N_CORES = multiprocessing.cpu_count()-1
 
 from src.simulation_setup import setup0
 from src.simulation_setup import setup_solo
+from src.simulation_setup import setup_battery
+from src.simulation_setup import setup_threshold
 
 
 class Setups(Enum):
     SETUP0 = setup0
     SETUP_SOLO = setup_solo
+    SETUP_BATTERY = setup_battery
+    SETUP_THRESHOLD = setup_threshold
 
 
 TORCH_DEVICE = 'cpu'  # 'cuda' if torch.cuda.is_available() else 'cpu'

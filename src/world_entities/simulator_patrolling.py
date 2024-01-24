@@ -337,59 +337,61 @@ class PatrollingSimulator:
         #     for ind in range(n_drones):
         #         cocco = self.point_on_line_segment(t1.coords, t2.coords, intra_drone_distance)
 
-        if issubclass(type(self.policy), PrecomputedPolicy):
-            if type(self.policy) is pol2.CYCLE.value:
-                # tsp_cost = self.policy.route_info["cost"]
-                # intra_drone_distance = tsp_cost // len(self.environment.drones)
-                tsp_ids =  [self.environment.targets[t].identifier for t in self.policy.cyclic_to_visit[0]]
-                coors = [self.environment.targets[t].coords for t in self.policy.cyclic_to_visit[0]]
-                print("-----")
-                if len(self.environment.drones) > 1:
-                    c1, c2 = self.generate_nodes_on_path(coors, len(self.environment.drones))
+        if self.cf.NO_BATTERY:
+            if issubclass(type(self.policy), PrecomputedPolicy):
+                if type(self.policy) is pol2.CYCLE.value:
+                    # tsp_cost = self.policy.route_info["cost"]
+                    # intra_drone_distance = tsp_cost // len(self.environment.drones)
+                    tsp_ids =  [self.environment.targets[t].identifier for t in self.policy.cyclic_to_visit[0]]
+                    coors = [self.environment.targets[t].coords for t in self.policy.cyclic_to_visit[0]]
+                    print("-----")
+                    if len(self.environment.drones) > 1:
+                        c1, c2 = self.generate_nodes_on_path(coors, len(self.environment.drones))
+                    else:
+                        c1, c2 = [self.environment.targets[self.policy.cyclic_to_visit[0][0]].coords], [0]
+
+                    di = len(self.environment.drones) - len(c1)
+                    if di > 0:
+                        rand_tar_id = np.random.randint(0, len(self.environment.drones), size=di)
+                        for r in rand_tar_id:
+                            c1.append(self.environment.targets[r].coords)
+                            c2.append(r)
+
+                    print("C2", c2, tsp_ids)
+                    for dr in self.environment.drones:
+                        COORS = c1[dr.identifier]
+                        dr.coords = COORS
+                        dr.visited_targets_coordinates[0] = COORS
+                        dr.previous_coords = COORS
+
+                        t_id = tsp_ids[c2[dr.identifier]-1]
+                        dr.prev_target = self.environment.targets[t_id]
+
+                        idx = self.policy.cyclic_to_visit[dr.identifier].index(dr.prev_target.identifier)
+                        # print(dr.prev_target.identifier, idx, self.policy.cyclic_to_visit[dr.identifier])
+                        self.policy.cyclic_to_visit[dr.identifier] = self.policy.cyclic_to_visit[dr.identifier][idx:] + self.policy.cyclic_to_visit[dr.identifier][:idx]
+                        print(dr.identifier, self.policy.cyclic_to_visit[dr.identifier])
                 else:
-                    c1, c2 = [self.environment.targets[self.policy.cyclic_to_visit[0][0]].coords], [0]
-
-                di = len(self.environment.drones) - len(c1)
-                if di > 0:
-                    rand_tar_id = np.random.randint(0, len(self.environment.drones), size=di)
-                    for r in rand_tar_id:
-                        c1.append(self.environment.targets[r].coords)
-                        c2.append(r)
-
-                print("C2", c2, tsp_ids)
-                for dr in self.environment.drones:
-                    COORS = c1[dr.identifier]
-                    dr.coords = COORS
-                    dr.visited_targets_coordinates[0] = COORS
-                    dr.previous_coords = COORS
-
-                    t_id = tsp_ids[c2[dr.identifier]-1]
-                    dr.prev_target = self.environment.targets[t_id]
-
-                    idx = self.policy.cyclic_to_visit[dr.identifier].index(dr.prev_target.identifier)
-                    # print(dr.prev_target.identifier, idx, self.policy.cyclic_to_visit[dr.identifier])
-                    self.policy.cyclic_to_visit[dr.identifier] = self.policy.cyclic_to_visit[dr.identifier][idx:] + self.policy.cyclic_to_visit[dr.identifier][:idx]
-                    print(dr.identifier, self.policy.cyclic_to_visit[dr.identifier])
+                    # partition e infocom
+                    for dr in self.environment.drones:
+                        # print("QUI ", self.policy.cyclic_to_visit[dr.identifier])
+                        index_tar = 1 if type(self.policy) is pol2.INFOCOM.value else 0
+                        # print(self.policy.cyclic_to_visit)
+                        # exit()
+                        tar_0 = self.environment.targets[self.policy.cyclic_to_visit[dr.identifier][0] + index_tar]
+                        dr.coords = tar_0.coords
+                        dr.visited_targets_coordinates[0] = tar_0.coords
+                        dr.previous_coords = tar_0.coords
+                        dr.prev_target = tar_0
             else:
                 for dr in self.environment.drones:
                     # print("QUI ", self.policy.cyclic_to_visit[dr.identifier])
-                    index_tar = 1 if type(self.policy) is pol2.INFOCOM.value else 0
-                    tar_0 = self.environment.targets[self.policy.cyclic_to_visit[dr.identifier][0] + index_tar]
+                    rand_tar = np.random.randint(0, len(self.environment.targets), 1)[0]
+                    tar_0 = self.environment.targets[rand_tar]
                     dr.coords = tar_0.coords
                     dr.visited_targets_coordinates[0] = tar_0.coords
                     dr.previous_coords = tar_0.coords
                     dr.prev_target = tar_0
-        else:
-            for dr in self.environment.drones:
-                # print("QUI ", self.policy.cyclic_to_visit[dr.identifier])
-                rand_tar = np.random.randint(0, len(self.environment.targets), 1)[0]
-                tar_0 = self.environment.targets[rand_tar]
-                dr.coords = tar_0.coords
-                dr.visited_targets_coordinates[0] = tar_0.coords
-                dr.previous_coords = tar_0.coords
-                dr.prev_target = tar_0
-
-
 
     def run_episodes(self, episodes_ids, typ: cst.EpisodeType, protocol):
         print("Doing", typ)
@@ -581,7 +583,8 @@ class PatrollingSimulator:
                                 n_targets=self.n_targets,
                                 drone_speed_meters_sec=self.drone_speed_meters_sec,
                                 geographic_scenario=self.cf.TARGETS_POSITION_SCENARIO.name,
-                                tolerance_scenario=self.cf.TARGETS_TOLERANCE_SCENARIO.name)
+                                tolerance_scenario=self.cf.TARGETS_TOLERANCE_SCENARIO.name,
+                                tolerance_fixed=self.cf.TARGETS_TOLERANCE_FIXED)
 
         plt.clf()
         plt.close()

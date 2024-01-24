@@ -33,7 +33,7 @@ class Configuration:
         self.DRONES_NUMBER = 1                                             # int: number of drones.
         self.DRONE_SPEED = 15                                              # 15 m/s = 54 km/h   # float: m/s, drone speed.
         self.DRONE_PATROLLING_POLICY = OnlinePatrollingProtocol.RANDOM_MOVEMENT  #
-        self.DRONE_MAX_ENERGY = int(2 * self.HOUR)                         # int: max energy of a drone steps
+        self.DRONE_MAX_ENERGY = 3000  # TRAVELED DISTANCE                       # int: max energy of a drone steps
 
         self.N_EPOCHS = 1                           # how many times you will see the same scenario
         self.EPISODE_DURATION = int(1.5 * self.HOUR)  # how much time the episode lasts steps
@@ -48,6 +48,7 @@ class Configuration:
         self.IS_ALLOW_SELF_LOOP = False     # drone can decide to visit the same target in two consecutive decisions or not
 
         self.IS_AD_HOC_SCENARIO = False
+        self.NO_BATTERY = True
 
         # Scenarios variables
         self.TARGETS_TOLERANCE_SCENARIO = ToleranceScenario.CONSTANT
@@ -173,13 +174,14 @@ class Configuration:
         self.IS_HIDE_PROGRESS_BAR = False
 
     def conf_description(self):
-        return "seed={}_nd={}_nt={}_pol={}_sp={}_tolscen={}_geoscen={}".format(self.SEED,
+        return "seed={}_nd={}_nt={}_pol={}_sp={}_tolscen={}_geoscen={}_deadco={}".format(self.SEED,
                                                                                 self.DRONES_NUMBER,
                                                                                 self.TARGETS_NUMBER,
                                                                                 self.DRONE_PATROLLING_POLICY.name,
                                                                                 self.DRONE_SPEED,
                                                                                 self.TARGETS_TOLERANCE_SCENARIO.name,
-                                                                                self.TARGETS_POSITION_SCENARIO.name)
+                                                                                self.TARGETS_POSITION_SCENARIO.name,
+                                                                                self.TARGETS_TOLERANCE_FIXED)
 
     def n_tot_episodes(self):
         return self.N_EPISODES_TRAIN + self.N_EPISODES_TEST + self.N_EPISODES_VAL

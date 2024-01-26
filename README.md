@@ -1,7 +1,8 @@
-# UAV Simulator
+# 🚁 UAVs Patrolling Simulator
+Welcome to the UAVs Patrolling Simulator. This simulator is designed to provide an environment for simulating patrolling scenarios with Unmanned Aerial Vehicles (UAVs). 
+The primary goal of this simulator is to facilitate the development and evaluation of algorithms and strategies for effective patrolling missions considering diverse deployment scenarios.
 
-UAV-Simulator is a Python simulator for experimenting networks unmanned aerial vehicles. 
-It requires Python 3 or greater.
+#### THIS README IS UNDER CONSTRUCTION 🛠️
 
 ## Quick Start
 

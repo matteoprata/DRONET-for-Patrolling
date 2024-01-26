@@ -16,13 +16,13 @@ comp_dims = {indv.SEED: range(0,5),  # [0, 2, 3, 4, 5],
                                             # # pol.CLUSTER_GO_MIN_RESIDUAL,
                                             # # pol2.PEPPE_CLUSTERING,
                                             # pol2.CYCLE,
-                                            pol2.INFOCOM
+                                            pol2.PARTITION
                                             ]
              }
 
 indv_vary = {
     # indv.DRONE_SPEED: [5, 10, 15, 20, 25],
-    indv.DRONES_NUMBER: [10]  # [1, 2, 5, 10, 15, 20, 25],
+    indv.DRONES_NUMBER: [25]  # [1, 2, 5, 10, 15, 20, 25],
 }
 
 indv_fixed = {
@@ -30,6 +30,6 @@ indv_fixed = {
     indv.DRONES_NUMBER: 5,
     indv.TARGETS_NUMBER: 40,
     indv.TARGETS_TOLERANCE_FIXED: 100,
-    indv.TARGETS_TOLERANCE_SCENARIO: ToleranceScenario.CONSTANT,
+    indv.TARGETS_TOLERANCE_SCENARIO: ToleranceScenario.CLUSTERED,
     indv.TARGETS_POSITION_SCENARIO: PositionScenario.CLUSTERED,
 }

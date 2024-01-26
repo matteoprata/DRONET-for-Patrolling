@@ -19,10 +19,10 @@ figure(figsize=(8, 6), dpi=400)
 
 # matplotlib.use('agg')
 
-dep_var_map = {depv.CUMULATIVE_AR: MetricsEvaluation.AOI1_integral_func,
-               depv.CUMULATIVE_DELAY_AR: MetricsEvaluation.AOI5_violation_time_func,
-               depv.WORST_DELAY: MetricsEvaluation.AOI3_max_delay_func,
-               depv.WORST_AGE: MetricsEvaluation.AOI2_max_func,
+dep_var_map = {depv.CUMULATIVE_AOI: MetricsEvaluation.AOI1_integral_func,
+               depv.CUMULATIVE_AOI_DELAY: MetricsEvaluation.AOI5_violation_time_func,
+               depv.MAX_DELAY: MetricsEvaluation.AOI3_max_delay_func,
+               depv.MAX_AGE: MetricsEvaluation.AOI2_max_func,
                depv.VIOLATION_NUMBER: MetricsEvaluation.AOI4_n_violations_func
                }
 

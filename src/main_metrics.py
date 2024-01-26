@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -10,12 +12,12 @@ from src.constants import ErrorType
 from src.evaluation.MetricsEvaluation import MetricsEvaluation
 
 
-dep_var_map = {depv.CUMULATIVE_AR: MetricsEvaluation.AOI1_integral_func,
-               depv.CUMULATIVE_DELAY_AR: MetricsEvaluation.AOI6_cumulative_delay_AOI_func,
-               depv.WORST_DELAY: MetricsEvaluation.AOI3_max_delay_func,
-               depv.WORST_AGE: MetricsEvaluation.AOI2_max_func,
+dep_var_map = {depv.CUMULATIVE_AOI: MetricsEvaluation.AOI1_integral_func,
+               depv.CUMULATIVE_AOI_DELAY: MetricsEvaluation.AOI6_cumulative_delay_AOI_func,
+               depv.MAX_DELAY: MetricsEvaluation.AOI3_max_delay_func,
+               depv.MAX_AGE: MetricsEvaluation.AOI2_max_func,
                depv.VIOLATION_NUMBER: MetricsEvaluation.AOI4_n_violations_func,
-               depv.DELAY_SUM: MetricsEvaluation.AOI5_violation_time_func
+               depv.TOTAL_DELAY: MetricsEvaluation.AOI5_violation_time_func
                }
 
 grid_alpha = .2
@@ -35,6 +37,7 @@ def __data_matrix_multiple_exps(setup_file, independent_variable):
     TOT_MAT = None
     is_first = True
 
+    TOT_THRESHOLDS = None
     for ai, a in enumerate(stp.comp_dims[indv.DRONE_PATROLLING_POLICY]):
         print("Algorithm", a)
         for si, s in enumerate(stp.comp_dims[indv.SEED]):
@@ -61,7 +64,7 @@ def __data_matrix_multiple_exps(setup_file, independent_variable):
                     times = []  # for each target
                     for t_id in met.targets_tolerance:
                         if t_id != str(0):
-                            _, timee = met.AOI_func(t_id)
+                            _, timee = met.AOI_func(t_id, is_absolute=False)
                             times.append(timee)
 
                     times_array = np.asarray(times).T  # rows is time, column are targets
@@ -74,26 +77,45 @@ def __data_matrix_multiple_exps(setup_file, independent_variable):
                                             len(stp.comp_dims[indv.DRONE_PATROLLING_POLICY]),
                                             N_TARGETS,
                                             len(X_var)))
+
+                        TOT_THRESHOLDS = np.zeros((len(stp.comp_dims[indv.SEED]),
+                                                  len(stp.comp_dims[indv.DRONE_PATROLLING_POLICY]),
+                                                  N_TARGETS,
+                                                  len(X_var)))
+
                         is_first = False
 
                     stp.indv_fixed = {k: indv_fixed_original[k] for k in indv_fixed_original}  # reset the change
                     TOT_MAT[:, si, ai, :, xi] = times_array
-
+                    TOT_THRESHOLDS[si, ai, :, xi] = [v for k, v in met.targets_tolerance.items()][1:] # XtimeX, seed, policy, tar, indp
+    # # time,
     # print(np.sum(TOT_MAT[:, 0, 0, 0, 0]))
     # print(np.sum(TOT_MAT[:, 0, 0, 0, 1]))
     # exit()
-    return TOT_MAT
+    return TOT_MAT, TOT_THRESHOLDS
 
 
 def plot_stats_dep_ind_var(setup, indep_var, dep_var, error_type=ErrorType.STD, targets_aggregator=np.average, is_boxplot=True):
     """ Given a matrix of data, plots an XY chart """
 
     print("Plotting the stats...")
-    data = __data_matrix_multiple_exps(setup, indep_var)
+    data, thresholds = __data_matrix_multiple_exps(setup, indep_var)
     print("Done filling up the matrix.")
 
     # removes temporal dimensions, becomes: [(TIME) X SEEDS x ALGORITHMS x TARGETS x INDEPENDENT]
     metrics_aoi = dep_var_map[dep_var](data)  # data shape (5400, 1, 2, 30, 4)
+
+    # print(indep_var, dep_var)
+    # mat = np.average(np.max(metrics_aoi, axis=2), axis=0)
+    # ind = 0
+    # eps = 10**-9
+    # perc = mat[ind] / (mat+eps)
+    # for ai, a in enumerate(setup.comp_dims[indv.DRONE_PATROLLING_POLICY]):
+    #     print(a.name, perc[ai])
+    #
+    # # 1. gap-comparison
+    # # seed, algo, target, points
+    # print(metrics_aoi.shape)
 
     plt.close('all')
     _, ax = plt.subplots(figsize=figure_size)
@@ -180,14 +202,14 @@ def plot_stats_single_seed(setup, seed, algorithm):
 
     # N 2
     for t in range(1, setup.indv_fixed[indv.TARGETS_NUMBER]+1):
-        met.plot_aoi(t)
+        met.plot_aoi_illustrative(t)
 
     print()
     print("STATS for seed", seed, "with patrolling_protocol", algorithm)
-    print(depv.CUMULATIVE_AR.name, "on avg vector:", dep_var_map[depv.CUMULATIVE_AR](Yavg))
-    print(depv.CUMULATIVE_DELAY_AR.name, "on avg vector:", dep_var_map[depv.CUMULATIVE_DELAY_AR](Yavg))
-    print(depv.WORST_DELAY.name, "on avg vector:", dep_var_map[depv.WORST_DELAY](Yavg))
-    print(depv.WORST_AGE.name, "on avg vector:", dep_var_map[depv.WORST_AGE](Yavg))
+    print(depv.CUMULATIVE_AOI.name, "on avg vector:", dep_var_map[depv.CUMULATIVE_AOI](Yavg))
+    print(depv.CUMULATIVE_AOI_DELAY.name, "on avg vector:", dep_var_map[depv.CUMULATIVE_AOI_DELAY](Yavg))
+    print(depv.MAX_DELAY.name, "on avg vector:", dep_var_map[depv.MAX_DELAY](Yavg))
+    print(depv.MAX_AGE.name, "on avg vector:", dep_var_map[depv.MAX_AGE](Yavg))
     print(depv.VIOLATION_NUMBER.name, "on avg vector:", dep_var_map[depv.VIOLATION_NUMBER](Yavg))
     print()
 
@@ -199,15 +221,17 @@ if __name__ == '__main__':
     # 2. Declare what independent variable varies at this execution and what stays fixed
 
     # python -m src.main_metrics
-    setu = Setups.SETUP0.value
+    setu = Setups.SETUP_THRESHOLD.value  # 3. gaussian-cluster-drones
     for k, _ in setu.indv_vary.items():
-        plot_stats_dep_ind_var(setu, k, depv.CUMULATIVE_DELAY_AR, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
-        plot_stats_dep_ind_var(setu, k, depv.CUMULATIVE_AR, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
-        plot_stats_dep_ind_var(setu, k, depv.WORST_AGE, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
-        plot_stats_dep_ind_var(setu, k, depv.DELAY_SUM, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
+        plot_stats_dep_ind_var(setu, k, depv.CUMULATIVE_AOI_DELAY, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
+        plot_stats_dep_ind_var(setu, k, depv.CUMULATIVE_AOI, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
+        plot_stats_dep_ind_var(setu, k, depv.MAX_AGE, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
+        plot_stats_dep_ind_var(setu, k, depv.TOTAL_DELAY, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
 
-    # plot_stats_dep_ind_var(setu, indv.DRONES_NUMBER, depv.WORST_DELAY, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
+    # plot_stats_dep_ind_var(setu, indv.DRONES_NUMBER, depv.MAX_DELAY, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
     # plot_stats_dep_ind_var(setu, indv.DRONES_NUMBER, depv.VIOLATION_NUMBER, is_boxplot=False, error_type=ErrorType.STD_ERROR, targets_aggregator=np.max)
 
-    # plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.WORST_AGE, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)
-    # plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.WORST_DELAY, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)
+    # plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.MAX_AGE, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)
+    # plot_stats_dep_ind_var(setup0, indv.DRONES_NUMBER, depv.MAX_DELAY, is_boxplot=False, error_type=ErrorType.STD, targets_aggregator=np.average)
+
+    # plot_stats_single_seed(setu, 0, setu.comp_dims[indv.DRONE_PATROLLING_POLICY][0])

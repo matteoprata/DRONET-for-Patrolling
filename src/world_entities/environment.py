@@ -209,8 +209,9 @@ class Environment(ObstacleHandler):
             # LOW, HIGH = 50, 500
             VAL = 100
             th = self.simulator.cf.TARGETS_TOLERANCE_FIXED
-            THRESHOLDS = [VAL*th, VAL*th, (VAL*th + VAL/th) / 2, VAL/th, VAL/th]
-            THRESHOLDS = [int(t) for t in THRESHOLDS]
+            # THRESHOLDS = [VAL*th, VAL*th, (VAL*th + VAL/th) / 2, VAL/th, VAL/th]
+            # THRESHOLDS = [int(t) for t in THRESHOLDS]
+            THRESHOLDS = [100, 100, 100, 2000, 2000]
             for i, clus in enumerate(clusters_split):
                 thetas += [THRESHOLDS[i] for _ in clus]
 

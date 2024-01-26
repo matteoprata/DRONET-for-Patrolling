@@ -4,7 +4,7 @@ from src.patrolling.meta_patrolling import PatrollingPolicy
 
 
 class MaxAOIRatioPolicy(PatrollingPolicy):
-    name = "Max-AOI-Ratio"
+    name = "Go-Max-AOI-Ratio"
     identifier = 3
     line_tick = 3
     marker = 3

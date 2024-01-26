@@ -87,6 +87,44 @@ class MetricsEvaluation:
         plt.legend()
         plt.show()
 
+
+    def plot_aoi_illustrative(self, target_id, drone_id=None):
+        X, Y = self.AOI_func(target_id, drone_id)
+        figure_size = (6, 6)
+
+        plt.figure(figsize=figure_size)
+
+        ima = np.argmax(Y)
+        plt.scatter(X[ima], np.max(Y), color="red", label="Max AOI", zorder=1000, edgecolors='black')
+        plt.fill_between(X, np.zeros(shape=len(X)), Y, color='#72B0A6', hatch='..', edgecolor='black', label='Cumulative AOI', alpha=1)
+        plt.fill_between(X, np.ones (shape=len(X)), np.maximum(Y, np.ones(shape=len(X))), color='red', hatch='x', edgecolor="black", label='Cumulative AOI delay', alpha=.4)
+
+        # aa = X[Y >= 1]
+        # Find start and end points of line segments
+
+        # for t in zip(X, Y, Y>1):
+        #     print(t)
+        # for i in zip(Y, Y>=1):
+        #     print(i)
+
+        plt.axhline(1, color="gray", label="Threshold")
+        plt.scatter(X[Y>=1], np.ones(len(X[Y>=1])), color="red", label="Total delay", marker="s", s=[10 for _ in range(len(X[Y>=1]))], zorder=100)
+
+        plt.plot(X, Y, label='$a_p(t)$', color="black")
+        plt.xlim(-1, 2251)
+
+        plt.xticks([0, 500, 1000, 1500, 2000, 2250], [0, 500, 1000, 1500, 2000, 2250])
+        plt.yticks([0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4], [30, "$\\theta(p)$", 90, 120, 150, 180, 210, 240])
+        plt.xlabel("Time ($s$)")
+        plt.ylabel("AOI ($s$)")
+
+
+
+        # plt.title("AOI for target {}".format(target_id))
+        plt.legend()
+        import datetime
+        plt.savefig(f"data/imgs/AOI-{datetime.datetime.now()}.pdf")
+
     def plot_avg_aoi(self, drone_id=None):
         Ys = []
         for t in range(1, self.n_targets):
@@ -205,9 +243,18 @@ class MetricsEvaluation:
     @staticmethod
     def AOI6_cumulative_delay_AOI_func(y_axis, theta=1):
         """ somma triangoli rossi"""
+        # for i in y_axis[:, 6,0,2,0]:
+        #     print(i)
+        # exit()  # 1, 2, 3,4
         viol = y_axis >= theta
-        triangles = y_axis * (viol * 1)
+        triangles = (y_axis-theta) * (viol * 1)
+        # print(triangles.shape)
         violation_time = np.sum(triangles, axis=0)
+        # integral_trapezoidal = np.trapz(triangles, axis=0)
+        # print(integral_trapezoidal[0,0,0,0], violation_time[0,0,0,0])
+        # print(integral_trapezoidal[0,0,2,0], violation_time[0,0,2,0])
+        # print(integral_trapezoidal[1,0,2,0], violation_time[1,0,2,0])
+        # exit()
         return violation_time
 
 

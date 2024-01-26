@@ -4,7 +4,7 @@ from src.patrolling.meta_patrolling import PatrollingPolicy
 
 
 class MaxAOIPolicy(PatrollingPolicy):
-    name = "Max-AOI"
+    name = "Go-Max-AOI"
     identifier = 7
     line_tick = 2
     marker = 9

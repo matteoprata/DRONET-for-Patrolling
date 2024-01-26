@@ -24,7 +24,7 @@ indv_fixed = {
     indv.DRONE_SPEED: 5,
     indv.DRONES_NUMBER: 10,
     indv.TARGETS_NUMBER: 40,
-    indv.TARGETS_TOLERANCE_FIXED: 0.15,  # 0.15,
+    indv.TARGETS_TOLERANCE_FIXED: .15,  # 0.15,
     indv.TARGETS_TOLERANCE_SCENARIO: ToleranceScenario.CLUSTERED,
     indv.TARGETS_POSITION_SCENARIO: PositionScenario.CLUSTERED,
 }

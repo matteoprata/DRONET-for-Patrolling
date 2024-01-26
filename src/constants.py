@@ -103,7 +103,7 @@ class IndependentVariable(Enum):
     DRONE_SPEED = {"ID": 3, "NAME": "Drones Speed"}
     DRONES_NUMBER = {"ID": 4, "NAME": "Number of UAVs"}
     TARGETS_NUMBER = {"ID": 5, "NAME": "Targets Number"}
-    TARGETS_TOLERANCE_FIXED = {"ID": 7, "NAME": "Tolerance factor"}
+    TARGETS_TOLERANCE_FIXED = {"ID": 7, "NAME": "Urgency factor"}
     TARGETS_TOLERANCE_SCENARIO = {"ID": 8, "NAME": "Tolerance Scenario"}
     TARGETS_POSITION_SCENARIO = {"ID": 9, "NAME": "Position Scenario"}
 
@@ -113,12 +113,12 @@ class DependentVariable(Enum):
     AOI_RATIO = {"NAME": "Ratio AOI"}
 
     # distinct target distribution & averaged targets
-    CUMULATIVE_AR =       {"NAME": "Cumulative AOI ($s$)"}
-    CUMULATIVE_DELAY_AR = {"NAME": "Cumulative AOI delay ($s$)"}
-    WORST_DELAY =         {"NAME": "Max delay ($s$)"}
-    WORST_AGE =           {"NAME": "Max age ($s$)"}
+    CUMULATIVE_AOI =       {"NAME": "Cumulative $\widehat{AOI}$"}
+    CUMULATIVE_AOI_DELAY = {"NAME": "Cumulative $\widehat{AOI}$ delay"}
+    MAX_DELAY =         {"NAME": "Max delay ($s$)"}
+    MAX_AGE =           {"NAME": "Max $\widehat{AOI}$"}
     VIOLATION_NUMBER =    {"NAME": "Number of violations"}
-    DELAY_SUM =           {"NAME": "Total delay ($s$)"}
+    TOTAL_DELAY =           {"NAME": "Total delay ($s$)"}
 
 
 class HyperParameters(Enum):

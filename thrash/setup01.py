@@ -1,67 +1,68 @@
-import numpy as np
+# import numpy as np
+# import seaborn as sns
+# import matplotlib.pyplot as plt
+#
+# np.random.seed(45)
+# # Create a grid
+# x, y = np.meshgrid(np.linspace(-10, 10, 100), np.linspace(-10, 10, 100))
+#
+# # Create a 2D Gaussian distribution for the heatmap
+# sigma = 2.0
+# gaussian = np.exp(-(x**2 + y**2) / (2 * 2*sigma**2))
+#
+# # Add 6 epicenters
+# epicenters = [(24, 24), (60, 40), (80, 80), (20, 84), (40, 64)]
+#
+# ALL_cluster_points=[]
+# # Add little points around each epicenter
+# for epicenter in epicenters:
+#     cluster_points = np.random.normal(loc=epicenter, scale=6, size=(8, 2))
+#     for point in cluster_points:
+#         distance = np.sqrt((x - point[0])**2 + (y - point[1])**2)
+#         gaussian += np.exp(-distance**2)
+#     ALL_cluster_points.append(cluster_points)
+#
+# plt.figure(figsize=(4, 4))
+# # Plot the heatmap
+# sns.heatmap(gaussian, cmap='inferno', center=np.min(gaussian), annot=False, alpha=.7, cbar=False, square=True, xticklabels=False, yticklabels=False)
+#
+# # Plot epicenters as red dots
+# epicenters_x, epicenters_y = zip(*epicenters)
+#
+# plt.scatter(epicenters_x, epicenters_y, color='red', marker='o', label='Epicenters')
+# i = 0
+# for a in ALL_cluster_points:
+#     po_x, po_y = zip(*a)
+#     i += 1
+#     st = 'IPs' if i == 1 else None
+#     plt.scatter(po_x, po_y, color='blue', marker='x', label=st)
+#
+# # Plot points around each epicenter as crosses
+# # for epicenter in epicenters:
+# #     plt.plot(epicenter[0], epicenter[1], color='white', marker='x')
+#
+# # Show the legend
+# plt.legend(fontsize=12)
+#
+# # Show the plot
+# plt.tight_layout()
+# plt.savefig("../data/imgs/epicenters1.pdf")
+# plt.show()
+
+
 import matplotlib.pyplot as plt
 
-def generate_nodes_on_path(coordinates, N):
-    if len(coordinates) < 2 or N < 2:
-        raise ValueError("Invalid input: At least two coordinates and N >= 2 are required.")
+# Function segments
+X = [1, 2, 3, 4, 100, 201]
+Y = [1, 1, 1, 1, 1, 1]
 
-    # Make the path a closed loop by connecting the last point to the first point
-    coordinates.append(coordinates[0])
+# Plot the function segments
+plt.plot(X, Y, marker='o', linestyle='-', color='blue')
 
-    path_length = 0
-    for i in range(len(coordinates) - 1):
-        x1, y1 = coordinates[i]
-        x2, y2 = coordinates[i + 1]
-        path_length += np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
-
-    distance_between_nodes = path_length / (N - 1)
-    current_distance = 0
-    path_coordinates = [coordinates[0]]
-    associated_indices = []  # List to store the index of the next node in the path
-
-    for i in range(len(coordinates) - 1):
-        x1, y1 = coordinates[i]
-        x2, y2 = coordinates[i + 1]
-        segment_length = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
-
-        while current_distance + distance_between_nodes < segment_length:
-            ratio = (current_distance + distance_between_nodes) / segment_length
-            x = x1 + ratio * (x2 - x1)
-            y = y1 + ratio * (y2 - y1)
-            path_coordinates.append((x, y))
-            associated_indices.append((i + 1) % len(coordinates))  # Store the index of the next node in the loop
-            current_distance += distance_between_nodes
-
-        current_distance -= segment_length
-
-    return path_coordinates, associated_indices
-
-# Example usage: Create a circle as the input path
-theta = np.linspace(0, 2 * np.pi, 100)
-circle_coordinates = [(np.cos(t), np.sin(t)) for t in theta]
-
-number_of_nodes = 20  # Replace with the desired number of nodes
-
-result_nodes, next_node_indices = generate_nodes_on_path(circle_coordinates, number_of_nodes)
-
-# Extract x and y coordinates for plotting
-x_circle, y_circle = zip(*circle_coordinates)
-x_nodes, y_nodes = zip(*result_nodes)
-
-# Plotting
-plt.figure(figsize=(8, 8))
-plt.plot(x_circle + (x_circle[0],), y_circle + (y_circle[0],), linestyle='-', color='blue', label='Original Circle')
-plt.scatter(x_nodes, y_nodes, color='red', label='Generated Nodes')
-
-# Annotate the indices of the next node in the path
-for i, index in enumerate(next_node_indices):
-    plt.annotate(index, (x_nodes[i], y_nodes[i]), textcoords="offset points", xytext=(0,5), ha='center')
-
-# Adding labels and legend
-plt.title('Nodes along the Circular Path with Associated Indices')
+# Add labels and title
 plt.xlabel('X-axis')
 plt.ylabel('Y-axis')
-plt.legend()
+plt.title('Function Defined in Segments')
 
 # Show the plot
 plt.show()

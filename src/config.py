@@ -65,10 +65,10 @@ class Configuration:
         ]
 
         self.VALIDATION_DEP_VARS = [
-            DependentVariable.CUMULATIVE_AR,
-            DependentVariable.CUMULATIVE_DELAY_AR,
-            DependentVariable.WORST_DELAY,
-            DependentVariable.WORST_AGE,
+            DependentVariable.CUMULATIVE_AOI,
+            DependentVariable.CUMULATIVE_AOI_DELAY,
+            DependentVariable.MAX_DELAY,
+            DependentVariable.MAX_AGE,
             DependentVariable.VIOLATION_NUMBER
         ]
 

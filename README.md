@@ -1,4 +1,4 @@
-# 🚁 UAVs Patrolling Simulator
+# 🚁 DRONET for UAVs Patrolling
 Welcome to the UAVs Patrolling Simulator. This simulator is designed to provide an environment for simulating patrolling scenarios with Unmanned Aerial Vehicles (UAVs). 
 The primary goal of this simulator is to facilitate the development and evaluation of algorithms and strategies for effective patrolling missions considering diverse deployment scenarios.
 
